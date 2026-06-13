@@ -17,8 +17,8 @@ export class Account {
   }): Account {
     return new Account(
       infos.id,
-      infos.email,
       infos.username,
+      infos.email,
       infos.password,
       AuthMethod.LOCAL,
     );

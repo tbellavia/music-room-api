@@ -44,6 +44,16 @@ export class TypeOrmAccountRepository implements AccountRepository {
     }
   }
 
+  async findByUsername(username: string): Promise<Account | null> {
+    const entity = await this.repository.findOneBy({ username });
+
+    if (!entity) {
+      return null;
+    }
+
+    return this.toDomain(entity);
+  }
+
   private toDomain(orm: AccountOrmEntity): Account {
     return new Account(
       orm.id,

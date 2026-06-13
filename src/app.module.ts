@@ -7,17 +7,13 @@ import { DatabaseModule } from './infrastructure/database/database.module';
 import { IdentityModule } from './identity/identity.module';
 
 @Module({
-  imports: [
-    ConfigurationModule,
-    DatabaseModule,
-    IdentityModule
-  ],
+  imports: [ConfigurationModule, DatabaseModule, IdentityModule],
   controllers: [AppController],
   providers: [
     {
       provide: APP_FILTER,
-      useClass: HttpExceptionFilter
-    }
+      useClass: HttpExceptionFilter,
+    },
   ],
 })
 export class AppModule {}
