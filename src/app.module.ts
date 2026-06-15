@@ -7,9 +7,10 @@ import { DatabaseModule } from './infrastructure/database/database.module';
 import { IdentityModule } from './identity/identity.module';
 import { JwtAuthGuard } from './interface/http/guards/jwt-auth.guard';
 import { JwtService } from '@nestjs/jwt';
+import { SocialModule } from './social/social.module';
 
 @Module({
-  imports: [ConfigurationModule, DatabaseModule, IdentityModule],
+  imports: [ConfigurationModule, DatabaseModule, IdentityModule, SocialModule],
   controllers: [AppController],
   providers: [
     JwtService,
