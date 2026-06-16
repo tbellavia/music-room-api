@@ -1,6 +1,6 @@
 services:
   api:
-    container_name: "api"
+    container_name: 'api'
     build:
       context: .
     restart: always
@@ -8,7 +8,7 @@ services:
       - .:/api
       - /api/node_modules
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - POSTGRES_HOST=${POSTGRES_HOST}
       - POSTGRES_PORT=${POSTGRES_PORT}
@@ -21,8 +21,9 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - ENVIRONMENT=dev
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/v1/health']
       interval: 10s
       timeout: 5s
       retries: 3
@@ -32,7 +33,7 @@ services:
 
   db:
     image: postgres
-    container_name: "db"
+    container_name: 'db'
     restart: always
     environment:
       - POSTGRES_DB=${POSTGRES_DATABASE}
@@ -41,7 +42,7 @@ services:
 
   adminer:
     image: adminer
-    container_name: "adminer"
+    container_name: 'adminer'
     depends_on:
       - db
     ports:

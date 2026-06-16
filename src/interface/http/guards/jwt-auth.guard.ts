@@ -8,20 +8,20 @@ import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
     private reflector: Reflector,
+    private readonly configService: ConfigService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-    if (isPublic) {
+    const isPublic = this.isPublic(context);
+    const isDevelopment = this.isDevelopment();
+    if (isPublic || isDevelopment) {
       return true;
     }
 
@@ -42,7 +42,20 @@ export class JwtAuthGuard implements CanActivate {
     return true;
   }
 
-  extractTokenFromHeader(request: Request) {
+  private isPublic(context: ExecutionContext): boolean {
+    return this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+  }
+
+  private isDevelopment(): boolean {
+    const isDevelopment = this.configService.get<string>('ENVIRONMENT') ?? '';
+
+    return isDevelopment == 'dev';
+  }
+
+  private extractTokenFromHeader(request: Request) {
     const [type, token] = request.headers.authorization?.split(' ') ?? [];
     return type === 'Bearer' ? token : undefined;
   }
