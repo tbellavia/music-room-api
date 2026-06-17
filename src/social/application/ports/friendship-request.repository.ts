@@ -5,6 +5,10 @@ export interface FriendshipRequestRepository {
     requestId: string;
     receiverId: string;
   }): Promise<FriendshipRequest | null>;
+  findBySenderAndReceiverId(infos: {
+    senderId: string;
+    receiverId: string;
+  }): Promise<FriendshipRequest | null>;
   delete(id: string): Promise<void>;
   save(request: FriendshipRequest): Promise<void>;
 }

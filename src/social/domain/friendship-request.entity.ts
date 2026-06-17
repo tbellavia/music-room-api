@@ -3,7 +3,6 @@ export class FriendshipRequest {
     public readonly id: string,
     public readonly senderId: string,
     public readonly receiverId: string,
-    public readonly accepted: boolean,
   ) {}
 
   static create(infos: {
@@ -11,11 +10,6 @@ export class FriendshipRequest {
     senderId: string;
     receiverId: string;
   }): FriendshipRequest {
-    return new FriendshipRequest(
-      infos.id,
-      infos.senderId,
-      infos.receiverId,
-      false,
-    );
+    return new FriendshipRequest(infos.id, infos.senderId, infos.receiverId);
   }
 }

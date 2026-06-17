@@ -20,6 +20,26 @@ export class TypeOrmFriendshipRepository implements FriendshipRepository {
     return entities.map((entity: FriendshipOrmEntity) => this.toDomain(entity));
   }
 
+  async findByUsersId(infos: {
+    userA: string;
+    userB: string;
+  }): Promise<Friendship | null> {
+    let entity = await this.repository.findOneBy({
+      user_a_id: infos.userA,
+      user_b_id: infos.userB,
+    });
+    if (!entity) {
+      entity = await this.repository.findOneBy({
+        user_a_id: infos.userB,
+        user_b_id: infos.userA,
+      });
+      if (!entity) {
+        return null;
+      }
+    }
+    return this.toDomain(entity);
+  }
+
   async save(friendship: Friendship): Promise<void> {
     await this.repository.save(this.toOrm(friendship));
   }

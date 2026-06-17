@@ -27,6 +27,21 @@ export class TypeOrmFriendshipRequestRepository implements FriendshipRequestRepo
     return this.toDomain(entity);
   }
 
+  async findBySenderAndReceiverId(infos: {
+    senderId: string;
+    receiverId: string;
+  }): Promise<FriendshipRequest | null> {
+    const entity = await this.repository.findOneBy({
+      senderId: infos.senderId,
+      receiverId: infos.receiverId,
+    });
+
+    if (!entity) {
+      return null;
+    }
+    return this.toDomain(entity);
+  }
+
   async delete(id: string): Promise<void> {
     await this.repository.delete({ id });
   }
@@ -40,16 +55,10 @@ export class TypeOrmFriendshipRequestRepository implements FriendshipRequestRepo
       id: request.id,
       senderId: request.senderId,
       receiverId: request.receiverId,
-      accepted: request.accepted,
     };
   }
 
   private toDomain(orm: FriendshipRequestOrmEntity): FriendshipRequest {
-    return new FriendshipRequest(
-      orm.id,
-      orm.senderId,
-      orm.receiverId,
-      orm.accepted,
-    );
+    return new FriendshipRequest(orm.id, orm.senderId, orm.receiverId);
   }
 }

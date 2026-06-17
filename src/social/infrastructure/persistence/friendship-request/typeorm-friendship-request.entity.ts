@@ -10,7 +10,4 @@ export class FriendshipRequestOrmEntity {
 
   @Column()
   receiverId: string;
-
-  @Column()
-  accepted: boolean;
 }
