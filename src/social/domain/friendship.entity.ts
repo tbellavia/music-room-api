@@ -11,12 +11,19 @@ export class Friendship {
     return this.userA == userId || this.userB == userId;
   }
 
-  static create(id: string, userA: string, userB: string): Friendship {
-    if (userA === userB) {
+  static create(infos: {
+    id: string;
+    userA: string;
+    userB: string;
+  }): Friendship {
+    if (infos.userA === infos.userB) {
       throw new SelfFriendshipError();
     }
 
-    const [a, b] = userA < userB ? [userA, userB] : [userB, userA];
-    return new Friendship(id, a, b);
+    const [a, b] =
+      infos.userA < infos.userB
+        ? [infos.userA, infos.userB]
+        : [infos.userB, infos.userA];
+    return new Friendship(infos.id, a, b);
   }
 }

@@ -6,7 +6,7 @@ import { TypeOrmAccountRepository } from './infrastructure/persistence/typeorm-a
 import { BcryptPasswordService } from './infrastructure/crypto/bcrypt-password.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AccountOrmEntity } from './infrastructure/persistence/typeorm-account.entity';
-import { JwtModule, JwtService } from '@nestjs/jwt';
+import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SignInUseCase } from './application/use-cases/sign-in/sign-in.usecase';
 
@@ -34,5 +34,6 @@ import { SignInUseCase } from './application/use-cases/sign-in/sign-in.usecase';
     RegisterAccountUseCase,
     SignInUseCase,
   ],
+  exports: [JwtModule],
 })
 export class IdentityModule {}

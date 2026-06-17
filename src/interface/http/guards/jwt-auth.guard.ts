@@ -20,8 +20,8 @@ export class JwtAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const isPublic = this.isPublic(context);
-    const isDevelopment = this.isDevelopment();
-    if (isPublic || isDevelopment) {
+    // const isDevelopment = this.isDevelopment();
+    if (isPublic) {
       return true;
     }
 
@@ -33,7 +33,9 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
-      const payload = await this.jwtService.verifyAsync(token);
+      const payload = await this.jwtService.verifyAsync(token, {
+        secret: this.configService.get<string>('JWT_SECRET'),
+      });
       request['user'] = payload;
     } catch {
       throw new UnauthorizedException();
