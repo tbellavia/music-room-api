@@ -9,6 +9,7 @@ export interface FriendshipRequestRepository {
     senderId: string;
     receiverId: string;
   }): Promise<FriendshipRequest | null>;
+  findBySenderId(senderId: string): Promise<FriendshipRequest[]>;
   delete(id: string): Promise<void>;
   save(request: FriendshipRequest): Promise<void>;
 }

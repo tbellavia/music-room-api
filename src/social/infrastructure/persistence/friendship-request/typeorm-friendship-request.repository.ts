@@ -42,6 +42,12 @@ export class TypeOrmFriendshipRequestRepository implements FriendshipRequestRepo
     return this.toDomain(entity);
   }
 
+  async findBySenderId(senderId: string): Promise<FriendshipRequest[]> {
+    const entities = await this.repository.findBy({ senderId });
+
+    return entities.map((entity) => this.toDomain(entity));
+  }
+
   async delete(id: string): Promise<void> {
     await this.repository.delete({ id });
   }
