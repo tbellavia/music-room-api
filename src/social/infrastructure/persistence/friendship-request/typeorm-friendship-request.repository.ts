@@ -12,6 +12,25 @@ export class TypeOrmFriendshipRequestRepository implements FriendshipRequestRepo
     private readonly repository: Repository<FriendshipRequestOrmEntity>,
   ) {}
 
+  async findByRequestAndSenderId(infos: {
+    requestId: string;
+    receiverId: string;
+  }): Promise<FriendshipRequest | null> {
+    const entity = await this.repository.findOneBy({
+      id: infos.requestId,
+      receiverId: infos.receiverId,
+    });
+
+    if (!entity) {
+      return null;
+    }
+    return this.toDomain(entity);
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.repository.delete({ id });
+  }
+
   async save(request: FriendshipRequest): Promise<void> {
     await this.repository.save(this.toOrm(request));
   }

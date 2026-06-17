@@ -8,6 +8,7 @@ import { FriendshipRequestOrmEntity } from './infrastructure/persistence/friends
 import { FRIENDSHIP_REQUEST_REPOSITORY } from './application/ports/friendship-request.repository';
 import { TypeOrmFriendshipRequestRepository } from './infrastructure/persistence/friendship-request/typeorm-friendship-request.repository';
 import { RequestFriendshipUseCase } from './application/use-cases/request-friendship/request-friendship.usecase';
+import { AcceptFriendshipUseCase } from './application/use-cases/accept-friendship/accept-friendship.usecase';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { RequestFriendshipUseCase } from './application/use-cases/request-friend
     TypeOrmFriendshipRequestRepository,
     TypeOrmFriendshipRepository,
     RequestFriendshipUseCase,
+    AcceptFriendshipUseCase,
   ],
 })
 export class SocialModule {}
