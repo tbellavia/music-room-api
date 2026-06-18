@@ -23,7 +23,7 @@ export class AcceptFriendshipUseCase {
   async execute(input: AcceptFriendshipInput): Promise<AcceptFriendshipOutput> {
     const request = await this.requestRepository.findByRequestAndSenderId({
       requestId: input.requestId,
-      receiverId: input.receiverId,
+      senderId: input.receiverId,
     });
 
     if (!request) {

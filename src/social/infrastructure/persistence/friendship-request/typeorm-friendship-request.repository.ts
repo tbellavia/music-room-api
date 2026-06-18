@@ -14,11 +14,11 @@ export class TypeOrmFriendshipRequestRepository implements FriendshipRequestRepo
 
   async findByRequestAndSenderId(infos: {
     requestId: string;
-    receiverId: string;
+    senderId: string;
   }): Promise<FriendshipRequest | null> {
     const entity = await this.repository.findOneBy({
       id: infos.requestId,
-      receiverId: infos.receiverId,
+      senderId: infos.senderId,
     });
 
     if (!entity) {

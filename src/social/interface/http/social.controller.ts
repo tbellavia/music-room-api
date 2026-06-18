@@ -1,6 +1,7 @@
-import { Controller, Get, Param, Post } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { UserIdParam } from 'src/interface/http/decorators/user-param.decorator';
 import { AcceptFriendshipUseCase } from 'src/social/application/use-cases/accept-friendship/accept-friendship.usecase';
+import { CancelFriendshipRequestUseCase } from 'src/social/application/use-cases/cancel-friendship-request/cancel-friendship-request.usecase';
 import { GetPendingRequestsUseCase } from 'src/social/application/use-cases/get-pending-requests/get-pending-requests.usecase';
 import { RequestFriendshipUseCase } from 'src/social/application/use-cases/request-friendship/request-friendship.usecase';
 
@@ -10,6 +11,7 @@ export class SocialController {
     private readonly requestFriendship: RequestFriendshipUseCase,
     private readonly acceptFriendship: AcceptFriendshipUseCase,
     private readonly getPendingRequest: GetPendingRequestsUseCase,
+    private readonly cancelFriendshipRequest: CancelFriendshipRequestUseCase,
   ) {}
 
   @Post('friends/request/:requestId/accept')
@@ -37,6 +39,17 @@ export class SocialController {
   @Get('friends/request/pending')
   async pendingRequests(@UserIdParam() senderId: string) {
     return await this.getPendingRequest.execute({
+      senderId,
+    });
+  }
+
+  @Delete('friends/request/:requestId/cancel')
+  async cancelRequest(
+    @UserIdParam() senderId: string,
+    @Param('requestId') requestId: string,
+  ) {
+    await this.cancelFriendshipRequest.execute({
+      requestId,
       senderId,
     });
   }

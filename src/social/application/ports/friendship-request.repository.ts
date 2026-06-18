@@ -3,7 +3,7 @@ import { FriendshipRequest } from 'src/social/domain/friendship-request.entity';
 export interface FriendshipRequestRepository {
   findByRequestAndSenderId(infos: {
     requestId: string;
-    receiverId: string;
+    senderId: string;
   }): Promise<FriendshipRequest | null>;
   findBySenderAndReceiverId(infos: {
     senderId: string;

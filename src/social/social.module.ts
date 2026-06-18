@@ -10,6 +10,7 @@ import { TypeOrmFriendshipRequestRepository } from './infrastructure/persistence
 import { RequestFriendshipUseCase } from './application/use-cases/request-friendship/request-friendship.usecase';
 import { AcceptFriendshipUseCase } from './application/use-cases/accept-friendship/accept-friendship.usecase';
 import { GetPendingRequestsUseCase } from './application/use-cases/get-pending-requests/get-pending-requests.usecase';
+import { CancelFriendshipRequestUseCase } from './application/use-cases/cancel-friendship-request/cancel-friendship-request.usecase';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { GetPendingRequestsUseCase } from './application/use-cases/get-pending-r
     RequestFriendshipUseCase,
     AcceptFriendshipUseCase,
     GetPendingRequestsUseCase,
+    CancelFriendshipRequestUseCase,
   ],
 })
 export class SocialModule {}
