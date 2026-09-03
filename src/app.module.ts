@@ -8,9 +8,10 @@ import { IdentityModule } from './identity/identity.module';
 import { JwtAuthGuard } from './interface/http/guards/jwt-auth.guard';
 import { JwtService } from '@nestjs/jwt';
 import { SocialModule } from './social/social.module';
+import { MusicModule } from './music/music.module';
 
 @Module({
-  imports: [ConfigurationModule, DatabaseModule, IdentityModule, SocialModule],
+  imports: [ConfigurationModule, DatabaseModule, IdentityModule, SocialModule, MusicModule],
   controllers: [AppController],
   providers: [
     JwtService,
