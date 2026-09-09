@@ -27,6 +27,21 @@ export class TypeOrmFriendshipRequestRepository implements FriendshipRequestRepo
     return this.toDomain(entity);
   }
 
+  async findByRequestAndReceiverId(infos: {
+    requestId: string;
+    receiverId: string;
+  }): Promise<FriendshipRequest | null> {
+    const entity = await this.repository.findOneBy({
+      id: infos.requestId,
+      receiverId: infos.receiverId,
+    });
+
+    if (!entity) {
+      return null;
+    }
+    return this.toDomain(entity);
+  }
+
   async findBySenderAndReceiverId(infos: {
     senderId: string;
     receiverId: string;
