@@ -16,6 +16,8 @@ export class YoutubeApiClient implements YoutubeClientPort {
         name: item.name,
         videoId: item.videoId,
         artist: item.artist.name,
+        thumbnail: (item.thumbnails.length === 0) ? null : item.thumbnails[0].url,
+        duration: item.duration
       }));
     return musics;
   }
