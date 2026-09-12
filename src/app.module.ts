@@ -9,9 +9,10 @@ import { JwtAuthGuard } from './interface/http/guards/jwt-auth.guard';
 import { JwtService } from '@nestjs/jwt';
 import { SocialModule } from './social/social.module';
 import { MusicModule } from './music/music.module';
+import { PlaylistModule } from './playlist/playlist.module';
 
 @Module({
-  imports: [ConfigurationModule, DatabaseModule, IdentityModule, SocialModule, MusicModule],
+  imports: [ConfigurationModule, DatabaseModule, IdentityModule, SocialModule, MusicModule, PlaylistModule],
   controllers: [AppController],
   providers: [
     JwtService,
