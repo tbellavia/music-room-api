@@ -4,6 +4,7 @@ export type PlaylistTrack = {
   userId: string;
   trackId: string;
   music: Music;
+  private: boolean
 }
 
 export class Playlist {
@@ -11,6 +12,7 @@ export class Playlist {
   private owner_id: string;
   private name: string;
   private participants: string[];
+  private is_private: boolean;
   private tracks: PlaylistTrack[];
 
   constructor(
@@ -18,12 +20,14 @@ export class Playlist {
     owner_id: string,
     name: string,
     participants: string[],
+    is_private: boolean,
     tracks: PlaylistTrack[]
   ) {
     this.id = id;
     this.owner_id = owner_id;
     this.name = name;
     this.participants = participants;
+    this.is_private = is_private;
     this.tracks = tracks;
   }
 
@@ -31,6 +35,7 @@ export class Playlist {
     id: string,
     owner_id: string,
     name: string,
+    is_private: boolean,
     participants: string[],
   }): Playlist {
     return new Playlist(
@@ -38,6 +43,7 @@ export class Playlist {
       infos.owner_id,
       infos.name,
       infos.participants,
+      infos.is_private,
       []
     );
   }
@@ -59,5 +65,13 @@ export class Playlist {
 
   getTracks(): PlaylistTrack[] {
     return this.tracks;
+  }
+
+  addParticipant(participantId: string) {
+    this.participants.push(participantId);
+  }
+
+  removeParticipant(participantId: string) {
+    this.participants = this.participants.filter((participant: string) => participant !== participantId);
   }
 }
