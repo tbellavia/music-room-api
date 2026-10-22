@@ -1,20 +1,23 @@
 import { Module } from '@nestjs/common';
-import { PlaylistController } from './interface/http/playlist.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ParticipantsOrmEntity } from './infrastructure/participants/typeorm-participants.entity';
-import { TrackVoteOrmEntity } from './infrastructure/track-vote/typeorm-track-vote.entity';
-import { TrackEditorPlaylistOrmEntity } from './infrastructure/track-editor-playlist/typeorm-track-editor-playlist.entity';
-import { TrackVotePlaylistOrmEntity } from './infrastructure/track-vote-playlist/typeorm-track-vote-playlist.entity';
+import { PlaylistController } from './interface/http/playlist.controller';
+import { PlaylistOrmEntity } from './infrastructure/persistence/playlist/typeorm-playlist.entity';
+import { ParticipantOrmEntity } from './infrastructure/persistence/participant/typeorm-participant.entity';
+import { PLAYLIST_REPOSITORY } from './application/ports/playlist.repository';
+import { TypeOrmPlaylistRepository } from './infrastructure/persistence/playlist/typeorm-playlist.repository';
+import { CreatePlaylistUseCase } from './application/use-cases/create-playlist/create-playlist.usecase';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      ParticipantsOrmEntity,
-      TrackVoteOrmEntity,
-      TrackEditorPlaylistOrmEntity,
-      TrackVotePlaylistOrmEntity,
-    ]),
+    TypeOrmModule.forFeature([PlaylistOrmEntity, ParticipantOrmEntity]),
   ],
   controllers: [PlaylistController],
+  providers: [
+    {
+      provide: PLAYLIST_REPOSITORY,
+      useClass: TypeOrmPlaylistRepository,
+    },
+    CreatePlaylistUseCase,
+  ],
 })
 export class PlaylistModule {}

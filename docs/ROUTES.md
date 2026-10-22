@@ -1,0 +1,66 @@
+# Music Room API — Routes
+
+Toutes les routes sont préfixées par `/api/v1`.
+Sauf mention `(public)`, elles exigent le header `Authorization: Bearer <access_token>`.
+
+Erreurs : `{ error: "CODE", message: string }` pour les erreurs métier,
+format Nest (`{ statusCode, message, error }`) pour les erreurs de validation (400) et d'auth (401).
+
+## Health
+
+- GET /api/v1/health (public)
+  → 200 { success: true }
+
+## Identity
+
+- POST /api/v1/identity/register (public)
+  Body : { username: string (3-20), email: string, password: string (12-72, strong) }
+  → 201 { id: string }
+  → 409 ACCOUNT_ALREADY_EXISTS
+
+- POST /api/v1/identity/login (public)
+  Body : { username: string, password: string }
+  → 201 { access_token: string }
+  → 401 INVALID_CREDENTIALS
+
+- GET /api/v1/identity/profile
+  → 200 { success: true }
+
+## Social
+
+- POST /api/v1/social/friends/request/:receiverId
+  → 201 { requestId: string }
+  → 400 SELF_FRIENDSHIP | 409 FRIENDSHIP_REQUEST_ALREADY_EXISTS | 409 FRIENDSHIP_ALREADY_EXISTS
+
+- POST /api/v1/social/friends/request/:requestId/accept
+  → 201 { friendshipId: string }
+  → 404 FRIENDSHIP_REQUEST_NOT_FOUND
+
+- GET /api/v1/social/friends/request/pending
+  → 200 { requests: { id: string, senderId: string, receiverId: string }[] }
+
+- DELETE /api/v1/social/friends/request/:requestId/cancel
+  → 200 (vide)
+  → 404 FRIENDSHIP_REQUEST_NOT_FOUND
+
+## Music
+
+- GET /api/v1/music/search/:name (public)
+  → 200 { musics: { name: string, videoId: string, artist: string, thumbnail: string | null, duration: number }[] }
+
+## Playlists
+
+- POST /api/v1/playlists
+  Body : {
+    type: "VOTE" | "EDITOR",
+    name: string (1-100),
+    description: string (max 500),
+    isPrivate?: boolean (défaut false),
+    beginAt?: string (ISO 8601),
+    endAt?: string (ISO 8601, strictement après beginAt),
+    latitude: number (-90..90),
+    longitude: number (-180..180)
+  }
+  → 201 { id: string }
+  → 400 INVALID_PLAYLIST_PERIOD
+  → 409 PLAYLIST_ALREADY_EXISTS (même nom pour le même owner)
