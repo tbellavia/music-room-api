@@ -10,6 +10,10 @@ import {
 import { UnknownFriendshipRequest } from 'src/social/domain/errors/unknown-friendship-request';
 import { Friendship } from 'src/social/domain/friendship.entity';
 import { randomUUID } from 'crypto';
+import {
+  AcceptFriendshipInput,
+  AcceptFriendshipOutput,
+} from './accept-friendship.contracts';
 
 @Injectable()
 export class AcceptFriendshipUseCase {
@@ -21,9 +25,10 @@ export class AcceptFriendshipUseCase {
   ) {}
 
   async execute(input: AcceptFriendshipInput): Promise<AcceptFriendshipOutput> {
-    const request = await this.requestRepository.findByRequestAndSenderId({
+    // Only the receiver of a request can accept it
+    const request = await this.requestRepository.findByRequestAndReceiverId({
       requestId: input.requestId,
-      senderId: input.receiverId,
+      receiverId: input.receiverId,
     });
 
     if (!request) {

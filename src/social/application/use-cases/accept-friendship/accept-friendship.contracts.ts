@@ -1,8 +1,8 @@
-type AcceptFriendshipInput = {
+export type AcceptFriendshipInput = {
   requestId: string;
   receiverId: string;
 };
 
-type AcceptFriendshipOutput = {
+export type AcceptFriendshipOutput = {
   friendshipId: string;
 };

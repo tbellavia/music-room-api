@@ -16,6 +16,7 @@ import { Participant } from 'src/playlist/domain/participant.entity';
 import { PlaylistNotFound } from 'src/playlist/domain/errors/playlist-not-found.error';
 import { PrivatePlaylist } from 'src/playlist/domain/errors/private-playlist.error';
 import { PlaylistEnded } from 'src/playlist/domain/errors/playlist-ended.error';
+import { PlaylistNotStarted } from 'src/playlist/domain/errors/playlist-not-started.error';
 import { AlreadyParticipant } from 'src/playlist/domain/errors/already-participant.error';
 import { OutsidePlaylistZone } from 'src/playlist/domain/errors/outside-playlist-zone.error';
 
@@ -38,6 +39,9 @@ export class JoinPlaylistUseCase {
     }
     if (playlist.hasEnded()) {
       throw new PlaylistEnded();
+    }
+    if (!playlist.hasBegun()) {
+      throw new PlaylistNotStarted();
     }
 
     // The owner is implicitly a member of their own playlist

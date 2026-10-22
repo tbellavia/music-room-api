@@ -49,12 +49,23 @@ export class RequestFriendshipUseCase {
     };
   }
 
+  // A pending request in either direction blocks a new one:
+  // the receiver of an existing request must accept it instead
   private async throwExistingRequest(input: RequestFriendshipInput) {
-    const request = await this.requestRepository.findBySenderAndReceiverId({
-      receiverId: input.receiverId,
+    const sentRequest = await this.requestRepository.findBySenderAndReceiverId({
       senderId: input.senderId,
+      receiverId: input.receiverId,
     });
-    if (request) {
+    if (sentRequest) {
+      throw new FriendshipRequestAlreadyExists();
+    }
+
+    const receivedRequest =
+      await this.requestRepository.findBySenderAndReceiverId({
+        senderId: input.receiverId,
+        receiverId: input.senderId,
+      });
+    if (receivedRequest) {
       throw new FriendshipRequestAlreadyExists();
     }
   }

@@ -4,6 +4,7 @@ import { AcceptFriendshipUseCase } from 'src/social/application/use-cases/accept
 import { CancelFriendshipRequestUseCase } from 'src/social/application/use-cases/cancel-friendship-request/cancel-friendship-request.usecase';
 import { GetPendingRequestsUseCase } from 'src/social/application/use-cases/get-pending-requests/get-pending-requests.usecase';
 import { RequestFriendshipUseCase } from 'src/social/application/use-cases/request-friendship/request-friendship.usecase';
+import { RejectFriendshipUseCase } from 'src/social/application/use-cases/reject-friendship/reject-friendship.usecase';
 
 @Controller('social')
 export class SocialController {
@@ -12,6 +13,7 @@ export class SocialController {
     private readonly acceptFriendship: AcceptFriendshipUseCase,
     private readonly getPendingRequest: GetPendingRequestsUseCase,
     private readonly cancelFriendshipRequest: CancelFriendshipRequestUseCase,
+    private readonly rejectFriendship: RejectFriendshipUseCase,
   ) {}
 
   @Post('friends/request/:requestId/accept')
@@ -37,9 +39,20 @@ export class SocialController {
   }
 
   @Get('friends/request/pending')
-  async pendingRequests(@UserIdParam() senderId: string) {
+  async pendingRequests(@UserIdParam() receiverId: string) {
     return await this.getPendingRequest.execute({
-      senderId,
+      receiverId,
+    });
+  }
+
+  @Delete('friends/request/:requestId/reject')
+  async rejectRequest(
+    @UserIdParam() receiverId: string,
+    @Param('requestId') requestId: string,
+  ) {
+    await this.rejectFriendship.execute({
+      requestId,
+      receiverId,
     });
   }
 

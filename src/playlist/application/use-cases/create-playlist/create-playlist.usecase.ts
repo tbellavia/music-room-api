@@ -9,6 +9,7 @@ import {
   CreatePlaylistOutput,
 } from './create-playlist.contracts';
 import { PlaylistAlreadyExists } from 'src/playlist/domain/errors/playlist-already-exists.error';
+import { PlaylistEndInPast } from 'src/playlist/domain/errors/playlist-end-in-past.error';
 import { Playlist } from 'src/playlist/domain/playlist.entity';
 
 @Injectable()
@@ -25,6 +26,12 @@ export class CreatePlaylistUseCase {
     });
     if (found) {
       throw new PlaylistAlreadyExists();
+    }
+
+    // Only checked at creation: an existing playlist is expected to end some day
+    const now = new Date();
+    if (input.endAt && input.endAt <= now) {
+      throw new PlaylistEndInPast();
     }
 
     const playlist = Playlist.create({
