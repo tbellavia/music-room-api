@@ -9,6 +9,7 @@ import { Participant } from 'src/playlist/domain/participant.entity';
 import { PlaylistNotFound } from 'src/playlist/domain/errors/playlist-not-found.error';
 import { PrivatePlaylist } from 'src/playlist/domain/errors/private-playlist.error';
 import { PlaylistEnded } from 'src/playlist/domain/errors/playlist-ended.error';
+import { PlaylistNotStarted } from 'src/playlist/domain/errors/playlist-not-started.error';
 import { AlreadyParticipant } from 'src/playlist/domain/errors/already-participant.error';
 import { OutsidePlaylistZone } from 'src/playlist/domain/errors/outside-playlist-zone.error';
 import { JoinPlaylistUseCase } from './join-playlist.usecase';
@@ -76,9 +77,19 @@ describe('JoinPlaylistUseCase', () => {
     expect(participantRepository.participants.size).toBe(1);
   });
 
-  it('lets a user join a playlist that has not begun yet', async () => {
+  it('rejects a playlist that has not begun yet', async () => {
     await givenPlaylist({
       beginAt: new Date('2998-01-01'),
+      endAt: new Date('2999-01-01'),
+    });
+
+    await expect(useCase.execute(input)).rejects.toThrow(PlaylistNotStarted);
+    expect(participantRepository.participants.size).toBe(0);
+  });
+
+  it('lets a user join a playlist that is in progress', async () => {
+    await givenPlaylist({
+      beginAt: new Date('2000-01-01'),
       endAt: new Date('2999-01-01'),
     });
 

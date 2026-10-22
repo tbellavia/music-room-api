@@ -18,7 +18,7 @@ export class GetPendingRequestsUseCase {
   async execute(
     input: GetPendingRequestsInput,
   ): Promise<GetPendingRequestsOutput> {
-    const requests = await this.repository.findBySenderId(input.senderId);
+    const requests = await this.repository.findByReceiverId(input.receiverId);
 
     return {
       requests,

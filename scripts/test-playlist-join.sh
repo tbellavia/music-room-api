@@ -4,11 +4,8 @@
 #
 # Usage: ./scripts/test-playlist-join.sh [API_URL]
 
-set -u
-
 API="${1:-http://localhost:3000/api/v1}"
-SUFFIX=$RANDOM
-PASSWORD='Password123!x'
+. "$(dirname "$0")/lib.sh"
 
 # 42 Paris
 PLAYLIST_LATITUDE=48.8966
@@ -16,93 +13,9 @@ PLAYLIST_LONGITUDE=2.3184
 LATITUDE_1500M_NORTH=48.9101
 LATITUDE_2500M_NORTH=48.9191
 
-RESPONSE_FILE=$(mktemp)
-trap 'rm -f "$RESPONSE_FILE"' EXIT
-
-PASSED=0
-FAILED=0
-STATUS=""
-BODY=""
-
-GREEN='\033[32m'
-RED='\033[31m'
-BOLD='\033[1m'
-RESET='\033[0m'
-
-# request METHOD PATH [TOKEN] [JSON_BODY] -> sets STATUS and BODY
-request() {
-  local method=$1
-  local path=$2
-  local token=${3:-}
-  local data=${4:-}
-  local args=(-s -o "$RESPONSE_FILE" -w '%{http_code}' -X "$method" "$API$path")
-
-  if [ -n "$token" ]; then
-    args+=(-H "Authorization: Bearer $token")
-  fi
-  if [ -n "$data" ]; then
-    args+=(-H 'Content-Type: application/json' -d "$data")
-  fi
-
-  STATUS=$(curl "${args[@]}")
-  BODY=$(cat "$RESPONSE_FILE")
-}
-
-pass() {
-  PASSED=$((PASSED + 1))
-  printf "  ${GREEN}✔${RESET} %s\n" "$1"
-}
-
-fail() {
-  FAILED=$((FAILED + 1))
-  printf "  ${RED}✘ %s${RESET}\n" "$1"
-  printf "      %s\n" "$2"
-}
-
-# expect DESCRIPTION EXPECTED_STATUS [EXPECTED_ERROR_CODE]
-expect() {
-  local description=$1
-  local expected_status=$2
-  local expected_error=${3:-}
-  local actual_error
-
-  if [ "$STATUS" != "$expected_status" ]; then
-    fail "$description" "expected HTTP $expected_status, got $STATUS: $BODY"
-    return
-  fi
-  if [ -n "$expected_error" ]; then
-    actual_error=$(echo "$BODY" | jq -r '.error // empty' 2>/dev/null)
-    if [ "$actual_error" != "$expected_error" ]; then
-      fail "$description" "expected error $expected_error, got: $BODY"
-      return
-    fi
-  fi
-  pass "$description"
-}
-
-section() {
-  printf "\n${BOLD}%s${RESET}\n" "$1"
-}
-
 register_and_login() {
-  local username=$1
-  local token
-
-  request POST /identity/register "" \
-    "{\"username\":\"$username\",\"email\":\"$username@test.com\",\"password\":\"$PASSWORD\"}"
-  if [ "$STATUS" != "201" ]; then
-    echo "Cannot register $username (HTTP $STATUS): $BODY" >&2
-    exit 1
-  fi
-
-  request POST /identity/login "" \
-    "{\"username\":\"$username\",\"password\":\"$PASSWORD\"}"
-  token=$(echo "$BODY" | jq -r '.access_token // empty')
-  if [ -z "$token" ]; then
-    echo "Cannot log in $username (HTTP $STATUS): $BODY" >&2
-    exit 1
-  fi
-  echo "$token"
+  register "$1" >/dev/null || exit 1
+  login "$1"
 }
 
 # create_playlist TOKEN JSON_BODY -> prints the playlist id
@@ -129,18 +42,13 @@ is_listed() {
   echo "$BODY" | jq -e --arg id "$1" 'any(.playlists[]; .id == $id)' >/dev/null
 }
 
-for command in curl jq; do
-  if ! command -v "$command" >/dev/null; then
-    echo "$command is required" >&2
-    exit 1
-  fi
-done
+# utc_in_seconds N -> ISO 8601 date N seconds from now (BSD and GNU date)
+utc_in_seconds() {
+  date -u -v+"$1"S +%Y-%m-%dT%H:%M:%SZ 2>/dev/null \
+    || date -u -d "+$1 seconds" +%Y-%m-%dT%H:%M:%SZ
+}
 
-request GET /health
-if [ "$STATUS" != "200" ]; then
-  echo "API is not reachable at $API (run: make start)" >&2
-  exit 1
-fi
+preflight
 
 section "Setup"
 ALICE=$(register_and_login "alice$SUFFIX") || exit 1
@@ -154,9 +62,20 @@ PRIVATE=$(create_playlist "$ALICE" \
   "{\"type\":\"EDITOR\",\"name\":\"Private $SUFFIX\",\"description\":\"\",\"isPrivate\":true,$LOCATION}") || exit 1
 FUTURE=$(create_playlist "$ALICE" \
   "{\"type\":\"VOTE\",\"name\":\"Future $SUFFIX\",\"description\":\"\",\"beginAt\":\"2030-01-01T20:00:00Z\",\"endAt\":\"2030-01-02T04:00:00Z\",$LOCATION}") || exit 1
+# A playlist cannot be created already ended: create it ending soon, then wait
 ENDED=$(create_playlist "$ALICE" \
-  "{\"type\":\"VOTE\",\"name\":\"Ended $SUFFIX\",\"description\":\"\",\"beginAt\":\"2020-01-01T20:00:00Z\",\"endAt\":\"2020-01-02T04:00:00Z\",$LOCATION}") || exit 1
-echo "  playlists created: public, private, future, ended"
+  "{\"type\":\"VOTE\",\"name\":\"Ended $SUFFIX\",\"description\":\"\",\"endAt\":\"$(utc_in_seconds 2)\",$LOCATION}") || exit 1
+echo "  playlists created: public, private, future, ended (waiting for it to end...)"
+sleep 3
+
+section "POST /playlists"
+request POST /playlists "$ALICE" \
+  "{\"type\":\"VOTE\",\"name\":\"Past $SUFFIX\",\"description\":\"\",\"beginAt\":\"2020-01-01T20:00:00Z\",\"endAt\":\"2020-01-02T04:00:00Z\",$LOCATION}"
+expect "endAt in the past → 400 PLAYLIST_END_IN_PAST" 400 PLAYLIST_END_IN_PAST
+
+request POST /playlists "$ALICE" \
+  "{\"type\":\"VOTE\",\"name\":\"Started $SUFFIX\",\"description\":\"\",\"beginAt\":\"2020-01-01T20:00:00Z\",\"endAt\":\"2030-01-02T04:00:00Z\",$LOCATION}"
+expect "already begun but ends in the future → 201" 201
 
 section "GET /playlists/public"
 request GET /playlists/public
@@ -195,7 +114,7 @@ join "$BOB" "$ENDED" "$PLAYLIST_LATITUDE"
 expect "ended playlist → 410 PLAYLIST_ENDED" 410 PLAYLIST_ENDED
 
 join "$BOB" "$FUTURE" "$PLAYLIST_LATITUDE"
-expect "not yet started playlist → 201" 201
+expect "not yet started playlist → 403 PLAYLIST_NOT_STARTED" 403 PLAYLIST_NOT_STARTED
 
 join "$BOB" "00000000-0000-0000-0000-000000000000" "$PLAYLIST_LATITUDE"
 expect "unknown playlist → 404 PLAYLIST_NOT_FOUND" 404 PLAYLIST_NOT_FOUND
@@ -211,5 +130,4 @@ request POST "/playlists/$PUBLIC/join" "$BOB" \
   "{\"latitude\":$PLAYLIST_LATITUDE,\"longitude\":$PLAYLIST_LONGITUDE,\"hack\":true}"
 expect "unknown field → 400" 400
 
-printf "\n${BOLD}%d passed, %d failed${RESET}\n" "$PASSED" "$FAILED"
-[ "$FAILED" -eq 0 ]
+summary

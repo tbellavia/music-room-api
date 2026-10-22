@@ -2,6 +2,7 @@ import { InMemoryPlaylistRepository } from 'src/playlist/infrastructure/persiste
 import { PlaylistType } from 'src/playlist/domain/playlist-type.enum';
 import { PlaylistAlreadyExists } from 'src/playlist/domain/errors/playlist-already-exists.error';
 import { InvalidPlaylistPeriod } from 'src/playlist/domain/errors/invalid-playlist-period.error';
+import { PlaylistEndInPast } from 'src/playlist/domain/errors/playlist-end-in-past.error';
 import { CreatePlaylistUseCase } from './create-playlist.usecase';
 import { CreatePlaylistInput } from './create-playlist.contracts';
 
@@ -45,8 +46,8 @@ describe('CreatePlaylistUseCase', () => {
   });
 
   it('creates a private playlist with a period', async () => {
-    const beginAt = new Date('2026-12-31T16:00:00Z');
-    const endAt = new Date('2026-12-31T18:00:00Z');
+    const beginAt = new Date('2999-12-31T16:00:00Z');
+    const endAt = new Date('2999-12-31T18:00:00Z');
 
     const { id } = await useCase.execute({
       ...input,
@@ -82,10 +83,42 @@ describe('CreatePlaylistUseCase', () => {
     await expect(
       useCase.execute({
         ...input,
-        beginAt: new Date('2026-12-31T18:00:00Z'),
-        endAt: new Date('2026-12-31T16:00:00Z'),
+        beginAt: new Date('2999-12-31T18:00:00Z'),
+        endAt: new Date('2999-12-31T16:00:00Z'),
       }),
     ).rejects.toThrow(InvalidPlaylistPeriod);
     expect(repository.playlists.size).toBe(0);
+  });
+
+  it('rejects a playlist that has already ended', async () => {
+    await expect(
+      useCase.execute({
+        ...input,
+        endAt: new Date('2000-01-01T00:00:00Z'),
+      }),
+    ).rejects.toThrow(PlaylistEndInPast);
+    expect(repository.playlists.size).toBe(0);
+  });
+
+  it('rejects an ended period even if it began in the past too', async () => {
+    await expect(
+      useCase.execute({
+        ...input,
+        beginAt: new Date('2000-01-01T00:00:00Z'),
+        endAt: new Date('2000-01-02T00:00:00Z'),
+      }),
+    ).rejects.toThrow(PlaylistEndInPast);
+    expect(repository.playlists.size).toBe(0);
+  });
+
+  it('accepts a playlist that already began but ends in the future', async () => {
+    const beginAt = new Date('2000-01-01T00:00:00Z');
+    const endAt = new Date('2999-01-01T00:00:00Z');
+
+    const { id } = await useCase.execute({ ...input, beginAt, endAt });
+
+    const saved = await repository.findById(id);
+    expect(saved).not.toBeNull();
+    expect(saved?.beginAt).toEqual(beginAt);
   });
 });
