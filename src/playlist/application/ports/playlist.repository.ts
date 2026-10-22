@@ -6,6 +6,7 @@ export interface PlaylistRepository {
     name: string;
   }): Promise<Playlist | null>;
   findById(id: string): Promise<Playlist | null>;
+  findPublic(): Promise<Playlist[]>;
   save(playlist: Playlist): Promise<void>;
 }
 

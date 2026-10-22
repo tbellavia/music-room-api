@@ -21,6 +21,16 @@ export class InMemoryPlaylistRepository implements PlaylistRepository {
     return Promise.resolve(this.playlists.get(id) ?? null);
   }
 
+  findPublic(): Promise<Playlist[]> {
+    const publicPlaylists: Playlist[] = [];
+    for (const playlist of this.playlists.values()) {
+      if (!playlist.isPrivate) {
+        publicPlaylists.push(playlist);
+      }
+    }
+    return Promise.resolve(publicPlaylists);
+  }
+
   save(playlist: Playlist): Promise<void> {
     this.playlists.set(playlist.id, playlist);
     return Promise.resolve();

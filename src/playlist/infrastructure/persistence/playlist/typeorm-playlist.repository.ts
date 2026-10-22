@@ -38,6 +38,12 @@ export class TypeOrmPlaylistRepository implements PlaylistRepository {
     return this.toDomain(entity);
   }
 
+  async findPublic(): Promise<Playlist[]> {
+    const entities = await this.repository.findBy({ is_private: false });
+
+    return entities.map((entity) => this.toDomain(entity));
+  }
+
   async save(playlist: Playlist): Promise<void> {
     try {
       await this.repository.save(this.toOrm(playlist));

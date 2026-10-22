@@ -9,6 +9,11 @@ import { Response } from 'express';
 import { AccountAlreadyExistsError } from 'src/identity/domain/errors/account-already-exists.error';
 import { AccountNotFound } from 'src/identity/domain/errors/account-not-found.error';
 import { Unauthorized } from 'src/identity/domain/errors/unauthorized.error';
+import { AlreadyParticipant } from 'src/playlist/domain/errors/already-participant.error';
+import { OutsidePlaylistZone } from 'src/playlist/domain/errors/outside-playlist-zone.error';
+import { PlaylistEnded } from 'src/playlist/domain/errors/playlist-ended.error';
+import { PlaylistNotFound } from 'src/playlist/domain/errors/playlist-not-found.error';
+import { PrivatePlaylist } from 'src/playlist/domain/errors/private-playlist.error';
 import { InvalidPlaylistPeriod } from 'src/playlist/domain/errors/invalid-playlist-period.error';
 import { PlaylistAlreadyExists } from 'src/playlist/domain/errors/playlist-already-exists.error';
 import { FriendshipAlreadyExists } from 'src/social/domain/errors/friendship-already-exists.error';
@@ -116,6 +121,42 @@ const DOMAIN_ERRORS = new Map<unknown, ErrorResponse>([
       status: 400,
       error: 'INVALID_PLAYLIST_PERIOD',
       message: 'Playlist end must be after its beginning',
+    },
+  ],
+  [
+    PlaylistNotFound,
+    { status: 404, error: 'PLAYLIST_NOT_FOUND', message: 'Playlist not found' },
+  ],
+  [
+    PrivatePlaylist,
+    {
+      status: 403,
+      error: 'PRIVATE_PLAYLIST',
+      message: 'This playlist is private, an invitation is required',
+    },
+  ],
+  [
+    PlaylistEnded,
+    {
+      status: 410,
+      error: 'PLAYLIST_ENDED',
+      message: 'This playlist has ended',
+    },
+  ],
+  [
+    AlreadyParticipant,
+    {
+      status: 409,
+      error: 'ALREADY_PARTICIPANT',
+      message: 'You are already a member of this playlist',
+    },
+  ],
+  [
+    OutsidePlaylistZone,
+    {
+      status: 403,
+      error: 'OUTSIDE_PLAYLIST_ZONE',
+      message: 'You must be within 2 km of the playlist to join it',
     },
   ],
 ]);
