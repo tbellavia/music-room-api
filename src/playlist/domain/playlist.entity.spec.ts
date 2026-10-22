@@ -61,6 +61,28 @@ describe('Playlist', () => {
     });
   });
 
+  describe('hasEnded', () => {
+    const endAt = new Date('2026-12-31T18:00:00Z');
+
+    it('never ends without end date', () => {
+      const playlist = build();
+
+      expect(playlist.hasEnded(new Date('2999-01-01'))).toBe(false);
+    });
+
+    it('has not ended before the end date', () => {
+      const playlist = build({ endAt });
+
+      expect(playlist.hasEnded(new Date('2026-12-31T17:59:59Z'))).toBe(false);
+    });
+
+    it('has ended from the end date', () => {
+      const playlist = build({ endAt });
+
+      expect(playlist.hasEnded(endAt)).toBe(true);
+    });
+  });
+
   describe('isActive', () => {
     const beginAt = new Date('2026-12-31T16:00:00Z');
     const endAt = new Date('2026-12-31T18:00:00Z');

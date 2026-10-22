@@ -55,11 +55,22 @@ export class Playlist {
     return this.ownerId === accountId;
   }
 
-  isActive(now: Date = new Date()): boolean {
-    const hasBegun = !this.beginAt || now >= this.beginAt;
-    const hasEnded = !!this.endAt && now >= this.endAt;
+  hasBegun(now: Date = new Date()): boolean {
+    if (this.beginAt === null) {
+      return true;
+    }
+    return now >= this.beginAt;
+  }
 
-    return hasBegun && !hasEnded;
+  hasEnded(now: Date = new Date()): boolean {
+    if (this.endAt === null) {
+      return false;
+    }
+    return now >= this.endAt;
+  }
+
+  isActive(now: Date = new Date()): boolean {
+    return this.hasBegun(now) && !this.hasEnded(now);
   }
 
   isWithinZone(position: Coordinates): boolean {

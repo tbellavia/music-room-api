@@ -64,3 +64,30 @@ format Nest (`{ statusCode, message, error }`) pour les erreurs de validation (4
   → 201 { id: string }
   → 400 INVALID_PLAYLIST_PERIOD
   → 409 PLAYLIST_ALREADY_EXISTS (même nom pour le même owner)
+
+- GET /api/v1/playlists/public
+  Liste les playlists publiques non terminées (celles qui n'ont pas encore commencé sont incluses).
+  → 200 {
+    playlists: {
+      id: string,
+      type: "VOTE" | "EDITOR",
+      ownerId: string,
+      name: string,
+      description: string,
+      beginAt: string | null,
+      endAt: string | null,
+      latitude: number,
+      longitude: number,
+      coverPath: string | null
+    }[]
+  }
+
+- POST /api/v1/playlists/:playlistId/join
+  Rejoindre une playlist publique, en étant à 2 km maximum de sa position.
+  Body : { latitude: number (-90..90), longitude: number (-180..180) }
+  → 201 { participantId: string }
+  → 404 PLAYLIST_NOT_FOUND
+  → 403 PRIVATE_PLAYLIST
+  → 410 PLAYLIST_ENDED
+  → 409 ALREADY_PARTICIPANT (déjà membre, ou owner de la playlist)
+  → 403 OUTSIDE_PLAYLIST_ZONE
