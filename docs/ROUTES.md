@@ -30,16 +30,26 @@ format Nest (`{ statusCode, message, error }`) pour les erreurs de validation (4
 
 - POST /api/v1/social/friends/request/:receiverId
   → 201 { requestId: string }
-  → 400 SELF_FRIENDSHIP | 409 FRIENDSHIP_REQUEST_ALREADY_EXISTS | 409 FRIENDSHIP_ALREADY_EXISTS
+  → 400 SELF_FRIENDSHIP
+  → 409 FRIENDSHIP_REQUEST_ALREADY_EXISTS (demande déjà en attente, dans un sens ou dans l'autre)
+  → 409 FRIENDSHIP_ALREADY_EXISTS
 
 - POST /api/v1/social/friends/request/:requestId/accept
+  Réservé au destinataire de la demande.
   → 201 { friendshipId: string }
-  → 404 FRIENDSHIP_REQUEST_NOT_FOUND
+  → 404 FRIENDSHIP_REQUEST_NOT_FOUND (inconnue, ou l'appelant n'en est pas le destinataire)
 
 - GET /api/v1/social/friends/request/pending
+  Liste les demandes reçues par l'appelant, en attente de sa réponse.
   → 200 { requests: { id: string, senderId: string, receiverId: string }[] }
 
+- DELETE /api/v1/social/friends/request/:requestId/reject
+  Refuser une demande reçue. Réservé au destinataire de la demande.
+  → 200 (vide)
+  → 404 FRIENDSHIP_REQUEST_NOT_FOUND (inconnue, ou l'appelant n'en est pas le destinataire)
+
 - DELETE /api/v1/social/friends/request/:requestId/cancel
+  Annuler une demande envoyée. Réservé à l'émetteur de la demande.
   → 200 (vide)
   → 404 FRIENDSHIP_REQUEST_NOT_FOUND
 
@@ -57,12 +67,13 @@ format Nest (`{ statusCode, message, error }`) pour les erreurs de validation (4
     description: string (max 500),
     isPrivate?: boolean (défaut false),
     beginAt?: string (ISO 8601),
-    endAt?: string (ISO 8601, strictement après beginAt),
+    endAt?: string (ISO 8601, dans le futur et strictement après beginAt),
     latitude: number (-90..90),
     longitude: number (-180..180)
   }
   → 201 { id: string }
   → 400 INVALID_PLAYLIST_PERIOD
+  → 400 PLAYLIST_END_IN_PAST
   → 409 PLAYLIST_ALREADY_EXISTS (même nom pour le même owner)
 
 - GET /api/v1/playlists/public
@@ -83,11 +94,12 @@ format Nest (`{ statusCode, message, error }`) pour les erreurs de validation (4
   }
 
 - POST /api/v1/playlists/:playlistId/join
-  Rejoindre une playlist publique, en étant à 2 km maximum de sa position.
+  Rejoindre une playlist publique en cours (commencée et non terminée), en étant à 2 km maximum de sa position.
   Body : { latitude: number (-90..90), longitude: number (-180..180) }
   → 201 { participantId: string }
   → 404 PLAYLIST_NOT_FOUND
   → 403 PRIVATE_PLAYLIST
   → 410 PLAYLIST_ENDED
+  → 403 PLAYLIST_NOT_STARTED
   → 409 ALREADY_PARTICIPANT (déjà membre, ou owner de la playlist)
   → 403 OUTSIDE_PLAYLIST_ZONE

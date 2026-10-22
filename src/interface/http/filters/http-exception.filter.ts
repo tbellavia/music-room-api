@@ -12,6 +12,8 @@ import { Unauthorized } from 'src/identity/domain/errors/unauthorized.error';
 import { AlreadyParticipant } from 'src/playlist/domain/errors/already-participant.error';
 import { OutsidePlaylistZone } from 'src/playlist/domain/errors/outside-playlist-zone.error';
 import { PlaylistEnded } from 'src/playlist/domain/errors/playlist-ended.error';
+import { PlaylistEndInPast } from 'src/playlist/domain/errors/playlist-end-in-past.error';
+import { PlaylistNotStarted } from 'src/playlist/domain/errors/playlist-not-started.error';
 import { PlaylistNotFound } from 'src/playlist/domain/errors/playlist-not-found.error';
 import { PrivatePlaylist } from 'src/playlist/domain/errors/private-playlist.error';
 import { InvalidPlaylistPeriod } from 'src/playlist/domain/errors/invalid-playlist-period.error';
@@ -124,6 +126,14 @@ const DOMAIN_ERRORS = new Map<unknown, ErrorResponse>([
     },
   ],
   [
+    PlaylistEndInPast,
+    {
+      status: 400,
+      error: 'PLAYLIST_END_IN_PAST',
+      message: 'Playlist end must be in the future',
+    },
+  ],
+  [
     PlaylistNotFound,
     { status: 404, error: 'PLAYLIST_NOT_FOUND', message: 'Playlist not found' },
   ],
@@ -141,6 +151,14 @@ const DOMAIN_ERRORS = new Map<unknown, ErrorResponse>([
       status: 410,
       error: 'PLAYLIST_ENDED',
       message: 'This playlist has ended',
+    },
+  ],
+  [
+    PlaylistNotStarted,
+    {
+      status: 403,
+      error: 'PLAYLIST_NOT_STARTED',
+      message: 'This playlist has not started yet',
     },
   ],
   [

@@ -11,6 +11,7 @@ import { RequestFriendshipUseCase } from './application/use-cases/request-friend
 import { AcceptFriendshipUseCase } from './application/use-cases/accept-friendship/accept-friendship.usecase';
 import { GetPendingRequestsUseCase } from './application/use-cases/get-pending-requests/get-pending-requests.usecase';
 import { CancelFriendshipRequestUseCase } from './application/use-cases/cancel-friendship-request/cancel-friendship-request.usecase';
+import { RejectFriendshipUseCase } from './application/use-cases/reject-friendship/reject-friendship.usecase';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { CancelFriendshipRequestUseCase } from './application/use-cases/cancel-f
     AcceptFriendshipUseCase,
     GetPendingRequestsUseCase,
     CancelFriendshipRequestUseCase,
+    RejectFriendshipUseCase,
   ],
 })
 export class SocialModule {}
