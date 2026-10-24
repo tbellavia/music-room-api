@@ -1,6 +1,9 @@
-import { Inject, Injectable } from "@nestjs/common";
-import { YOUTUBE_CLIENT_PORT, YoutubeClientPort } from "../../ports/youtube-client.port";
-import { SearchMusicInput, SearchMusicOutput } from "./search-music.contracts";
+import { Inject, Injectable } from '@nestjs/common';
+import {
+  YOUTUBE_CLIENT_PORT,
+  YoutubeClientPort,
+} from '../../ports/youtube-client.port';
+import { SearchMusicInput, SearchMusicOutput } from './search-music.contracts';
 
 @Injectable()
 export class SearchMusicUseCase {
@@ -13,7 +16,7 @@ export class SearchMusicUseCase {
     const musics = await this.api.search(input.name);
 
     return {
-      musics: musics
+      musics: musics,
     };
   }
 }

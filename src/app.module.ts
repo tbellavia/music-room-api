@@ -12,7 +12,14 @@ import { MusicModule } from './music/music.module';
 import { PlaylistModule } from './playlist/playlist.module';
 
 @Module({
-  imports: [ConfigurationModule, DatabaseModule, IdentityModule, SocialModule, MusicModule, PlaylistModule],
+  imports: [
+    ConfigurationModule,
+    DatabaseModule,
+    IdentityModule,
+    SocialModule,
+    MusicModule,
+    PlaylistModule,
+  ],
   controllers: [AppController],
   providers: [
     JwtService,

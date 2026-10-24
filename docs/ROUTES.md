@@ -56,7 +56,8 @@ format Nest (`{ statusCode, message, error }`) pour les erreurs de validation (4
 ## Music
 
 - GET /api/v1/music/search/:name (public)
-  → 200 { musics: { name: string, videoId: string, artist: string, thumbnail: string | null, duration: number }[] }
+  → 200 { musics: { name: string, videoId: string, artist: string, thumbnail: string | null, duration: number | null }[] }
+  duration est en secondes, null quand YouTube ne la fournit pas (certaines vidéos).
 
 ## Playlists
 

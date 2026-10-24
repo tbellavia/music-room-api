@@ -11,7 +11,7 @@ import { SearchMusicUseCase } from './application/use-cases/search-music/search-
       provide: YOUTUBE_CLIENT_PORT,
       useClass: YoutubeApiClient,
     },
-    SearchMusicUseCase
-  ]
+    SearchMusicUseCase,
+  ],
 })
 export class MusicModule {}
