@@ -15,8 +15,10 @@ export class AppController {
   async musics(): Promise<any> {
     const api = new YTMusic();
     await api.initialize();
-    const songs = await api.search("Versace on the floor");
+    const songs = await api.search('Versace on the floor');
 
-    return songs.filter(item => item.type == "SONG").map(item => `https://youtube.com/watch?v=${item.videoId}`);
+    return songs
+      .filter((item) => item.type == 'SONG')
+      .map((item) => `https://youtube.com/watch?v=${item.videoId}`);
   }
 }
