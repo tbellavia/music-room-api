@@ -10,7 +10,7 @@ export class MusicController {
   @Public()
   async search(@Param('name') name: string) {
     return await this.searchMusic.execute({
-      name: name
+      name: name,
     });
   }
 }
