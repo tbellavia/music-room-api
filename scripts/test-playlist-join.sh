@@ -10,8 +10,8 @@ API="${1:-http://localhost:3000/api/v1}"
 # 42 Paris
 PLAYLIST_LATITUDE=48.8966
 PLAYLIST_LONGITUDE=2.3184
-LATITUDE_1500M_NORTH=48.9101
-LATITUDE_2500M_NORTH=48.9191
+LATITUDE_400M_NORTH=48.9002
+LATITUDE_600M_NORTH=48.9020
 
 register_and_login() {
   register "$1" >/dev/null || exit 1
@@ -93,15 +93,15 @@ request POST "/playlists/$PUBLIC/join" "" \
   "{\"latitude\":$PLAYLIST_LATITUDE,\"longitude\":$PLAYLIST_LONGITUDE}"
 expect "without token → 401" 401
 
-join "$BOB" "$PUBLIC" "$LATITUDE_2500M_NORTH"
-expect "2.5 km away → 403 OUTSIDE_PLAYLIST_ZONE" 403 OUTSIDE_PLAYLIST_ZONE
+join "$BOB" "$PUBLIC" "$LATITUDE_600M_NORTH"
+expect "600 m away → 403 OUTSIDE_PLAYLIST_ZONE" 403 OUTSIDE_PLAYLIST_ZONE
 
-join "$BOB" "$PUBLIC" "$LATITUDE_1500M_NORTH"
-expect "1.5 km away → 201" 201
+join "$BOB" "$PUBLIC" "$LATITUDE_400M_NORTH"
+expect "400 m away → 201" 201
 PARTICIPANT_ID=$(echo "$BODY" | jq -r '.participantId // empty')
 if [ -n "$PARTICIPANT_ID" ]; then pass "response contains participantId"; else fail "response contains participantId" "$BODY"; fi
 
-join "$BOB" "$PUBLIC" "$LATITUDE_1500M_NORTH"
+join "$BOB" "$PUBLIC" "$LATITUDE_400M_NORTH"
 expect "join twice → 409 ALREADY_PARTICIPANT" 409 ALREADY_PARTICIPANT
 
 join "$ALICE" "$PUBLIC" "$PLAYLIST_LATITUDE"

@@ -95,7 +95,7 @@ format Nest (`{ statusCode, message, error }`) pour les erreurs de validation (4
   }
 
 - POST /api/v1/playlists/:playlistId/join
-  Rejoindre une playlist publique en cours (commencée et non terminée), en étant à 2 km maximum de sa position.
+  Rejoindre une playlist publique en cours (commencée et non terminée), en étant à 500 m maximum de sa position.
   Body : { latitude: number (-90..90), longitude: number (-180..180) }
   → 201 { participantId: string }
   → 404 PLAYLIST_NOT_FOUND
@@ -104,3 +104,82 @@ format Nest (`{ statusCode, message, error }`) pour les erreurs de validation (4
   → 403 PLAYLIST_NOT_STARTED
   → 409 ALREADY_PARTICIPANT (déjà membre, ou owner de la playlist)
   → 403 OUTSIDE_PLAYLIST_ZONE
+
+- POST /api/v1/playlists/:playlistId/leave
+  Quitter une playlist. Toujours possible, quelle que soit la période ou la position.
+  L'owner ne peut pas quitter sa propre playlist.
+  → 201 (vide)
+  → 404 PLAYLIST_NOT_FOUND
+  → 404 PARTICIPANT_NOT_FOUND (l'appelant n'est pas participant, ou est l'owner)
+
+### Invitations
+
+- POST /api/v1/playlists/:playlistId/invitations
+  Inviter un compte. Réservé à l'owner et aux participants privilégiés, à tout moment et de n'importe où.
+  Body : { accountId: string (UUID) }
+  → 201 { invitationId: string }
+  → 404 PLAYLIST_NOT_FOUND
+  → 410 PLAYLIST_ENDED
+  → 403 INVITATION_FORBIDDEN (ni owner, ni participant privilégié)
+  → 404 ACCOUNT_NOT_FOUND (compte invité inconnu)
+  → 409 ALREADY_PARTICIPANT (le compte invité est déjà membre, ou est l'owner)
+  → 409 INVITATION_ALREADY_EXISTS (une invitation est déjà en attente pour ce compte)
+
+- GET /api/v1/playlists/invitations
+  Liste les invitations reçues par l'appelant, en attente de sa réponse.
+  → 200 {
+    invitations: {
+      id: string,
+      playlistId: string,
+      playlistName: string,
+      playlistType: "VOTE" | "EDITOR",
+      inviterId: string,
+      inviterUsername: string | null
+    }[]
+  }
+
+- POST /api/v1/playlists/invitations/:invitationId/accept
+  Accepter une invitation. Réservé à l'invité. Possible avant le début de la playlist et sans être sur place :
+  l'invité devient participant (sans privilège). Il ne pourra agir sur les musiques (ajout, suppression, vote)
+  qu'une fois la playlist commencée et en étant à 500 m maximum.
+  → 201 { participantId: string }
+  → 404 INVITATION_NOT_FOUND (inconnue, ou l'appelant n'est pas l'invité)
+  → 410 PLAYLIST_ENDED
+  → 409 ALREADY_PARTICIPANT (déjà membre entre-temps)
+
+- DELETE /api/v1/playlists/invitations/:invitationId/decline
+  Refuser une invitation. Réservé à l'invité.
+  → 200 (vide)
+  → 404 INVITATION_NOT_FOUND (inconnue, ou l'appelant n'est pas l'invité)
+
+- DELETE /api/v1/playlists/invitations/:invitationId/cancel
+  Annuler une invitation envoyée. Réservé à la personne qui a invité.
+  → 200 (vide)
+  → 404 INVITATION_NOT_FOUND (inconnue, ou l'appelant n'est pas celui qui a invité)
+
+### Participants
+
+- GET /api/v1/playlists/:playlistId/participants
+  Réservé aux membres (owner et participants).
+  → 200 {
+    owner: { accountId: string, username: string | null },
+    participants: { participantId: string, accountId: string, username: string | null, hasPrivilege: boolean }[]
+  }
+  → 404 PLAYLIST_NOT_FOUND
+  → 403 NOT_PLAYLIST_MEMBER
+
+- PATCH /api/v1/playlists/:playlistId/participants/:participantId
+  Donner ou retirer le privilège (inviter d'autres comptes). Réservé à l'owner.
+  Les invitations déjà envoyées par le participant restent valides.
+  Body : { hasPrivilege: boolean }
+  → 200 (vide)
+  → 404 PLAYLIST_NOT_FOUND
+  → 403 NOT_PLAYLIST_OWNER
+  → 404 PARTICIPANT_NOT_FOUND
+
+- DELETE /api/v1/playlists/:playlistId/participants/:participantId
+  Retirer un participant. Réservé à l'owner.
+  → 200 (vide)
+  → 404 PLAYLIST_NOT_FOUND
+  → 403 NOT_PLAYLIST_OWNER
+  → 404 PARTICIPANT_NOT_FOUND

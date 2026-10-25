@@ -18,6 +18,14 @@ import { PlaylistNotFound } from 'src/playlist/domain/errors/playlist-not-found.
 import { PrivatePlaylist } from 'src/playlist/domain/errors/private-playlist.error';
 import { InvalidPlaylistPeriod } from 'src/playlist/domain/errors/invalid-playlist-period.error';
 import { PlaylistAlreadyExists } from 'src/playlist/domain/errors/playlist-already-exists.error';
+import { InvitationForbidden } from 'src/playlist/domain/errors/invitation-forbidden.error';
+import { NotPlaylistOwner } from 'src/playlist/domain/errors/not-playlist-owner.error';
+import { NotPlaylistMember } from 'src/playlist/domain/errors/not-playlist-member.error';
+import { InviteeNotFound } from 'src/playlist/domain/errors/invitee-not-found.error';
+import { InvitationNotFound } from 'src/playlist/domain/errors/invitation-not-found.error';
+import { ParticipantNotFound } from 'src/playlist/domain/errors/participant-not-found.error';
+import { InvitationAlreadyExists } from 'src/playlist/domain/errors/invitation-already-exists.error';
+import { PLAYLIST_ZONE_RADIUS_METERS } from 'src/shared/constants';
 import { FriendshipAlreadyExists } from 'src/social/domain/errors/friendship-already-exists.error';
 import { FriendshipRequestAlreadyExists } from 'src/social/domain/errors/friendship-request-already-exists.error';
 import { FriendshipRequestNotFound } from 'src/social/domain/errors/friendship-request-not-found.error';
@@ -174,7 +182,59 @@ const DOMAIN_ERRORS = new Map<unknown, ErrorResponse>([
     {
       status: 403,
       error: 'OUTSIDE_PLAYLIST_ZONE',
-      message: 'You must be within 2 km of the playlist to join it',
+      message: `You must be within ${PLAYLIST_ZONE_RADIUS_METERS} m of the playlist`,
+    },
+  ],
+  [
+    InvitationForbidden,
+    {
+      status: 403,
+      error: 'INVITATION_FORBIDDEN',
+      message: 'Only the owner and privileged participants can invite',
+    },
+  ],
+  [
+    NotPlaylistOwner,
+    {
+      status: 403,
+      error: 'NOT_PLAYLIST_OWNER',
+      message: 'Only the owner of the playlist can do this',
+    },
+  ],
+  [
+    NotPlaylistMember,
+    {
+      status: 403,
+      error: 'NOT_PLAYLIST_MEMBER',
+      message: 'You are not a member of this playlist',
+    },
+  ],
+  [
+    InviteeNotFound,
+    { status: 404, error: 'ACCOUNT_NOT_FOUND', message: 'Account not found' },
+  ],
+  [
+    InvitationNotFound,
+    {
+      status: 404,
+      error: 'INVITATION_NOT_FOUND',
+      message: 'Invitation not found',
+    },
+  ],
+  [
+    ParticipantNotFound,
+    {
+      status: 404,
+      error: 'PARTICIPANT_NOT_FOUND',
+      message: 'Participant not found',
+    },
+  ],
+  [
+    InvitationAlreadyExists,
+    {
+      status: 409,
+      error: 'INVITATION_ALREADY_EXISTS',
+      message: 'This account already has a pending invitation',
     },
   ],
 ]);
