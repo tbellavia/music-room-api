@@ -13,4 +13,4 @@ export const PASSWORD_MIN_LENGTH: number = 12;
 export const PLAYLIST_NAME_MIN_LENGTH: number = 1;
 export const PLAYLIST_NAME_MAX_LENGTH: number = 100;
 export const PLAYLIST_DESCRIPTION_MAX_LENGTH: number = 500;
-export const PLAYLIST_ZONE_RADIUS_METERS: number = 2000;
+export const PLAYLIST_ZONE_RADIUS_METERS: number = 500;

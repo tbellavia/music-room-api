@@ -34,7 +34,7 @@ const defaultInfos: CreatePlaylistInfos = {
 const input: JoinPlaylistInput = {
   playlistId: 'playlist-id',
   accountId: 'joiner-id',
-  latitude: PLAYLIST_LATITUDE + 1500 * ONE_METER_IN_LATITUDE_DEGREES,
+  latitude: PLAYLIST_LATITUDE + 400 * ONE_METER_IN_LATITUDE_DEGREES,
   longitude: PLAYLIST_LONGITUDE,
 };
 
@@ -139,12 +139,12 @@ describe('JoinPlaylistUseCase', () => {
     expect(participantRepository.participants.size).toBe(1);
   });
 
-  it('rejects a position farther than 2 km', async () => {
+  it('rejects a position farther than 500 m', async () => {
     await givenPlaylist();
 
     const farInput = {
       ...input,
-      latitude: PLAYLIST_LATITUDE + 2500 * ONE_METER_IN_LATITUDE_DEGREES,
+      latitude: PLAYLIST_LATITUDE + 600 * ONE_METER_IN_LATITUDE_DEGREES,
     };
 
     await expect(useCase.execute(farInput)).rejects.toThrow(

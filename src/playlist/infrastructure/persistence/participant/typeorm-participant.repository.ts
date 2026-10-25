@@ -14,6 +14,25 @@ export class TypeOrmParticipantRepository implements ParticipantRepository {
     private readonly repository: Repository<ParticipantOrmEntity>,
   ) {}
 
+  async findById(id: string): Promise<Participant | null> {
+    const entity = await this.repository.findOneBy({ id });
+
+    if (!entity) {
+      return null;
+    }
+    return this.toDomain(entity);
+  }
+
+  async findByPlaylist(playlistId: string): Promise<Participant[]> {
+    const entities = await this.repository.findBy({ playlist_id: playlistId });
+
+    return entities.map((entity) => this.toDomain(entity));
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.repository.delete({ id });
+  }
+
   async findByPlaylistAndAccount(infos: {
     playlistId: string;
     accountId: string;

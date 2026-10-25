@@ -114,28 +114,28 @@ describe('Playlist', () => {
   describe('isWithinZone', () => {
     const playlist = build({ latitude: 48.8966, longitude: 2.3184 });
 
-    it('accepts a position at 1.5 km', () => {
+    it('accepts a position at 400 m', () => {
       expect(
         playlist.isWithinZone({
-          latitude: 48.8966 + 1500 * ONE_METER_IN_LATITUDE_DEGREES,
+          latitude: 48.8966 + 400 * ONE_METER_IN_LATITUDE_DEGREES,
           longitude: 2.3184,
         }),
       ).toBe(true);
     });
 
-    it('accepts a position right under the 2 km limit', () => {
+    it('accepts a position right under the 500 m limit', () => {
       expect(
         playlist.isWithinZone({
-          latitude: 48.8966 + 1999 * ONE_METER_IN_LATITUDE_DEGREES,
+          latitude: 48.8966 + 499 * ONE_METER_IN_LATITUDE_DEGREES,
           longitude: 2.3184,
         }),
       ).toBe(true);
     });
 
-    it('rejects a position at 2.5 km', () => {
+    it('rejects a position at 600 m', () => {
       expect(
         playlist.isWithinZone({
-          latitude: 48.8966 - 2500 * ONE_METER_IN_LATITUDE_DEGREES,
+          latitude: 48.8966 - 600 * ONE_METER_IN_LATITUDE_DEGREES,
           longitude: 2.3184,
         }),
       ).toBe(false);
