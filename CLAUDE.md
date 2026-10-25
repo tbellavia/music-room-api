@@ -11,7 +11,7 @@ Full subject: `en.subject.pdf`. Vision and backlog: `SPECS.md`.
 - The back-end is the source of truth; the mobile app is only a "remote control".
 - Personas: **Creator** (single owner and admin of the playlist) and **Participant**.
 - Key invariants: one owner per playlist, optional end date, joining a playlist
-  requires being within 2 km of its position (lat/long).
+  requires being within 500 m of its position (lat/long).
 - The subject stresses **concurrency** (simultaneous votes, concurrent moves of the
   same track): take it into account from the design phase of those features.
 - Security: an authenticated user only accesses their own data. No secret is ever
