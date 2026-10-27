@@ -4,7 +4,7 @@ export type AddTrackInput = {
   playlistId: string;
   accountId: string;
   videoId: string;
-  // Required for participants, who must be on site
+  // Required for participants of a VOTE playlist, who must be on site
   position: Coordinates | null;
 };
 

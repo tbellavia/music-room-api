@@ -3,6 +3,7 @@ import { InMemoryParticipantRepository } from 'src/playlist/infrastructure/persi
 import { InMemoryTrackRepository } from 'src/playlist/infrastructure/persistence/track/in-memory-track.repository';
 import { InMemoryMusicCatalog } from 'src/playlist/infrastructure/music/in-memory-music-catalog';
 import { RxjsPlaylistEventBus } from 'src/playlist/infrastructure/events/rxjs-playlist-event-bus';
+import { InProcessPlaylistEditLock } from 'src/playlist/infrastructure/locks/in-process-playlist-edit-lock';
 import { PlaylistEvent } from 'src/playlist/application/ports/playlist-event-bus';
 import {
   CreatePlaylistInfos,
@@ -14,7 +15,10 @@ import { Participant } from 'src/playlist/domain/participant.entity';
 import { JoinMethod } from 'src/playlist/domain/join-method.enum';
 import { Track } from 'src/playlist/domain/track.entity';
 import { PlaylistNotFound } from 'src/playlist/domain/errors/playlist-not-found.error';
-import { NotAVotePlaylist } from 'src/playlist/domain/errors/not-a-vote-playlist.error';
+import { PlaylistFull } from 'src/playlist/domain/errors/playlist-full.error';
+import { PlaylistEnded } from 'src/playlist/domain/errors/playlist-ended.error';
+import { PLAYLIST_MAX_TRACKS } from 'src/shared/constants';
+import { POSITION_STEP } from 'src/playlist/domain/track-ordering';
 import { NotPlaylistMember } from 'src/playlist/domain/errors/not-playlist-member.error';
 import { TrackActionForbidden } from 'src/playlist/domain/errors/track-action-forbidden.error';
 import { OutsidePlaylistZone } from 'src/playlist/domain/errors/outside-playlist-zone.error';
@@ -45,6 +49,14 @@ const ONE_MORE_TIME = {
   artist: 'Daft Punk',
   thumbnail: 'https://example.com/thumbnail.jpg',
   duration: 321,
+};
+
+const NEVER_GONNA = {
+  videoId: 'dQw4w9WgXcQ',
+  name: 'Never Gonna Give You Up',
+  artist: 'Rick Astley',
+  thumbnail: null,
+  duration: 213,
 };
 
 const defaultInfos: CreatePlaylistInfos = {
@@ -110,9 +122,11 @@ describe('AddTrackUseCase', () => {
       trackRepository,
       musicCatalog,
       eventBus,
+      new InProcessPlaylistEditLock(),
     );
 
     musicCatalog.add(ONE_MORE_TIME);
+    musicCatalog.add(NEVER_GONNA);
   });
 
   it('adds the track with the informations of the catalog', async () => {
@@ -136,12 +150,20 @@ describe('AddTrackUseCase', () => {
     const { trackId } = await useCase.execute(ownerInput);
 
     expect(publishedEvents).toHaveLength(1);
-    const event = publishedEvents[0];
-    expect(event.type).toBe('track.added');
-    if (event.type === 'track.added') {
-      expect(event.track.id).toBe(trackId);
-      expect(event.track.votes).toBe(0);
-    }
+    expect(publishedEvents[0]).toMatchObject({
+      type: 'track.added',
+      track: { id: trackId, votes: 0 },
+      afterTrackId: null,
+    });
+  });
+
+  it('does not give a position to a VOTE track', async () => {
+    await givenPlaylist();
+
+    const { trackId } = await useCase.execute(ownerInput);
+
+    const track = trackRepository.tracks.get(trackId);
+    expect(track?.position).toBeNull();
   });
 
   it('lets the owner add a track before the start, without position', async () => {
@@ -212,10 +234,137 @@ describe('AddTrackUseCase', () => {
     });
   });
 
-  it('rejects an editor playlist', async () => {
-    await givenPlaylist({ type: PlaylistType.EDITOR });
+  describe('in an EDITOR playlist', () => {
+    it('adds the first track at the first position', async () => {
+      await givenPlaylist({ type: PlaylistType.EDITOR });
 
-    await expect(useCase.execute(ownerInput)).rejects.toThrow(NotAVotePlaylist);
+      const { trackId } = await useCase.execute(ownerInput);
+
+      const track = trackRepository.tracks.get(trackId);
+      expect(track?.position).toBe(POSITION_STEP);
+      expect(track?.version).toBe(1);
+    });
+
+    it('adds a new track after the last one', async () => {
+      await givenPlaylist({ type: PlaylistType.EDITOR });
+      const first = await useCase.execute(ownerInput);
+
+      const second = await useCase.execute({
+        ...ownerInput,
+        videoId: NEVER_GONNA.videoId,
+      });
+
+      const firstTrack = trackRepository.tracks.get(first.trackId);
+      const secondTrack = trackRepository.tracks.get(second.trackId);
+      expect(secondTrack?.position).toBeGreaterThan(firstTrack?.position ?? 0);
+    });
+
+    it('tells which track the new one was placed after', async () => {
+      await givenPlaylist({ type: PlaylistType.EDITOR });
+      const first = await useCase.execute(ownerInput);
+
+      const second = await useCase.execute({
+        ...ownerInput,
+        videoId: NEVER_GONNA.videoId,
+      });
+
+      expect(publishedEvents[0]).toMatchObject({
+        type: 'track.added',
+        track: { id: first.trackId, version: 1 },
+        afterTrackId: null,
+      });
+      expect(publishedEvents[1]).toMatchObject({
+        type: 'track.added',
+        track: { id: second.trackId },
+        afterTrackId: first.trackId,
+      });
+    });
+
+    it('lets a participant add a track remotely, before the start', async () => {
+      await givenPlaylist({
+        type: PlaylistType.EDITOR,
+        beginAt: new Date('2999-01-01'),
+      });
+      await givenParticipant();
+
+      const remoteInput = { ...participantInput, position: null };
+      await useCase.execute(remoteInput);
+
+      expect(trackRepository.tracks.size).toBe(1);
+    });
+
+    it('rejects a participant once the playlist has ended', async () => {
+      await givenPlaylist({
+        type: PlaylistType.EDITOR,
+        endAt: new Date('2000-01-01'),
+      });
+      await givenParticipant();
+
+      const remoteInput = { ...participantInput, position: null };
+
+      await expect(useCase.execute(remoteInput)).rejects.toThrow(PlaylistEnded);
+    });
+
+    it('applies the INVITED_ONLY license', async () => {
+      await givenPlaylist({
+        type: PlaylistType.EDITOR,
+        license: PlaylistLicense.INVITED_ONLY,
+      });
+      await givenParticipant(JoinMethod.JOIN);
+
+      const remoteInput = { ...participantInput, position: null };
+
+      await expect(useCase.execute(remoteInput)).rejects.toThrow(
+        TrackActionForbidden,
+      );
+    });
+  });
+
+  describe('track limit', () => {
+    async function givenTracks(count: number) {
+      for (let index = 0; index < count; index++) {
+        const track = Track.create({
+          id: `existing-track-${index}`,
+          playlistId: 'playlist-id',
+          music: { ...ONE_MORE_TIME, videoId: `existing-${index}` },
+          addedBy: 'owner-id',
+          addedAt: new Date('2026-06-15T20:00:00Z'),
+          position: (index + 1) * POSITION_STEP,
+        });
+        await trackRepository.save(track);
+      }
+    }
+
+    it('rejects a track once the playlist is full', async () => {
+      await givenPlaylist({ type: PlaylistType.EDITOR });
+      await givenTracks(PLAYLIST_MAX_TRACKS);
+
+      await expect(useCase.execute(ownerInput)).rejects.toThrow(PlaylistFull);
+      expect(trackRepository.tracks.size).toBe(PLAYLIST_MAX_TRACKS);
+    });
+
+    it('accepts a track just under the limit', async () => {
+      await givenPlaylist({ type: PlaylistType.EDITOR });
+      await givenTracks(PLAYLIST_MAX_TRACKS - 1);
+
+      await useCase.execute(ownerInput);
+
+      expect(trackRepository.tracks.size).toBe(PLAYLIST_MAX_TRACKS);
+    });
+
+    it('does not count the played tracks of a VOTE playlist', async () => {
+      await givenPlaylist();
+      await givenTracks(PLAYLIST_MAX_TRACKS);
+      const playedTrack = await trackRepository.findById('existing-track-0');
+      playedTrack?.markAsPlayed();
+      if (playedTrack) {
+        await trackRepository.save(playedTrack);
+      }
+
+      await useCase.execute(ownerInput);
+
+      expect(trackRepository.tracks.size).toBe(PLAYLIST_MAX_TRACKS + 1);
+    });
   });
 
   it('rejects an unknown playlist', async () => {

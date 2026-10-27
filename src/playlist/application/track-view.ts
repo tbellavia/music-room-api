@@ -1,7 +1,8 @@
 import { Track } from 'src/playlist/domain/track.entity';
 
-// What clients see of a track, in the ranking and in the real-time events
-export type TrackView = {
+// What clients see of a track, in the lists and in the real-time events
+
+type TrackBaseView = {
   id: string;
   videoId: string;
   name: string;
@@ -10,10 +11,18 @@ export type TrackView = {
   duration: number | null;
   addedBy: string;
   addedAt: Date;
+};
+
+export type VoteTrackView = TrackBaseView & {
   votes: number;
 };
 
-export function toTrackView(track: Track, votes: number): TrackView {
+// No numeric position: clients only rely on the order of the list
+export type EditorTrackView = TrackBaseView & {
+  version: number;
+};
+
+function toTrackBaseView(track: Track): TrackBaseView {
   return {
     id: track.id,
     videoId: track.videoId,
@@ -23,6 +32,19 @@ export function toTrackView(track: Track, votes: number): TrackView {
     duration: track.duration,
     addedBy: track.addedBy,
     addedAt: track.addedAt,
+  };
+}
+
+export function toVoteTrackView(track: Track, votes: number): VoteTrackView {
+  return {
+    ...toTrackBaseView(track),
     votes,
+  };
+}
+
+export function toEditorTrackView(track: Track): EditorTrackView {
+  return {
+    ...toTrackBaseView(track),
+    version: track.version,
   };
 }

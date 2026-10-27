@@ -40,6 +40,7 @@ const privilegedInput: DeleteTrackInput = {
 };
 
 describe('DeleteTrackUseCase', () => {
+  let playlistRepository: InMemoryPlaylistRepository;
   let participantRepository: InMemoryParticipantRepository;
   let trackRepository: InMemoryTrackRepository;
   let voteRepository: InMemoryVoteRepository;
@@ -59,7 +60,7 @@ describe('DeleteTrackUseCase', () => {
   }
 
   beforeEach(async () => {
-    const playlistRepository = new InMemoryPlaylistRepository();
+    playlistRepository = new InMemoryPlaylistRepository();
     participantRepository = new InMemoryParticipantRepository();
     trackRepository = new InMemoryTrackRepository();
     voteRepository = new InMemoryVoteRepository();
@@ -179,5 +180,76 @@ describe('DeleteTrackUseCase', () => {
     const unknownInput = { ...ownerInput, trackId: 'unknown-id' };
 
     await expect(useCase.execute(unknownInput)).rejects.toThrow(TrackNotFound);
+  });
+
+  describe('in an EDITOR playlist', () => {
+    const editorInput: DeleteTrackInput = {
+      playlistId: 'editor-playlist-id',
+      trackId: 'editor-track-id',
+      accountId: 'author-id',
+      position: null,
+    };
+
+    beforeEach(async () => {
+      const editorPlaylist = Playlist.create({
+        id: 'editor-playlist-id',
+        type: PlaylistType.EDITOR,
+        ownerId: 'owner-id',
+        name: 'Radio',
+        description: '',
+        latitude: PLAYLIST_LATITUDE,
+        longitude: PLAYLIST_LONGITUDE,
+      });
+      await playlistRepository.save(editorPlaylist);
+
+      const editorTrack = Track.create({
+        id: 'editor-track-id',
+        playlistId: 'editor-playlist-id',
+        music: {
+          videoId: 'dQw4w9WgXcQ',
+          name: 'Never Gonna Give You Up',
+          artist: 'Rick Astley',
+          thumbnail: null,
+          duration: 213,
+        },
+        addedBy: 'author-id',
+        addedAt: new Date('2026-06-15T20:00:00Z'),
+        position: 1024,
+      });
+      await trackRepository.save(editorTrack);
+
+      for (const accountId of ['author-id', 'other-id']) {
+        const participant = Participant.create({
+          id: `${accountId}-editor-participant`,
+          playlistId: 'editor-playlist-id',
+          accountId,
+          joinedVia: JoinMethod.JOIN,
+        });
+        await participantRepository.save(participant);
+      }
+    });
+
+    it('lets the author delete their own track, remotely', async () => {
+      await useCase.execute(editorInput);
+
+      expect(trackRepository.tracks.has('editor-track-id')).toBe(false);
+    });
+
+    it('does not let a regular participant delete the track of someone else', async () => {
+      const otherInput = { ...editorInput, accountId: 'other-id' };
+
+      await expect(useCase.execute(otherInput)).rejects.toThrow(
+        TrackDeleteForbidden,
+      );
+      expect(trackRepository.tracks.has('editor-track-id')).toBe(true);
+    });
+
+    it('lets the owner delete any track, remotely', async () => {
+      const ownerEditorInput = { ...editorInput, accountId: 'owner-id' };
+
+      await useCase.execute(ownerEditorInput);
+
+      expect(trackRepository.tracks.has('editor-track-id')).toBe(false);
+    });
   });
 });

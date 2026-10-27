@@ -137,7 +137,8 @@ expect "owner without position → 201" 201
 TRACK_ALICE=$(json_field trackId)
 
 add_track "$ALICE" "$EDITOR" "$NEVER_GONNA"
-expect "editor playlist → 400 NOT_A_VOTE_PLAYLIST" 400 NOT_A_VOTE_PLAYLIST
+vote "$ALICE" "$EDITOR" "$(json_field trackId)"
+expect "vote in an editor playlist → 400 NOT_A_VOTE_PLAYLIST" 400 NOT_A_VOTE_PLAYLIST
 
 section "GET /playlists/:playlistId/tracks"
 list_tracks "$DAVE" "$PUBLIC"

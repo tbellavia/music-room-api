@@ -35,7 +35,14 @@ import { VoteNotFound } from 'src/playlist/domain/errors/vote-not-found.error';
 import { TrackAlreadyInPlaylist } from 'src/playlist/domain/errors/track-already-in-playlist.error';
 import { AlreadyVoted } from 'src/playlist/domain/errors/already-voted.error';
 import { TrackAlreadyPlayed } from 'src/playlist/domain/errors/track-already-played.error';
-import { PLAYLIST_ZONE_RADIUS_METERS } from 'src/shared/constants';
+import { TrackVersionConflict } from 'src/playlist/domain/errors/track-version-conflict.error';
+import { PlaylistFull } from 'src/playlist/domain/errors/playlist-full.error';
+import { NotAnEditorPlaylist } from 'src/playlist/domain/errors/not-an-editor-playlist.error';
+import { InvalidMove } from 'src/playlist/domain/errors/invalid-move.error';
+import {
+  PLAYLIST_MAX_TRACKS,
+  PLAYLIST_ZONE_RADIUS_METERS,
+} from 'src/shared/constants';
 import { FriendshipAlreadyExists } from 'src/social/domain/errors/friendship-already-exists.error';
 import { FriendshipRequestAlreadyExists } from 'src/social/domain/errors/friendship-request-already-exists.error';
 import { FriendshipRequestNotFound } from 'src/social/domain/errors/friendship-request-not-found.error';
@@ -318,6 +325,38 @@ const DOMAIN_ERRORS = new Map<unknown, ErrorResponse>([
       status: 409,
       error: 'TRACK_ALREADY_PLAYED',
       message: 'This track has already been played',
+    },
+  ],
+  [
+    NotAnEditorPlaylist,
+    {
+      status: 400,
+      error: 'NOT_AN_EDITOR_PLAYLIST',
+      message: 'This action is only available on editor playlists',
+    },
+  ],
+  [
+    InvalidMove,
+    {
+      status: 400,
+      error: 'INVALID_MOVE',
+      message: 'A track cannot be placed after itself',
+    },
+  ],
+  [
+    TrackVersionConflict,
+    {
+      status: 409,
+      error: 'TRACK_VERSION_CONFLICT',
+      message: 'This track has been moved in the meantime, reload the playlist',
+    },
+  ],
+  [
+    PlaylistFull,
+    {
+      status: 409,
+      error: 'PLAYLIST_FULL',
+      message: `A playlist cannot hold more than ${PLAYLIST_MAX_TRACKS} tracks`,
     },
   ],
 ]);

@@ -12,16 +12,20 @@ import {
   TrackRepository,
 } from '../../ports/track.repository';
 import { VOTE_REPOSITORY, VoteRepository } from '../../ports/vote.repository';
-import { toTrackView } from '../../track-view';
+import { toEditorTrackView, toVoteTrackView } from '../../track-view';
 import {
+  EditorTracksOutput,
   ListTracksInput,
   ListTracksOutput,
   RankedTrackView,
+  VoteTracksOutput,
 } from './list-tracks.contracts';
+import { Track } from 'src/playlist/domain/track.entity';
+import { PlaylistType } from 'src/playlist/domain/playlist-type.enum';
 import { rankTracks } from 'src/playlist/domain/track-ranking';
+import { sortByPosition } from 'src/playlist/domain/track-ordering';
 import { canRead } from 'src/playlist/domain/playlist-permissions';
 import { PlaylistNotFound } from 'src/playlist/domain/errors/playlist-not-found.error';
-import { NotAVotePlaylist } from 'src/playlist/domain/errors/not-a-vote-playlist.error';
 import { NotPlaylistMember } from 'src/playlist/domain/errors/not-playlist-member.error';
 
 @Injectable()
@@ -42,9 +46,6 @@ export class ListTracksUseCase {
     if (!playlist) {
       throw new PlaylistNotFound();
     }
-    if (!playlist.isVotePlaylist()) {
-      throw new NotAVotePlaylist();
-    }
 
     const participant =
       await this.participantRepository.findByPlaylistAndAccount({
@@ -58,23 +59,44 @@ export class ListTracksUseCase {
     const tracks = await this.trackRepository.findUnplayedByPlaylist(
       playlist.id,
     );
+
+    if (playlist.isEditorPlaylist()) {
+      return this.toEditorOutput(tracks);
+    }
+    return await this.toVoteOutput(tracks, input.accountId);
+  }
+
+  private toEditorOutput(tracks: Track[]): EditorTracksOutput {
+    const orderedTracks = sortByPosition(tracks);
+
+    return {
+      type: PlaylistType.EDITOR,
+      tracks: orderedTracks.map((track) => toEditorTrackView(track)),
+    };
+  }
+
+  private async toVoteOutput(
+    tracks: Track[],
+    accountId: string,
+  ): Promise<VoteTracksOutput> {
     const trackIds = tracks.map((track) => track.id);
     const votes = await this.voteRepository.findByTracks(trackIds);
 
     const votedTrackIds = new Set<string>();
     for (const vote of votes) {
-      if (vote.accountId === input.accountId) {
+      if (vote.accountId === accountId) {
         votedTrackIds.add(vote.trackId);
       }
     }
 
     const rankedTracks = rankTracks(tracks, votes);
     const trackViews: RankedTrackView[] = rankedTracks.map((rankedTrack) => ({
-      ...toTrackView(rankedTrack.track, rankedTrack.votes),
+      ...toVoteTrackView(rankedTrack.track, rankedTrack.votes),
       hasVoted: votedTrackIds.has(rankedTrack.track.id),
     }));
 
     return {
+      type: PlaylistType.VOTE,
       tracks: trackViews,
     };
   }

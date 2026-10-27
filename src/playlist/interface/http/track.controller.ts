@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
@@ -14,8 +15,10 @@ import { VoteForTrackUseCase } from 'src/playlist/application/use-cases/vote-for
 import { WithdrawVoteUseCase } from 'src/playlist/application/use-cases/withdraw-vote/withdraw-vote.usecase';
 import { MarkTrackPlayedUseCase } from 'src/playlist/application/use-cases/mark-track-played/mark-track-played.usecase';
 import { DeleteTrackUseCase } from 'src/playlist/application/use-cases/delete-track/delete-track.usecase';
+import { MoveTrackUseCase } from 'src/playlist/application/use-cases/move-track/move-track.usecase';
 import { AddTrackDto } from './dto/add-track.dto';
 import { PositionDto, toPosition } from './dto/position.dto';
+import { MoveTrackDto } from './dto/move-track.dto';
 
 @Controller('playlists')
 export class TrackController {
@@ -26,6 +29,7 @@ export class TrackController {
     private readonly withdrawVote: WithdrawVoteUseCase,
     private readonly markTrackPlayed: MarkTrackPlayedUseCase,
     private readonly deleteTrack: DeleteTrackUseCase,
+    private readonly moveTrack: MoveTrackUseCase,
   ) {}
 
   @Post(':playlistId/tracks')
@@ -81,6 +85,22 @@ export class TrackController {
       trackId,
       accountId,
       position: toPosition(positionDto),
+    });
+  }
+
+  @Patch(':playlistId/tracks/:trackId/position')
+  async move(
+    @UserIdParam() accountId: string,
+    @Param('playlistId') playlistId: string,
+    @Param('trackId') trackId: string,
+    @Body() moveTrackDto: MoveTrackDto,
+  ) {
+    return await this.moveTrack.execute({
+      playlistId,
+      trackId,
+      accountId,
+      afterTrackId: moveTrackDto.afterTrackId,
+      version: moveTrackDto.version,
     });
   }
 

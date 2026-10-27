@@ -25,6 +25,8 @@ import { MUSIC_CATALOG } from './application/ports/music-catalog';
 import { YtMusicCatalog } from './infrastructure/music/ytmusic-catalog';
 import { PLAYLIST_EVENT_BUS } from './application/ports/playlist-event-bus';
 import { RxjsPlaylistEventBus } from './infrastructure/events/rxjs-playlist-event-bus';
+import { PLAYLIST_EDIT_LOCK } from './application/ports/playlist-edit-lock';
+import { InProcessPlaylistEditLock } from './infrastructure/locks/in-process-playlist-edit-lock';
 import { CreatePlaylistUseCase } from './application/use-cases/create-playlist/create-playlist.usecase';
 import { ListPublicPlaylistsUseCase } from './application/use-cases/list-public-playlists/list-public-playlists.usecase';
 import { JoinPlaylistUseCase } from './application/use-cases/join-playlist/join-playlist.usecase';
@@ -44,6 +46,7 @@ import { WithdrawVoteUseCase } from './application/use-cases/withdraw-vote/withd
 import { MarkTrackPlayedUseCase } from './application/use-cases/mark-track-played/mark-track-played.usecase';
 import { DeleteTrackUseCase } from './application/use-cases/delete-track/delete-track.usecase';
 import { WatchPlaylistEventsUseCase } from './application/use-cases/watch-playlist-events/watch-playlist-events.usecase';
+import { MoveTrackUseCase } from './application/use-cases/move-track/move-track.usecase';
 
 @Module({
   imports: [
@@ -91,6 +94,11 @@ import { WatchPlaylistEventsUseCase } from './application/use-cases/watch-playli
       provide: PLAYLIST_EVENT_BUS,
       useClass: RxjsPlaylistEventBus,
     },
+    // A single lock instance, shared by every use case editing the tracks
+    {
+      provide: PLAYLIST_EDIT_LOCK,
+      useClass: InProcessPlaylistEditLock,
+    },
     CreatePlaylistUseCase,
     ListPublicPlaylistsUseCase,
     JoinPlaylistUseCase,
@@ -110,6 +118,7 @@ import { WatchPlaylistEventsUseCase } from './application/use-cases/watch-playli
     MarkTrackPlayedUseCase,
     DeleteTrackUseCase,
     WatchPlaylistEventsUseCase,
+    MoveTrackUseCase,
   ],
 })
 export class PlaylistModule {}

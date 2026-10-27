@@ -63,6 +63,10 @@ export class Playlist {
     return this.type === PlaylistType.VOTE;
   }
 
+  isEditorPlaylist(): boolean {
+    return this.type === PlaylistType.EDITOR;
+  }
+
   hasBegun(now: Date = new Date()): boolean {
     if (this.beginAt === null) {
       return true;
