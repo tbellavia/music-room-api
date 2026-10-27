@@ -2,16 +2,17 @@ import { CreatePlaylistInfos, Playlist } from './playlist.entity';
 import { JoinMethod } from './join-method.enum';
 import { PlaylistType } from './playlist-type.enum';
 import { Participant } from './participant.entity';
+import { Track } from './track.entity';
 import { PlaylistLicense } from './playlist-license.enum';
 import {
   canActOnTracks,
-  canDeleteTracks,
+  canDeleteTrack,
   canInvite,
   canManageParticipants,
   canRead,
   isMember,
   throwIfCannotActOnTracks,
-  throwIfCannotDeleteTracks,
+  throwIfCannotDeleteTrack,
   throwIfParticipantCannotOperate,
 } from './playlist-permissions';
 import { PlaylistEnded } from './errors/playlist-ended.error';
@@ -45,6 +46,23 @@ const defaultInfos: CreatePlaylistInfos = {
   latitude: PLAYLIST_LATITUDE,
   longitude: PLAYLIST_LONGITUDE,
 };
+
+// A track added by someone else than the participant used in the tests
+function buildTrack(addedBy: string = 'author-id') {
+  return Track.create({
+    id: 'track-id',
+    playlistId: 'playlist-id',
+    music: {
+      videoId: 'FGBhQbmPwH8',
+      name: 'One More Time',
+      artist: 'Daft Punk',
+      thumbnail: null,
+      duration: 321,
+    },
+    addedBy,
+    addedAt: new Date('2026-06-15T20:00:00Z'),
+  });
+}
 
 function buildPlaylist(overrides: Partial<CreatePlaylistInfos> = {}) {
   return Playlist.create({ ...defaultInfos, ...overrides });
@@ -236,25 +254,63 @@ describe('playlist permissions', () => {
     });
   });
 
-  describe('canDeleteTracks', () => {
+  describe('canDeleteTrack', () => {
+    const editorPlaylist = buildPlaylist({ type: PlaylistType.EDITOR });
+
     it('lets the owner and privileged participants delete', () => {
       const privilegedParticipant = buildParticipant(true);
+      const track = buildTrack();
 
-      expect(canDeleteTracks(playlist, 'owner-id', null)).toBe(true);
+      expect(canDeleteTrack(playlist, 'owner-id', null, track)).toBe(true);
       expect(
-        canDeleteTracks(
+        canDeleteTrack(
           playlist,
           'participant-account-id',
           privilegedParticipant,
+          track,
         ),
       ).toBe(true);
     });
 
     it('does not let a regular participant delete', () => {
       const regularParticipant = buildParticipant(false);
+      const track = buildTrack();
 
       expect(
-        canDeleteTracks(playlist, 'participant-account-id', regularParticipant),
+        canDeleteTrack(
+          playlist,
+          'participant-account-id',
+          regularParticipant,
+          track,
+        ),
+      ).toBe(false);
+    });
+
+    it('lets the author delete their track in an EDITOR playlist', () => {
+      const regularParticipant = buildParticipant(false);
+      const ownTrack = buildTrack('participant-account-id');
+
+      expect(
+        canDeleteTrack(
+          editorPlaylist,
+          'participant-account-id',
+          regularParticipant,
+          ownTrack,
+        ),
+      ).toBe(true);
+    });
+
+    it('does not let the author delete their track in a VOTE playlist', () => {
+      const regularParticipant = buildParticipant(false);
+      const ownTrack = buildTrack('participant-account-id');
+
+      expect(
+        canDeleteTrack(
+          playlist,
+          'participant-account-id',
+          regularParticipant,
+          ownTrack,
+        ),
       ).toBe(false);
     });
   });
@@ -331,17 +387,19 @@ describe('playlist permissions', () => {
     });
   });
 
-  describe('throwIfCannotDeleteTracks', () => {
+  describe('throwIfCannotDeleteTrack', () => {
     const now = new Date('2026-06-15T20:00:00Z');
+    const track = buildTrack();
 
     it('rejects a regular participant', () => {
       const regularParticipant = buildParticipant(false);
 
       const check = () =>
-        throwIfCannotDeleteTracks(
+        throwIfCannotDeleteTrack(
           playlist,
           'participant-account-id',
           regularParticipant,
+          track,
           ON_SITE_POSITION,
           now,
         );
@@ -349,14 +407,15 @@ describe('playlist permissions', () => {
       expect(check).toThrow(TrackDeleteForbidden);
     });
 
-    it('requires a privileged participant to be on site', () => {
+    it('requires a privileged participant of a VOTE playlist to be on site', () => {
       const privilegedParticipant = buildParticipant(true);
 
       const check = () =>
-        throwIfCannotDeleteTracks(
+        throwIfCannotDeleteTrack(
           playlist,
           'participant-account-id',
           privilegedParticipant,
+          track,
           null,
           now,
         );
@@ -368,15 +427,95 @@ describe('playlist permissions', () => {
       const privilegedParticipant = buildParticipant(true);
 
       const check = () =>
-        throwIfCannotDeleteTracks(
+        throwIfCannotDeleteTrack(
           playlist,
           'participant-account-id',
           privilegedParticipant,
+          track,
           ON_SITE_POSITION,
           now,
         );
 
       expect(check).not.toThrow();
+    });
+
+    it('lets the author of an EDITOR track delete it remotely', () => {
+      const editorPlaylist = buildPlaylist({ type: PlaylistType.EDITOR });
+      const regularParticipant = buildParticipant(false);
+      const ownTrack = buildTrack('participant-account-id');
+
+      const check = () =>
+        throwIfCannotDeleteTrack(
+          editorPlaylist,
+          'participant-account-id',
+          regularParticipant,
+          ownTrack,
+          null,
+          now,
+        );
+
+      expect(check).not.toThrow();
+    });
+  });
+
+  describe('in an EDITOR playlist', () => {
+    const now = new Date('2026-06-15T20:00:00Z');
+
+    it('lets a participant act remotely, even before the start', () => {
+      const futureEditorPlaylist = buildPlaylist({
+        type: PlaylistType.EDITOR,
+        beginAt: new Date('2026-06-16T20:00:00Z'),
+      });
+      const participant = buildParticipant(false);
+
+      const check = () =>
+        throwIfCannotActOnTracks(
+          futureEditorPlaylist,
+          'participant-account-id',
+          participant,
+          null,
+          now,
+        );
+
+      expect(check).not.toThrow();
+    });
+
+    it('does not let a participant act once the playlist has ended', () => {
+      const endedEditorPlaylist = buildPlaylist({
+        type: PlaylistType.EDITOR,
+        endAt: new Date('2026-06-15T19:00:00Z'),
+      });
+      const participant = buildParticipant(false);
+
+      const check = () =>
+        throwIfCannotActOnTracks(
+          endedEditorPlaylist,
+          'participant-account-id',
+          participant,
+          null,
+          now,
+        );
+
+      expect(check).toThrow(PlaylistEnded);
+    });
+
+    it('still applies the INVITED_ONLY license', () => {
+      const invitedOnlyEditorPlaylist = buildPlaylist({
+        type: PlaylistType.EDITOR,
+        license: PlaylistLicense.INVITED_ONLY,
+      });
+      const joinedParticipant = buildParticipant(false, JoinMethod.JOIN);
+
+      const check = () =>
+        throwIfCannotActOnTracks(
+          invitedOnlyEditorPlaylist,
+          'participant-account-id',
+          joinedParticipant,
+          null,
+          now,
+        );
+
+      expect(check).toThrow(TrackActionForbidden);
     });
   });
 });

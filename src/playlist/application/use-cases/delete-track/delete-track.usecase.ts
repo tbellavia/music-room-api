@@ -17,9 +17,12 @@ import {
   PlaylistEventBus,
 } from '../../ports/playlist-event-bus';
 import { DeleteTrackInput } from './delete-track.contracts';
-import { throwIfCannotDeleteTracks } from 'src/playlist/domain/playlist-permissions';
+import {
+  isMember,
+  throwIfCannotDeleteTrack,
+} from 'src/playlist/domain/playlist-permissions';
 import { PlaylistNotFound } from 'src/playlist/domain/errors/playlist-not-found.error';
-import { NotAVotePlaylist } from 'src/playlist/domain/errors/not-a-vote-playlist.error';
+import { NotPlaylistMember } from 'src/playlist/domain/errors/not-playlist-member.error';
 import { TrackNotFound } from 'src/playlist/domain/errors/track-not-found.error';
 import { TrackAlreadyPlayed } from 'src/playlist/domain/errors/track-already-played.error';
 
@@ -43,27 +46,30 @@ export class DeleteTrackUseCase {
     if (!playlist) {
       throw new PlaylistNotFound();
     }
-    if (!playlist.isVotePlaylist()) {
-      throw new NotAVotePlaylist();
-    }
 
-    // Owner and privileged participants only
     const participant =
       await this.participantRepository.findByPlaylistAndAccount({
         playlistId: playlist.id,
         accountId: input.accountId,
       });
-    throwIfCannotDeleteTracks(
-      playlist,
-      input.accountId,
-      participant,
-      input.position,
-    );
+    // Checked before looking for the track: nothing is revealed to non members
+    if (!isMember(playlist, input.accountId, participant)) {
+      throw new NotPlaylistMember();
+    }
 
     const track = await this.trackRepository.findById(input.trackId);
     if (!track || track.playlistId !== playlist.id) {
       throw new TrackNotFound();
     }
+
+    // Owner and privileged participants; in an EDITOR playlist, the author too
+    throwIfCannotDeleteTrack(
+      playlist,
+      input.accountId,
+      participant,
+      track,
+      input.position,
+    );
     // A played track is part of the history, it is not in the ranking anymore
     if (track.isPlayed()) {
       throw new TrackAlreadyPlayed();

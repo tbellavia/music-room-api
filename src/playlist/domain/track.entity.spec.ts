@@ -1,5 +1,6 @@
 import { Track } from './track.entity';
 import { TrackAlreadyPlayed } from './errors/track-already-played.error';
+import { TrackVersionConflict } from './errors/track-version-conflict.error';
 
 function buildTrack() {
   return Track.create({
@@ -14,6 +15,7 @@ function buildTrack() {
     },
     addedBy: 'author-id',
     addedAt: new Date('2026-06-15T20:00:00Z'),
+    position: 1024,
   });
 }
 
@@ -51,5 +53,44 @@ describe('Track', () => {
     const markAgain = () => track.markAsPlayed();
 
     expect(markAgain).toThrow(TrackAlreadyPlayed);
+  });
+
+  describe('moveTo', () => {
+    it('starts at the first version', () => {
+      const track = buildTrack();
+
+      expect(track.version).toBe(1);
+    });
+
+    it('moves the track and increments its version', () => {
+      const track = buildTrack();
+
+      track.moveTo(2048, 1);
+
+      expect(track.position).toBe(2048);
+      expect(track.version).toBe(2);
+    });
+
+    it('refuses a move based on an outdated version', () => {
+      const track = buildTrack();
+      track.moveTo(2048, 1);
+
+      const outdatedMove = () => track.moveTo(512, 1);
+
+      expect(outdatedMove).toThrow(TrackVersionConflict);
+      expect(track.position).toBe(2048);
+      expect(track.version).toBe(2);
+    });
+  });
+
+  describe('renumberTo', () => {
+    it('changes the position without changing the version', () => {
+      const track = buildTrack();
+
+      track.renumberTo(3072);
+
+      expect(track.position).toBe(3072);
+      expect(track.version).toBe(1);
+    });
   });
 });

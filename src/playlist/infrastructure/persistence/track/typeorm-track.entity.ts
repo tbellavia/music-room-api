@@ -54,4 +54,11 @@ export class TrackOrmEntity {
 
   @Column({ type: 'timestamptz', nullable: true })
   played_at: Date | null;
+
+  // EDITOR only: fractional position, the list is ordered by it
+  @Column({ type: 'double precision', nullable: true })
+  position: number | null;
+
+  @Column({ type: 'integer', default: 1 })
+  version: number;
 }
