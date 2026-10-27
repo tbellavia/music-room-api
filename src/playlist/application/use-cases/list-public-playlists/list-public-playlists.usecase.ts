@@ -34,6 +34,7 @@ export class ListPublicPlaylistsUseCase {
     return {
       id: playlist.id,
       type: playlist.type,
+      license: playlist.license,
       ownerId: playlist.ownerId,
       name: playlist.name,
       description: playlist.description,

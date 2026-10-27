@@ -1,4 +1,5 @@
 import { InMemoryPlaylistRepository } from 'src/playlist/infrastructure/persistence/playlist/in-memory-playlist.repository';
+import { JoinMethod } from 'src/playlist/domain/join-method.enum';
 import { InMemoryParticipantRepository } from 'src/playlist/infrastructure/persistence/participant/in-memory-participant.repository';
 import { InMemoryInvitationRepository } from 'src/playlist/infrastructure/persistence/invitation/in-memory-invitation.repository';
 import {
@@ -72,6 +73,16 @@ describe('AcceptInvitationUseCase', () => {
     expect(participant?.hasPrivilege).toBe(false);
   });
 
+  // Used by the INVITED_ONLY license
+  it('records that the participant was invited', async () => {
+    await givenPlaylist();
+
+    const { participantId } = await useCase.execute(input);
+
+    const participant = participantRepository.participants.get(participantId);
+    expect(participant?.joinedVia).toBe(JoinMethod.INVITATION);
+  });
+
   it('deletes the accepted invitation', async () => {
     await givenPlaylist();
 
@@ -123,6 +134,7 @@ describe('AcceptInvitationUseCase', () => {
       id: 'existing-participant-id',
       playlistId: 'playlist-id',
       accountId: 'invitee-id',
+      joinedVia: JoinMethod.JOIN,
     });
     await participantRepository.save(existing);
 

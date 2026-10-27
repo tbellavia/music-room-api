@@ -66,6 +66,7 @@ export class TypeOrmParticipantRepository implements ParticipantRepository {
       playlist_id: participant.playlistId,
       account_id: participant.accountId,
       has_privilege: participant.hasPrivilege,
+      joined_via: participant.joinedVia,
     };
   }
 
@@ -75,6 +76,7 @@ export class TypeOrmParticipantRepository implements ParticipantRepository {
       orm.playlist_id,
       orm.account_id,
       orm.has_privilege,
+      orm.joined_via,
     );
   }
 }

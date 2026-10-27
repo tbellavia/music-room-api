@@ -41,6 +41,7 @@ export class CreatePlaylistUseCase {
       name: input.name,
       description: input.description,
       isPrivate: input.isPrivate,
+      license: input.license,
       beginAt: input.beginAt,
       endAt: input.endAt,
       latitude: input.latitude,

@@ -1,4 +1,5 @@
 import { InMemoryPlaylistRepository } from 'src/playlist/infrastructure/persistence/playlist/in-memory-playlist.repository';
+import { JoinMethod } from 'src/playlist/domain/join-method.enum';
 import { InMemoryParticipantRepository } from 'src/playlist/infrastructure/persistence/participant/in-memory-participant.repository';
 import { Playlist } from 'src/playlist/domain/playlist.entity';
 import { PlaylistType } from 'src/playlist/domain/playlist-type.enum';
@@ -52,6 +53,7 @@ describe('UpdateParticipantPrivilegeUseCase', () => {
       id: 'member-participant-id',
       playlistId: 'playlist-id',
       accountId: 'member-id',
+      joinedVia: JoinMethod.JOIN,
     });
     await participantRepository.save(member);
   });
@@ -94,6 +96,7 @@ describe('UpdateParticipantPrivilegeUseCase', () => {
       id: 'other-participant-id',
       playlistId: 'other-playlist-id',
       accountId: 'other-id',
+      joinedVia: JoinMethod.JOIN,
     });
     await participantRepository.save(otherPlaylistParticipant);
 

@@ -4,6 +4,7 @@ import {
   Playlist,
 } from 'src/playlist/domain/playlist.entity';
 import { PlaylistType } from 'src/playlist/domain/playlist-type.enum';
+import { PlaylistLicense } from 'src/playlist/domain/playlist-license.enum';
 import { ListPublicPlaylistsUseCase } from './list-public-playlists.usecase';
 
 const defaultInfos: CreatePlaylistInfos = {
@@ -87,6 +88,7 @@ describe('ListPublicPlaylistsUseCase', () => {
     expect(output.playlists[0]).toEqual({
       id: 'playlist-id',
       type: PlaylistType.VOTE,
+      license: PlaylistLicense.EVERYONE,
       ownerId: 'owner-id',
       name: 'Soirée',
       description: 'Une soirée à 42',

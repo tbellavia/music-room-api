@@ -13,6 +13,7 @@ import {
   JoinPlaylistOutput,
 } from './join-playlist.contracts';
 import { Participant } from 'src/playlist/domain/participant.entity';
+import { JoinMethod } from 'src/playlist/domain/join-method.enum';
 import { PlaylistNotFound } from 'src/playlist/domain/errors/playlist-not-found.error';
 import { PrivatePlaylist } from 'src/playlist/domain/errors/private-playlist.error';
 import { PlaylistEnded } from 'src/playlist/domain/errors/playlist-ended.error';
@@ -62,6 +63,7 @@ export class JoinPlaylistUseCase {
       id: randomUUID(),
       playlistId: playlist.id,
       accountId: input.accountId,
+      joinedVia: JoinMethod.JOIN,
     });
     await this.participantRepository.save(participant);
 

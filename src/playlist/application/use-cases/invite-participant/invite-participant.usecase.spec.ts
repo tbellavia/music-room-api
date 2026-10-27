@@ -1,4 +1,5 @@
 import { InMemoryPlaylistRepository } from 'src/playlist/infrastructure/persistence/playlist/in-memory-playlist.repository';
+import { JoinMethod } from 'src/playlist/domain/join-method.enum';
 import { InMemoryParticipantRepository } from 'src/playlist/infrastructure/persistence/participant/in-memory-participant.repository';
 import { InMemoryInvitationRepository } from 'src/playlist/infrastructure/persistence/invitation/in-memory-invitation.repository';
 import { InMemoryAccountDirectory } from 'src/playlist/infrastructure/persistence/account/in-memory-account-directory';
@@ -59,6 +60,7 @@ describe('InviteParticipantUseCase', () => {
       'playlist-id',
       accountId,
       hasPrivilege,
+      JoinMethod.JOIN,
     );
     await participantRepository.save(participant);
   }

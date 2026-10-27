@@ -8,6 +8,7 @@ import {
   Relation,
   Unique,
 } from 'typeorm';
+import { JoinMethod } from 'src/playlist/domain/join-method.enum';
 import { PlaylistOrmEntity } from '../playlist/typeorm-playlist.entity';
 
 @Entity('participants')
@@ -32,4 +33,8 @@ export class ParticipantOrmEntity {
 
   @Column({ type: 'boolean', default: false })
   has_privilege: boolean;
+
+  // Rows created before this column existed are considered as joined
+  @Column({ type: 'enum', enum: JoinMethod, default: JoinMethod.JOIN })
+  joined_via: JoinMethod;
 }

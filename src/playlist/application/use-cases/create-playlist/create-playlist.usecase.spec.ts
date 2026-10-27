@@ -1,5 +1,6 @@
 import { InMemoryPlaylistRepository } from 'src/playlist/infrastructure/persistence/playlist/in-memory-playlist.repository';
 import { PlaylistType } from 'src/playlist/domain/playlist-type.enum';
+import { PlaylistLicense } from 'src/playlist/domain/playlist-license.enum';
 import { PlaylistAlreadyExists } from 'src/playlist/domain/errors/playlist-already-exists.error';
 import { InvalidPlaylistPeriod } from 'src/playlist/domain/errors/invalid-playlist-period.error';
 import { PlaylistEndInPast } from 'src/playlist/domain/errors/playlist-end-in-past.error';
@@ -43,6 +44,23 @@ describe('CreatePlaylistUseCase', () => {
     const saved = await repository.findById(id);
     expect(saved).not.toBeNull();
     expect(saved?.type).toBe(PlaylistType.EDITOR);
+  });
+
+  it('uses the EVERYONE license by default', async () => {
+    const { id } = await useCase.execute(input);
+
+    const saved = await repository.findById(id);
+    expect(saved?.license).toBe(PlaylistLicense.EVERYONE);
+  });
+
+  it('creates a playlist with the INVITED_ONLY license', async () => {
+    const { id } = await useCase.execute({
+      ...input,
+      license: PlaylistLicense.INVITED_ONLY,
+    });
+
+    const saved = await repository.findById(id);
+    expect(saved?.license).toBe(PlaylistLicense.INVITED_ONLY);
   });
 
   it('creates a private playlist with a period', async () => {
