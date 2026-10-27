@@ -17,6 +17,7 @@ import {
   AcceptInvitationOutput,
 } from './accept-invitation.contracts';
 import { Participant } from 'src/playlist/domain/participant.entity';
+import { JoinMethod } from 'src/playlist/domain/join-method.enum';
 import { InvitationNotFound } from 'src/playlist/domain/errors/invitation-not-found.error';
 import { PlaylistNotFound } from 'src/playlist/domain/errors/playlist-not-found.error';
 import { PlaylistEnded } from 'src/playlist/domain/errors/playlist-ended.error';
@@ -67,6 +68,7 @@ export class AcceptInvitationUseCase {
       id: randomUUID(),
       playlistId: playlist.id,
       accountId: input.accountId,
+      joinedVia: JoinMethod.INVITATION,
     });
     await this.participantRepository.save(participant);
     await this.invitationRepository.delete(invitation.id);

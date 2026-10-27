@@ -2,6 +2,7 @@ import { PLAYLIST_ZONE_RADIUS_METERS } from 'src/shared/constants';
 import { InvalidPlaylistPeriod } from './errors/invalid-playlist-period.error';
 import { Coordinates, distanceInMeters } from './geo';
 import { PlaylistType } from './playlist-type.enum';
+import { PlaylistLicense } from './playlist-license.enum';
 
 export type CreatePlaylistInfos = {
   id: string;
@@ -10,6 +11,7 @@ export type CreatePlaylistInfos = {
   name: string;
   description: string;
   isPrivate?: boolean;
+  license?: PlaylistLicense;
   beginAt?: Date | null;
   endAt?: Date | null;
   latitude: number;
@@ -24,6 +26,7 @@ export class Playlist {
     public name: string,
     public description: string,
     public isPrivate: boolean,
+    public license: PlaylistLicense,
     public beginAt: Date | null,
     public endAt: Date | null,
     public latitude: number,
@@ -43,6 +46,7 @@ export class Playlist {
       infos.name,
       infos.description,
       infos.isPrivate ?? false,
+      infos.license ?? PlaylistLicense.EVERYONE,
       infos.beginAt ?? null,
       infos.endAt ?? null,
       infos.latitude,
@@ -53,6 +57,10 @@ export class Playlist {
 
   isOwner(accountId: string): boolean {
     return this.ownerId === accountId;
+  }
+
+  isVotePlaylist(): boolean {
+    return this.type === PlaylistType.VOTE;
   }
 
   hasBegun(now: Date = new Date()): boolean {

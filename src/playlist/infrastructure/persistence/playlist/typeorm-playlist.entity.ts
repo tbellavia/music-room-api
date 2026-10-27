@@ -1,5 +1,6 @@
 import { AccountOrmEntity } from 'src/identity/infrastructure/persistence/typeorm-account.entity';
 import { PlaylistType } from 'src/playlist/domain/playlist-type.enum';
+import { PlaylistLicense } from 'src/playlist/domain/playlist-license.enum';
 import {
   Column,
   Entity,
@@ -34,6 +35,13 @@ export class PlaylistOrmEntity {
 
   @Column({ type: 'boolean', default: false })
   is_private: boolean;
+
+  @Column({
+    type: 'enum',
+    enum: PlaylistLicense,
+    default: PlaylistLicense.EVERYONE,
+  })
+  license: PlaylistLicense;
 
   @Column({ type: 'timestamptz', nullable: true })
   begin_at: Date | null;

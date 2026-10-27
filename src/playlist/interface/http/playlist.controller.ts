@@ -53,6 +53,7 @@ export class PlaylistController {
       name: createPlaylistDto.name,
       description: createPlaylistDto.description,
       isPrivate: createPlaylistDto.isPrivate,
+      license: createPlaylistDto.license,
       beginAt: createPlaylistDto.beginAt,
       endAt: createPlaylistDto.endAt,
       latitude: createPlaylistDto.latitude,

@@ -25,6 +25,16 @@ import { InviteeNotFound } from 'src/playlist/domain/errors/invitee-not-found.er
 import { InvitationNotFound } from 'src/playlist/domain/errors/invitation-not-found.error';
 import { ParticipantNotFound } from 'src/playlist/domain/errors/participant-not-found.error';
 import { InvitationAlreadyExists } from 'src/playlist/domain/errors/invitation-already-exists.error';
+import { NotAVotePlaylist } from 'src/playlist/domain/errors/not-a-vote-playlist.error';
+import { TrackActionForbidden } from 'src/playlist/domain/errors/track-action-forbidden.error';
+import { TrackDeleteForbidden } from 'src/playlist/domain/errors/track-delete-forbidden.error';
+import { CannotVoteOwnTrack } from 'src/playlist/domain/errors/cannot-vote-own-track.error';
+import { MusicNotFound } from 'src/playlist/domain/errors/music-not-found.error';
+import { TrackNotFound } from 'src/playlist/domain/errors/track-not-found.error';
+import { VoteNotFound } from 'src/playlist/domain/errors/vote-not-found.error';
+import { TrackAlreadyInPlaylist } from 'src/playlist/domain/errors/track-already-in-playlist.error';
+import { AlreadyVoted } from 'src/playlist/domain/errors/already-voted.error';
+import { TrackAlreadyPlayed } from 'src/playlist/domain/errors/track-already-played.error';
 import { PLAYLIST_ZONE_RADIUS_METERS } from 'src/shared/constants';
 import { FriendshipAlreadyExists } from 'src/social/domain/errors/friendship-already-exists.error';
 import { FriendshipRequestAlreadyExists } from 'src/social/domain/errors/friendship-request-already-exists.error';
@@ -235,6 +245,79 @@ const DOMAIN_ERRORS = new Map<unknown, ErrorResponse>([
       status: 409,
       error: 'INVITATION_ALREADY_EXISTS',
       message: 'This account already has a pending invitation',
+    },
+  ],
+  // tracks
+  [
+    NotAVotePlaylist,
+    {
+      status: 400,
+      error: 'NOT_A_VOTE_PLAYLIST',
+      message: 'This action is only available on vote playlists',
+    },
+  ],
+  [
+    TrackActionForbidden,
+    {
+      status: 403,
+      error: 'TRACK_ACTION_FORBIDDEN',
+      message: 'Only invited participants can do this on this playlist',
+    },
+  ],
+  [
+    TrackDeleteForbidden,
+    {
+      status: 403,
+      error: 'TRACK_DELETE_FORBIDDEN',
+      message: 'Only the owner and privileged participants can delete tracks',
+    },
+  ],
+  [
+    CannotVoteOwnTrack,
+    {
+      status: 403,
+      error: 'CANNOT_VOTE_OWN_TRACK',
+      message: 'You cannot vote for a track you added',
+    },
+  ],
+  [
+    MusicNotFound,
+    { status: 404, error: 'MUSIC_NOT_FOUND', message: 'Unknown YouTube video' },
+  ],
+  [
+    TrackNotFound,
+    { status: 404, error: 'TRACK_NOT_FOUND', message: 'Track not found' },
+  ],
+  [
+    VoteNotFound,
+    {
+      status: 404,
+      error: 'VOTE_NOT_FOUND',
+      message: 'You did not vote for this track',
+    },
+  ],
+  [
+    TrackAlreadyInPlaylist,
+    {
+      status: 409,
+      error: 'TRACK_ALREADY_IN_PLAYLIST',
+      message: 'This music is already waiting in the playlist',
+    },
+  ],
+  [
+    AlreadyVoted,
+    {
+      status: 409,
+      error: 'ALREADY_VOTED',
+      message: 'You already voted for this track',
+    },
+  ],
+  [
+    TrackAlreadyPlayed,
+    {
+      status: 409,
+      error: 'TRACK_ALREADY_PLAYED',
+      message: 'This track has already been played',
     },
   ],
 ]);

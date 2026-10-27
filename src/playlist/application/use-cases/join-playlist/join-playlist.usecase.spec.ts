@@ -1,4 +1,5 @@
 import { InMemoryPlaylistRepository } from 'src/playlist/infrastructure/persistence/playlist/in-memory-playlist.repository';
+import { JoinMethod } from 'src/playlist/domain/join-method.enum';
 import { InMemoryParticipantRepository } from 'src/playlist/infrastructure/persistence/participant/in-memory-participant.repository';
 import {
   CreatePlaylistInfos,
@@ -69,6 +70,16 @@ describe('JoinPlaylistUseCase', () => {
     expect(participant?.hasPrivilege).toBe(false);
   });
 
+  // Used by the INVITED_ONLY license: joining by oneself is not an invitation
+  it('records that the participant joined by themselves', async () => {
+    await givenPlaylist();
+
+    const { participantId } = await useCase.execute(input);
+
+    const participant = participantRepository.participants.get(participantId);
+    expect(participant?.joinedVia).toBe(JoinMethod.JOIN);
+  });
+
   it('lets a user join an editor playlist', async () => {
     await givenPlaylist({ type: PlaylistType.EDITOR });
 
@@ -132,6 +143,7 @@ describe('JoinPlaylistUseCase', () => {
       id: 'participant-id',
       playlistId: 'playlist-id',
       accountId: 'joiner-id',
+      joinedVia: JoinMethod.JOIN,
     });
     await participantRepository.save(existing);
 

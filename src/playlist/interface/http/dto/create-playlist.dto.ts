@@ -12,6 +12,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { PlaylistType } from 'src/playlist/domain/playlist-type.enum';
+import { PlaylistLicense } from 'src/playlist/domain/playlist-license.enum';
 import {
   PLAYLIST_DESCRIPTION_MAX_LENGTH,
   PLAYLIST_NAME_MAX_LENGTH,
@@ -34,6 +35,10 @@ export class CreatePlaylistDto {
   @IsOptional()
   @IsBoolean()
   isPrivate?: boolean;
+
+  @IsOptional()
+  @IsEnum(PlaylistLicense)
+  license?: PlaylistLicense;
 
   @IsOptional()
   @Type(() => Date)

@@ -1,4 +1,5 @@
 import { PlaylistType } from 'src/playlist/domain/playlist-type.enum';
+import { PlaylistLicense } from 'src/playlist/domain/playlist-license.enum';
 
 export type CreatePlaylistInput = {
   ownerId: string;
@@ -6,6 +7,7 @@ export type CreatePlaylistInput = {
   name: string;
   description: string;
   isPrivate?: boolean;
+  license?: PlaylistLicense;
   beginAt?: Date;
   endAt?: Date;
   latitude: number;
