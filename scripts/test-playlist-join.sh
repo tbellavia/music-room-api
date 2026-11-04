@@ -79,7 +79,7 @@ expect "already begun but ends in the future → 201" 201
 
 section "GET /playlists/public"
 request GET /playlists/public
-expect "without token → 401" 401
+expect "without token → 401 UNAUTHORIZED" 401 UNAUTHORIZED
 
 request GET /playlists/public "$BOB"
 expect "with token → 200" 200
@@ -91,7 +91,7 @@ if is_listed "$ENDED"; then fail "ended playlist is not listed" "$BODY"; else pa
 section "POST /playlists/:playlistId/join"
 request POST "/playlists/$PUBLIC/join" "" \
   "{\"latitude\":$PLAYLIST_LATITUDE,\"longitude\":$PLAYLIST_LONGITUDE}"
-expect "without token → 401" 401
+expect "without token → 401 UNAUTHORIZED" 401 UNAUTHORIZED
 
 join "$BOB" "$PUBLIC" "$LATITUDE_600M_NORTH"
 expect "600 m away → 403 OUTSIDE_PLAYLIST_ZONE" 403 OUTSIDE_PLAYLIST_ZONE
@@ -121,7 +121,7 @@ expect "unknown playlist → 404 PLAYLIST_NOT_FOUND" 404 PLAYLIST_NOT_FOUND
 
 section "Body validation"
 join "$BOB" "$PUBLIC" 95
-expect "latitude out of range → 400" 400
+expect "latitude out of range → 400 VALIDATION_FAILED" 400 VALIDATION_FAILED
 
 request POST "/playlists/$PUBLIC/join" "$BOB" "{\"latitude\":$PLAYLIST_LATITUDE}"
 expect "missing longitude → 400" 400

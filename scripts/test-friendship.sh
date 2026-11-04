@@ -46,7 +46,7 @@ echo "  users: alice$SUFFIX, bob$SUFFIX, carol$SUFFIX"
 
 section "POST /social/friends/request/:receiverId"
 request POST "/social/friends/request/$BOB_ID"
-expect "without token → 401" 401
+expect "without token → 401 UNAUTHORIZED" 401 UNAUTHORIZED
 
 send_request "$ALICE" "$ALICE_ID"
 expect "to oneself → 400 SELF_FRIENDSHIP" 400 SELF_FRIENDSHIP
@@ -119,7 +119,7 @@ CAROL_TO_ALICE=$(echo "$BODY" | jq -r '.requestId // empty')
 
 section "DELETE /social/friends/request/:requestId/reject"
 request DELETE "/social/friends/request/$CAROL_TO_ALICE/reject"
-expect "without token → 401" 401
+expect "without token → 401 UNAUTHORIZED" 401 UNAUTHORIZED
 
 reject_request "$CAROL" "$CAROL_TO_ALICE"
 expect "sender rejects her own request → 404 FRIENDSHIP_REQUEST_NOT_FOUND" 404 FRIENDSHIP_REQUEST_NOT_FOUND

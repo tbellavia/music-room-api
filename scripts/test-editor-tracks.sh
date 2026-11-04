@@ -139,7 +139,7 @@ expect_json "no votes in an EDITOR playlist" "all(.tracks[]; has(\"votes\") | no
 
 section "PATCH /playlists/:playlistId/tracks/:trackId/position"
 request PATCH "/playlists/$RADIO/tracks/$TRACK_3/position" "" '{"afterTrackId":null,"version":1}'
-expect "without token → 401" 401
+expect "without token → 401 UNAUTHORIZED" 401 UNAUTHORIZED
 
 move "$DAVE" "$RADIO" "$TRACK_3" null 1
 expect "non member → 403 NOT_PLAYLIST_MEMBER" 403 NOT_PLAYLIST_MEMBER
@@ -160,10 +160,10 @@ move "$ALICE" "$RADIO" "$TRACK_1" "$UNKNOWN_ID" 1
 expect "unknown anchor track → 404 TRACK_NOT_FOUND" 404 TRACK_NOT_FOUND
 
 request PATCH "/playlists/$RADIO/tracks/$TRACK_1/position" "$ALICE" '{"version":1}'
-expect "missing afterTrackId → 400" 400
+expect "missing afterTrackId → 400 VALIDATION_FAILED" 400 VALIDATION_FAILED
 
 request PATCH "/playlists/$RADIO/tracks/$TRACK_1/position" "$ALICE" '{"afterTrackId":null,"version":0}'
-expect "invalid version → 400" 400
+expect "invalid version → 400 VALIDATION_FAILED" 400 VALIDATION_FAILED
 
 move "$ALICE" "$VOTE" "$TRACK_1" null 1
 expect "VOTE playlist → 400 NOT_AN_EDITOR_PLAYLIST" 400 NOT_AN_EDITOR_PLAYLIST

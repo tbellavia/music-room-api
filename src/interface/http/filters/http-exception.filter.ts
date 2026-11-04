@@ -3,6 +3,7 @@ import {
   Catch,
   ExceptionFilter,
   HttpException,
+  HttpStatus,
   Logger,
 } from '@nestjs/common';
 import { Response } from 'express';
@@ -49,6 +50,7 @@ import { FriendshipRequestNotFound } from 'src/social/domain/errors/friendship-r
 import { SelfFriendshipRequestError } from 'src/social/domain/errors/self-friendship-request.error';
 import { SelfFriendshipError } from 'src/social/domain/errors/self-friendship.error';
 import { UnknownFriendshipRequest } from 'src/social/domain/errors/unknown-friendship-request';
+import { RequestValidationFailed } from 'src/interface/http/validation/request-validation-failed.error';
 
 type ErrorResponse = {
   status: number;
@@ -361,6 +363,42 @@ const DOMAIN_ERRORS = new Map<unknown, ErrorResponse>([
   ],
 ]);
 
+// Every error leaves the API with this same shape
+function errorResponse(exception: unknown): ErrorResponse {
+  const domainError = DOMAIN_ERRORS.get(
+    exception instanceof Error ? exception.constructor : undefined,
+  );
+  if (domainError) {
+    return domainError;
+  }
+
+  // The message is the first broken constraint, see createValidationPipe
+  if (exception instanceof RequestValidationFailed) {
+    return {
+      status: 400,
+      error: 'VALIDATION_FAILED',
+      message: exception.message,
+    };
+  }
+
+  // Nest exceptions (guard, unknown route...) already carry their status
+  if (exception instanceof HttpException) {
+    const status = exception.getStatus();
+    const statusName: string | undefined = HttpStatus[status];
+    return {
+      status,
+      error: statusName ?? 'HTTP_ERROR',
+      message: exception.message,
+    };
+  }
+
+  return {
+    status: 500,
+    error: 'INTERNAL_SERVER_ERROR',
+    message: 'Internal server error',
+  };
+}
+
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
   logger: Logger = new Logger(HttpExceptionFilter.name);
@@ -369,25 +407,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const res: Response = ctx.getResponse();
 
-    const domainError = DOMAIN_ERRORS.get(
-      exception instanceof Error ? exception.constructor : undefined,
-    );
-    if (domainError) {
-      return res
-        .status(domainError.status)
-        .json({ error: domainError.error, message: domainError.message });
+    const response = errorResponse(exception);
+    if (response.status === 500) {
+      this.logger.error(exception);
     }
 
-    // Nest exceptions (guards, ValidationPipe...) already carry their status
-    if (exception instanceof HttpException) {
-      return res.status(exception.getStatus()).json(exception.getResponse());
-    }
-
-    this.logger.error(exception);
-
-    return res.status(500).json({
-      error: 'INTERNAL_SERVER_ERROR',
-      message: 'Internal server error',
-    });
+    return res.status(response.status).json(response);
   }
 }
