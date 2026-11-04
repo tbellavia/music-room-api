@@ -5,9 +5,11 @@ const FALLBACK_MESSAGE = 'Invalid request';
 
 function findFirstMessage(errors: ValidationError[]): string | null {
   for (const error of errors) {
+    // class-validator lists the constraints in reverse order of the decorators:
+    // the last one is the first written in the DTO, usually the type check
     const messages = Object.values(error.constraints ?? {});
     if (messages.length > 0) {
-      return messages[0];
+      return messages[messages.length - 1];
     }
     const childMessage = findFirstMessage(error.children ?? []);
     if (childMessage !== null) {
