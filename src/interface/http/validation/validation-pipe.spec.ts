@@ -67,6 +67,28 @@ describe('createValidationPipe', () => {
     expect(error).toHaveProperty('message', 'email must be an email');
   });
 
+  it('reports the type of a field before its other constraints', async () => {
+    const bodyWithNumericUsername = { ...validRegisterBody, username: 42 };
+
+    const error = await validationErrorOf(bodyWithNumericUsername);
+
+    expect(error).toHaveProperty('message', 'username must be a string');
+  });
+
+  it('reports the constraint that actually fails when the type is right', async () => {
+    const bodyWithLongUsername = {
+      ...validRegisterBody,
+      username: 'a'.repeat(21),
+    };
+
+    const error = await validationErrorOf(bodyWithLongUsername);
+
+    expect(error).toHaveProperty(
+      'message',
+      'username must be shorter than or equal to 20 characters',
+    );
+  });
+
   it('rejects an unknown field', async () => {
     const bodyWithUnknownField = { ...validRegisterBody, isAdmin: true };
 
