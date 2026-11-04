@@ -2,9 +2,24 @@
 
 - Toutes les routes sont préfixées par `/api/v1` (omis dans les titres ci-dessous).
 - Sauf mention **public**, elles exigent le header `Authorization: Bearer <access_token>`.
-- Format des erreurs :
-  - erreurs métier : `{ error: "CODE", message: string }` ;
-  - erreurs de validation (400) et d'auth (401) : format Nest `{ statusCode, message, error }`.
+- Toutes les erreurs ont la même forme :
+
+  ```ts
+  {
+    status: number   // identique au statut HTTP
+    error: string    // code stable, à utiliser côté client (ex. "PLAYLIST_NOT_FOUND")
+    message: string  // texte lisible, en anglais
+  }
+  ```
+
+- Erreurs transverses, possibles sur toutes les routes :
+
+  | Statut | Réponse | Détail |
+  | --- | --- | --- |
+  | 400 | `VALIDATION_FAILED` | Body, query ou paramètre invalide. `message` décrit **la première** contrainte non respectée (ex. `"username must be longer than or equal to 3 characters"`) ; une fois corrigée, la requête suivante signale la suivante |
+  | 401 | `UNAUTHORIZED` | Token absent, invalide ou expiré |
+  | 404 | `NOT_FOUND` | Route inconnue |
+  | 500 | `INTERNAL_SERVER_ERROR` | Erreur inattendue |
 
 ## Sommaire
 

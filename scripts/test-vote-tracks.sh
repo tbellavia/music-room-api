@@ -108,7 +108,7 @@ echo "  SSE stream opened on the public playlist"
 
 section "POST /playlists/:playlistId/tracks"
 request POST "/playlists/$PUBLIC/tracks" "" "{\"videoId\":\"$ONE_MORE_TIME\"}"
-expect "without token → 401" 401
+expect "without token → 401 UNAUTHORIZED" 401 UNAUTHORIZED
 
 add_track "$DAVE" "$PUBLIC" "$ONE_MORE_TIME" "$ON_SITE"
 expect "non member → 403 NOT_PLAYLIST_MEMBER" 403 NOT_PLAYLIST_MEMBER

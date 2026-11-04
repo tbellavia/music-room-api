@@ -68,13 +68,13 @@ echo "  playlists created: private (running), future (not started)"
 
 section "POST /playlists/:playlistId/invitations (owner)"
 request POST "/playlists/$PRIVATE/invitations" "" "{\"accountId\":\"$BOB_ID\"}"
-expect "without token → 401" 401
+expect "without token → 401 UNAUTHORIZED" 401 UNAUTHORIZED
 
 invite "$BOB" "$PRIVATE" "$CAROL_ID"
 expect "non member invites → 403 INVITATION_FORBIDDEN" 403 INVITATION_FORBIDDEN
 
 invite "$ALICE" "$PRIVATE" "not-a-uuid"
-expect "invalid accountId → 400" 400
+expect "invalid accountId → 400 VALIDATION_FAILED" 400 VALIDATION_FAILED
 
 invite "$ALICE" "$PRIVATE" "$UNKNOWN_ID"
 expect "unknown account → 404 ACCOUNT_NOT_FOUND" 404 ACCOUNT_NOT_FOUND
@@ -134,7 +134,7 @@ set_privilege "$ALICE" "$PRIVATE" "$UNKNOWN_ID" true
 expect "unknown participant → 404 PARTICIPANT_NOT_FOUND" 404 PARTICIPANT_NOT_FOUND
 
 request PATCH "/playlists/$PRIVATE/participants/$BOB_PARTICIPANT" "$ALICE" '{"hasPrivilege":"yes"}'
-expect "non boolean hasPrivilege → 400" 400
+expect "non boolean hasPrivilege → 400 VALIDATION_FAILED" 400 VALIDATION_FAILED
 
 set_privilege "$ALICE" "$PRIVATE" "$BOB_PARTICIPANT" true
 expect "owner promotes bob → 200" 200
