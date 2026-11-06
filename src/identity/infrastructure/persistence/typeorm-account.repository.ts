@@ -60,6 +60,9 @@ export class TypeOrmAccountRepository implements AccountRepository {
       orm.username,
       orm.email,
       orm.password,
+      orm.otp_code,
+      orm.otp_expiry,
+      orm.is_active,
       orm.auth_method,
     );
   }
@@ -70,6 +73,9 @@ export class TypeOrmAccountRepository implements AccountRepository {
       username: account.username,
       email: account.email,
       password: account.password,
+      otp_code: account.otp_code,
+      otp_expiry: account.otp_expiry,
+      is_active: account.is_active,
       auth_method: account.auth_method,
     };
   }

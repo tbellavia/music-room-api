@@ -7,6 +7,7 @@ export class Account {
     public readonly email: string,
     public readonly password: string,
     public readonly otp_code: string | null,
+    public readonly otp_expiry: Date | null,
     public readonly is_active: boolean,
     public readonly auth_method: AuthMethod,
   ) {}
@@ -16,13 +17,16 @@ export class Account {
     username: string;
     email: string;
     password: string;
+    otp_code: string;
+    otp_expiry: Date;
   }): Account {
     return new Account(
       infos.id,
       infos.username,
       infos.email,
       infos.password,
-      null,
+      infos.otp_code,
+      infos.otp_expiry,
       false,
       AuthMethod.LOCAL,
     );
@@ -39,6 +43,7 @@ export class Account {
       infos.email,
       infos.username,
       infos.password,
+      null,
       null,
       true,
       AuthMethod.GOOGLE,

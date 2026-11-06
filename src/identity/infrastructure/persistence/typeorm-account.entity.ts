@@ -19,7 +19,10 @@ export class AccountOrmEntity {
   auth_method: AuthMethod;
 
   @Column({ type: 'varchar', length: 6, nullable: true, default: null })
-  otp_code?: string;
+  otp_code: string | null;
+
+  @Column({ type: 'timestamp', nullable: true, default: null })
+  otp_expiry: Date | null;
 
   @Column({ type: 'boolean', default: false })
   is_active: boolean;
