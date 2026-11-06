@@ -52,6 +52,8 @@ import { SelfFriendshipError } from 'src/social/domain/errors/self-friendship.er
 import { UnknownFriendshipRequest } from 'src/social/domain/errors/unknown-friendship-request';
 import { RequestValidationFailed } from 'src/interface/http/validation/request-validation-failed.error';
 import { AccountNotActive } from 'src/identity/domain/errors/account-not-active.error';
+import { AccountAlreadyActive } from 'src/identity/domain/errors/account-already-active.error';
+import { InvalidOTP } from 'src/identity/domain/errors/invalid-otp.error';
 
 type ErrorResponse = {
   status: number;
@@ -93,6 +95,22 @@ const DOMAIN_ERRORS = new Map<unknown, ErrorResponse>([
       status: 403,
       error: 'ACCOUNT_NOT_ACTIVE',
       message: 'Account is not active, verify it with the code you received',
+    },
+  ],
+  [
+    AccountAlreadyActive,
+    {
+      status: 409,
+      error: 'ACCOUNT_ALREADY_ACTIVE',
+      message: 'Account is already active',
+    },
+  ],
+  [
+    InvalidOTP,
+    {
+      status: 401,
+      error: 'INVALID_OTP',
+      message: 'Invalid otp',
     },
   ],
   // social

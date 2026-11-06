@@ -6,9 +6,9 @@ export class Account {
     public readonly username: string,
     public readonly email: string,
     public readonly password: string,
-    public readonly otp_code: string | null,
-    public readonly otp_expiry: Date | null,
-    public readonly is_active: boolean,
+    public otp_code: string | null,
+    public otp_expiry: Date | null,
+    public is_active: boolean,
     public readonly auth_method: AuthMethod,
   ) {}
 
@@ -48,5 +48,11 @@ export class Account {
       true,
       AuthMethod.GOOGLE,
     );
+  }
+
+  activate() {
+    this.is_active = true;
+    this.otp_code = null;
+    this.otp_expiry = null;
   }
 }

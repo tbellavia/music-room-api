@@ -46,12 +46,12 @@ export class RegisterAccountUseCase {
       otp_expiry: otp.expiry,
     });
 
-    await this.repository.save(account);
     await this.mailer.sendMail({
       to: input.email,
       subject: 'Votre code de validation',
       html: validationEmailTemplate(otp.code),
     });
+    await this.repository.save(account);
     return { id: account.id };
   }
 }
