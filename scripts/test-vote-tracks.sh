@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Manual end-to-end check of the tracks of VOTE playlists and of the SSE stream.
-# Requires a running API (make start), curl, jq, and network access to YouTube.
+# Requires curl, jq, and network access to YouTube.
+# Run through `make test-e2e`: the API must be in E2E mode to verify the accounts.
 #
-# Usage: ./scripts/test-vote-tracks.sh [API_URL]
+# Usage: make test-e2e, or ./scripts/test-vote-tracks.sh [API_URL]
 
 API="${1:-http://localhost:3000/api/v1}"
 . "$(dirname "$0")/lib.sh"

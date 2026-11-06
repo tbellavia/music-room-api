@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   PLAYLIST_REPOSITORY,
   PlaylistRepository,
@@ -29,6 +29,8 @@ import { VoteNotFound } from 'src/playlist/domain/errors/vote-not-found.error';
 
 @Injectable()
 export class WithdrawVoteUseCase {
+  private readonly logger = new Logger(WithdrawVoteUseCase.name);
+
   constructor(
     @Inject(PLAYLIST_REPOSITORY)
     private readonly playlistRepository: PlaylistRepository,
@@ -90,6 +92,10 @@ export class WithdrawVoteUseCase {
       trackId: track.id,
       votes,
     });
+
+    this.logger.log(
+      `Vote withdrawn playlist=${playlist.id} track=${track.id} votes=${votes} by=${input.accountId}`,
+    );
 
     return {
       votes,

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { RejectFriendshipInput } from './reject-friendship.contracts';
 import {
   FRIENDSHIP_REQUEST_REPOSITORY,
@@ -8,6 +8,8 @@ import { FriendshipRequestNotFound } from 'src/social/domain/errors/friendship-r
 
 @Injectable()
 export class RejectFriendshipUseCase {
+  private readonly logger = new Logger(RejectFriendshipUseCase.name);
+
   constructor(
     @Inject(FRIENDSHIP_REQUEST_REPOSITORY)
     private readonly repository: FriendshipRequestRepository,
@@ -23,5 +25,8 @@ export class RejectFriendshipUseCase {
       throw new FriendshipRequestNotFound();
     }
     await this.repository.delete(request.id);
+    this.logger.log(
+      `Friendship request rejected request=${request.id} by=${input.receiverId}`,
+    );
   }
 }

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   PLAYLIST_REPOSITORY,
   PlaylistRepository,
@@ -28,6 +28,8 @@ import { TrackAlreadyPlayed } from 'src/playlist/domain/errors/track-already-pla
 
 @Injectable()
 export class DeleteTrackUseCase {
+  private readonly logger = new Logger(DeleteTrackUseCase.name);
+
   constructor(
     @Inject(PLAYLIST_REPOSITORY)
     private readonly playlistRepository: PlaylistRepository,
@@ -77,6 +79,10 @@ export class DeleteTrackUseCase {
 
     await this.voteRepository.deleteByTrack(track.id);
     await this.trackRepository.delete(track.id);
+
+    this.logger.log(
+      `Track deleted playlist=${playlist.id} track=${track.id} by=${input.accountId}`,
+    );
 
     this.eventBus.publish({
       type: 'track.removed',

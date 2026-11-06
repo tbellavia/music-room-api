@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   PLAYLIST_REPOSITORY,
   PlaylistRepository,
@@ -41,6 +41,8 @@ type Neighbours = {
 
 @Injectable()
 export class MoveTrackUseCase {
+  private readonly logger = new Logger(MoveTrackUseCase.name);
+
   constructor(
     @Inject(PLAYLIST_REPOSITORY)
     private readonly playlistRepository: PlaylistRepository,
@@ -78,6 +80,10 @@ export class MoveTrackUseCase {
     // Reads the neighbours then writes: one edit of this playlist at a time
     const version = await this.editLock.runExclusively(playlist.id, () =>
       this.moveTrack(input),
+    );
+
+    this.logger.log(
+      `Track moved playlist=${playlist.id} track=${input.trackId} version=${version} by=${input.accountId}`,
     );
 
     return {

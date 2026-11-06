@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   PLAYLIST_REPOSITORY,
   PlaylistRepository,
@@ -31,6 +31,8 @@ import { AlreadyVoted } from 'src/playlist/domain/errors/already-voted.error';
 
 @Injectable()
 export class VoteForTrackUseCase {
+  private readonly logger = new Logger(VoteForTrackUseCase.name);
+
   constructor(
     @Inject(PLAYLIST_REPOSITORY)
     private readonly playlistRepository: PlaylistRepository,
@@ -97,6 +99,10 @@ export class VoteForTrackUseCase {
       trackId: track.id,
       votes,
     });
+
+    this.logger.log(
+      `Vote added playlist=${playlist.id} track=${track.id} votes=${votes} by=${input.accountId}`,
+    );
 
     return {
       votes,

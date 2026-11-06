@@ -52,6 +52,7 @@ import { SelfFriendshipRequestError } from 'src/social/domain/errors/self-friend
 import { SelfFriendshipError } from 'src/social/domain/errors/self-friendship.error';
 import { UnknownFriendshipRequest } from 'src/social/domain/errors/unknown-friendship-request';
 import { RequestValidationFailed } from 'src/interface/http/validation/request-validation-failed.error';
+import { ERROR_CODE_LOCAL } from 'src/interface/http/middleware/request-logger.middleware';
 import { AccountNotActive } from 'src/identity/domain/errors/account-not-active.error';
 import { AccountAlreadyActive } from 'src/identity/domain/errors/account-already-active.error';
 import { InvalidOTP } from 'src/identity/domain/errors/invalid-otp.error';
@@ -467,6 +468,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
     if (response.status === 500) {
       this.logger.error(exception);
     }
+    // Read by the request logger, which writes the line once the response is sent
+    res.locals[ERROR_CODE_LOCAL] = response.error;
 
     return res.status(response.status).json(response);
   }

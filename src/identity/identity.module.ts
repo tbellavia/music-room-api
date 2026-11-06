@@ -11,9 +11,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SignInUseCase } from './application/use-cases/sign-in/sign-in.usecase';
 import { VerifyAccountUseCase } from './application/use-cases/verify/verify-account.usecase';
 import { ResendVerificationCodeUseCase } from './application/use-cases/resend-verification-code/resend-verification-code.usecase';
-import { VERIFICATION_CODE_SENDER } from './application/ports/verification-code-sender';
+import {
+  VERIFICATION_CODE_SENDER,
+  VerificationCodeSender,
+} from './application/ports/verification-code-sender';
 import { PASSWORD_HASHER } from './application/ports/password-hasher';
 import { NodemailerVerificationCodeSender } from './infrastructure/mail/nodemailer-verification-code-sender';
+import { LoggingVerificationCodeSender } from './infrastructure/mail/logging-verification-code-sender';
+import { isE2eMode } from 'src/infrastructure/config/e2e-mode';
 
 @Module({
   imports: [
@@ -36,7 +41,13 @@ import { NodemailerVerificationCodeSender } from './infrastructure/mail/nodemail
     },
     {
       provide: VERIFICATION_CODE_SENDER,
-      useClass: NodemailerVerificationCodeSender,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService): VerificationCodeSender => {
+        if (isE2eMode(config)) {
+          return new LoggingVerificationCodeSender();
+        }
+        return new NodemailerVerificationCodeSender(config);
+      },
     },
     {
       provide: PASSWORD_HASHER,

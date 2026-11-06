@@ -33,9 +33,13 @@ export class NodemailerVerificationCodeSender implements VerificationCodeSender 
         subject: 'Votre code de validation',
         html: verificationCodeTemplate(mail.code),
       });
+      this.logger.debug(`Verification email sent account=${mail.accountId}`);
     } catch (error) {
       // The SMTP error stays in the logs, the client only gets a stable code
-      this.logger.error('Verification email could not be sent', error);
+      this.logger.error(
+        `Verification email could not be sent account=${mail.accountId}`,
+        error,
+      );
       throw new VerificationEmailNotSent();
     }
   }

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   ACCOUNT_REPOSITORY,
   AccountRepository,
@@ -13,6 +13,8 @@ import { generateOtp } from 'src/shared/otp';
 
 @Injectable()
 export class ResendVerificationCodeUseCase {
+  private readonly logger = new Logger(ResendVerificationCodeUseCase.name);
+
   constructor(
     @Inject(ACCOUNT_REPOSITORY)
     private readonly repository: AccountRepository,
@@ -32,7 +34,10 @@ export class ResendVerificationCodeUseCase {
     account.renewOtp(otp.code, otp.expiry, now);
 
     await this.repository.save(account);
+    this.logger.log(`Verification code renewed account=${account.id}`);
+
     await this.verificationCodeSender.send({
+      accountId: account.id,
       email: account.email,
       code: otp.code,
     });

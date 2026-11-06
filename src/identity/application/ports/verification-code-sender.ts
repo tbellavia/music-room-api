@@ -1,4 +1,6 @@
 export type VerificationCodeMail = {
+  // Only used to log: the email address is personal data, the id is not
+  accountId: string;
   email: string;
   code: string;
 };

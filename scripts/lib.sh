@@ -5,6 +5,8 @@
 set -u
 
 SUFFIX=$RANDOM
+# Name of the API container in docker-compose.yaml, to read its logs
+API_CONTAINER="${API_CONTAINER:-api}"
 PASSWORD='Password123!x'
 
 RESPONSE_FILE=$(mktemp)
@@ -84,10 +86,33 @@ section() {
   printf "\n${BOLD}%s${RESET}\n" "$1"
 }
 
-# register USERNAME -> prints the account id
+# verification_code ACCOUNT_ID -> prints the code the API logged for this account.
+# Only works in E2E mode (make test-e2e): in normal mode the code is emailed.
+# Retries a few times: the log line can reach `docker logs` slightly later.
+verification_code() {
+  local account_id=$1
+  local code
+  local attempt
+
+  for attempt in 1 2 3 4 5; do
+    code=$(docker logs "$API_CONTAINER" 2>&1 \
+      | grep "E2E verification code account=$account_id " \
+      | tail -n 1 \
+      | sed -E 's/.*code=([0-9]{6}).*/\1/')
+    if [ -n "$code" ]; then
+      echo "$code"
+      return 0
+    fi
+    sleep 1
+  done
+  return 1
+}
+
+# register USERNAME -> creates and verifies the account, prints its id
 register() {
   local username=$1
   local account_id
+  local code
 
   request POST /identity/register "" \
     "{\"username\":\"$username\",\"email\":\"$username@test.com\",\"password\":\"$PASSWORD\"}"
@@ -96,6 +121,18 @@ register() {
     echo "Cannot register $username (HTTP $STATUS): $BODY" >&2
     exit 1
   fi
+
+  if ! code=$(verification_code "$account_id"); then
+    echo "Cannot read the verification code of $username: run the scripts with make test-e2e" >&2
+    exit 1
+  fi
+  request POST /identity/verify "" \
+    "{\"username\":\"$username\",\"otp_code\":\"$code\"}"
+  if [ "$STATUS" != "201" ]; then
+    echo "Cannot verify $username (HTTP $STATUS): $BODY" >&2
+    exit 1
+  fi
+
   echo "$account_id"
 }
 
@@ -118,7 +155,7 @@ login() {
 preflight() {
   local command
 
-  for command in curl jq; do
+  for command in curl jq docker; do
     if ! command -v "$command" >/dev/null; then
       echo "$command is required" >&2
       exit 1
@@ -127,7 +164,7 @@ preflight() {
 
   request GET /health
   if [ "$STATUS" != "200" ]; then
-    echo "API is not reachable at $API (run: make start)" >&2
+    echo "API is not reachable at $API (run: make test-e2e)" >&2
     exit 1
   fi
 }

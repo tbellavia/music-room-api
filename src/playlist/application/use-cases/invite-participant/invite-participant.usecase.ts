@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import {
   PLAYLIST_REPOSITORY,
@@ -32,6 +32,8 @@ import { InvitationAlreadyExists } from 'src/playlist/domain/errors/invitation-a
 
 @Injectable()
 export class InviteParticipantUseCase {
+  private readonly logger = new Logger(InviteParticipantUseCase.name);
+
   constructor(
     @Inject(PLAYLIST_REPOSITORY)
     private readonly playlistRepository: PlaylistRepository,
@@ -64,6 +66,10 @@ export class InviteParticipantUseCase {
       inviteeId: input.inviteeId,
     });
     await this.invitationRepository.save(invitation);
+
+    this.logger.log(
+      `Participant invited invitation=${invitation.id} playlist=${playlist.id} inviter=${input.inviterId} invitee=${input.inviteeId}`,
+    );
 
     return {
       invitationId: invitation.id,

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { filter, Observable, Subject } from 'rxjs';
 import {
   PlaylistEvent,
@@ -9,9 +9,13 @@ import {
 // Several instances would need a shared relay (e.g. Redis pub/sub).
 @Injectable()
 export class RxjsPlaylistEventBus implements PlaylistEventBus {
+  private readonly logger = new Logger(RxjsPlaylistEventBus.name);
   private readonly events = new Subject<PlaylistEvent>();
 
   publish(event: PlaylistEvent): void {
+    this.logger.debug(
+      `Event published type=${event.type} playlist=${event.playlistId}`,
+    );
     this.events.next(event);
   }
 

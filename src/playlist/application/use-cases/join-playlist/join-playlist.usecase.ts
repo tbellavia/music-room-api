@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import {
   PLAYLIST_REPOSITORY,
@@ -23,6 +23,8 @@ import { OutsidePlaylistZone } from 'src/playlist/domain/errors/outside-playlist
 
 @Injectable()
 export class JoinPlaylistUseCase {
+  private readonly logger = new Logger(JoinPlaylistUseCase.name);
+
   constructor(
     @Inject(PLAYLIST_REPOSITORY)
     private readonly playlistRepository: PlaylistRepository,
@@ -66,6 +68,10 @@ export class JoinPlaylistUseCase {
       joinedVia: JoinMethod.JOIN,
     });
     await this.participantRepository.save(participant);
+
+    this.logger.log(
+      `Participant joined playlist=${playlist.id} account=${input.accountId}`,
+    );
 
     return {
       participantId: participant.id,

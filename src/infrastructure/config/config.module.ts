@@ -20,6 +20,15 @@ import Joi from 'joi';
         MAIL: Joi.string().required(),
         MAIL_PASSWORD: Joi.string().required(),
         ENVIRONMENT: Joi.string().pattern(/^dev|prod$/),
+        // Never in production: verification codes would end up in the logs
+        E2E_MODE: Joi.boolean()
+          .default(false)
+          .when('ENVIRONMENT', {
+            is: 'prod',
+            then: Joi.valid(false).messages({
+              'any.only': 'E2E_MODE cannot be enabled when ENVIRONMENT=prod',
+            }),
+          }),
       }),
     }),
   ],

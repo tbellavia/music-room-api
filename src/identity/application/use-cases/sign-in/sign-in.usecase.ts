@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { SignInInput, SignInOutput } from './sign-in.contracts';
 import {
   ACCOUNT_REPOSITORY,
@@ -12,6 +12,8 @@ import { AccountNotActive } from 'src/identity/domain/errors/account-not-active.
 
 @Injectable()
 export class SignInUseCase {
+  private readonly logger = new Logger(SignInUseCase.name);
+
   constructor(
     @Inject(ACCOUNT_REPOSITORY)
     private readonly repository: AccountRepository,
@@ -33,6 +35,8 @@ export class SignInUseCase {
     if (!account.is_active) {
       throw new AccountNotActive();
     }
+
+    this.logger.log(`Account signed in account=${account.id}`);
 
     const payload = { sub: account.id, username: account.username };
     return {
