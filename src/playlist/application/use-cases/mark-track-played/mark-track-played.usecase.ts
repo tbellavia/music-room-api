@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   PLAYLIST_REPOSITORY,
   PlaylistRepository,
@@ -19,6 +19,8 @@ import { TrackNotFound } from 'src/playlist/domain/errors/track-not-found.error'
 
 @Injectable()
 export class MarkTrackPlayedUseCase {
+  private readonly logger = new Logger(MarkTrackPlayedUseCase.name);
+
   constructor(
     @Inject(PLAYLIST_REPOSITORY)
     private readonly playlistRepository: PlaylistRepository,
@@ -49,6 +51,8 @@ export class MarkTrackPlayedUseCase {
     }
     track.markAsPlayed();
     await this.trackRepository.save(track);
+
+    this.logger.log(`Track played playlist=${playlist.id} track=${track.id}`);
 
     this.eventBus.publish({
       type: 'track.played',

@@ -1,5 +1,5 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { Observable } from 'rxjs';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Observable, tap } from 'rxjs';
 import {
   PLAYLIST_REPOSITORY,
   PlaylistRepository,
@@ -20,6 +20,8 @@ import { NotPlaylistMember } from 'src/playlist/domain/errors/not-playlist-membe
 
 @Injectable()
 export class WatchPlaylistEventsUseCase {
+  private readonly logger = new Logger(WatchPlaylistEventsUseCase.name);
+
   constructor(
     @Inject(PLAYLIST_REPOSITORY)
     private readonly playlistRepository: PlaylistRepository,
@@ -47,6 +49,18 @@ export class WatchPlaylistEventsUseCase {
       throw new NotPlaylistMember();
     }
 
-    return this.eventBus.streamFor(playlist.id);
+    // Logged on subscribe and on unsubscribe: the stream lives as long as the
+    // client stays connected, not as long as this method
+    const streamDescription = `playlist=${playlist.id} account=${input.accountId}`;
+    return this.eventBus.streamFor(playlist.id).pipe(
+      tap({
+        subscribe: () => {
+          this.logger.log(`Stream opened ${streamDescription}`);
+        },
+        finalize: () => {
+          this.logger.log(`Stream closed ${streamDescription}`);
+        },
+      }),
+    );
   }
 }

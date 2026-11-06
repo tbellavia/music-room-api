@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   PLAYLIST_REPOSITORY,
   PlaylistRepository,
@@ -15,6 +15,8 @@ import { ParticipantNotFound } from 'src/playlist/domain/errors/participant-not-
 
 @Injectable()
 export class RemoveParticipantUseCase {
+  private readonly logger = new Logger(RemoveParticipantUseCase.name);
+
   constructor(
     @Inject(PLAYLIST_REPOSITORY)
     private readonly playlistRepository: PlaylistRepository,
@@ -40,5 +42,8 @@ export class RemoveParticipantUseCase {
     }
 
     await this.participantRepository.delete(participant.id);
+    this.logger.log(
+      `Participant removed playlist=${playlist.id} participant=${participant.id} by=${input.accountId}`,
+    );
   }
 }

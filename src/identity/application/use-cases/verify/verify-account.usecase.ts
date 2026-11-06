@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   ACCOUNT_REPOSITORY,
   AccountRepository,
@@ -11,6 +11,8 @@ import { OTP_MAX_ATTEMPTS } from 'src/shared/constants';
 
 @Injectable()
 export class VerifyAccountUseCase {
+  private readonly logger = new Logger(VerifyAccountUseCase.name);
+
   constructor(
     @Inject(ACCOUNT_REPOSITORY)
     private readonly repository: AccountRepository,
@@ -39,5 +41,6 @@ export class VerifyAccountUseCase {
 
     account.activate(input.otp_code, new Date());
     await this.repository.save(account);
+    this.logger.log(`Account verified account=${account.id}`);
   }
 }

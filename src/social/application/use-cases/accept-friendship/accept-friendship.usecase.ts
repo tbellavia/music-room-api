@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   FRIENDSHIP_REQUEST_REPOSITORY,
   FriendshipRequestRepository,
@@ -17,6 +17,8 @@ import {
 
 @Injectable()
 export class AcceptFriendshipUseCase {
+  private readonly logger = new Logger(AcceptFriendshipUseCase.name);
+
   constructor(
     @Inject(FRIENDSHIP_REQUEST_REPOSITORY)
     private readonly requestRepository: FriendshipRequestRepository,
@@ -42,6 +44,10 @@ export class AcceptFriendshipUseCase {
       userB: request.receiverId,
     });
     await this.friendshipRepository.save(friendship);
+
+    this.logger.log(
+      `Friendship accepted friendship=${friendship.id} request=${request.id}`,
+    );
 
     return {
       friendshipId: friendship.id,

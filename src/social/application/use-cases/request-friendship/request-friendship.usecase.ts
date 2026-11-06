@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   RequestFriendshipInput,
   RequestFriendshipOutput,
@@ -19,6 +19,8 @@ import { FriendshipAlreadyExists } from 'src/social/domain/errors/friendship-alr
 
 @Injectable()
 export class RequestFriendshipUseCase {
+  private readonly logger = new Logger(RequestFriendshipUseCase.name);
+
   constructor(
     @Inject(FRIENDSHIP_REQUEST_REPOSITORY)
     private readonly requestRepository: FriendshipRequestRepository,
@@ -43,6 +45,10 @@ export class RequestFriendshipUseCase {
     });
 
     await this.requestRepository.save(request);
+
+    this.logger.log(
+      `Friendship requested request=${request.id} sender=${input.senderId} receiver=${input.receiverId}`,
+    );
 
     return {
       requestId: request.id,

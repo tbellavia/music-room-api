@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   PLAYLIST_REPOSITORY,
   PlaylistRepository,
@@ -15,6 +15,8 @@ import { ParticipantNotFound } from 'src/playlist/domain/errors/participant-not-
 
 @Injectable()
 export class UpdateParticipantPrivilegeUseCase {
+  private readonly logger = new Logger(UpdateParticipantPrivilegeUseCase.name);
+
   constructor(
     @Inject(PLAYLIST_REPOSITORY)
     private readonly playlistRepository: PlaylistRepository,
@@ -41,5 +43,8 @@ export class UpdateParticipantPrivilegeUseCase {
     // Invitations already sent by this participant stay valid
     participant.hasPrivilege = input.hasPrivilege;
     await this.participantRepository.save(participant);
+    this.logger.log(
+      `Participant privilege updated playlist=${playlist.id} participant=${participant.id} privilege=${input.hasPrivilege}`,
+    );
   }
 }

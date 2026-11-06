@@ -50,7 +50,11 @@ describe('RegisterAccountUseCase', () => {
 
     const account = await storedAccount(output.id);
     expect(sender.sentMails).toEqual([
-      { email: 'alice@example.com', code: account.otp_code },
+      {
+        accountId: account.id,
+        email: 'alice@example.com',
+        code: account.otp_code,
+      },
     ]);
   });
 

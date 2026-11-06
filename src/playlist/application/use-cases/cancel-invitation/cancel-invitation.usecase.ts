@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   INVITATION_REPOSITORY,
   InvitationRepository,
@@ -8,6 +8,8 @@ import { InvitationNotFound } from 'src/playlist/domain/errors/invitation-not-fo
 
 @Injectable()
 export class CancelInvitationUseCase {
+  private readonly logger = new Logger(CancelInvitationUseCase.name);
+
   constructor(
     @Inject(INVITATION_REPOSITORY)
     private readonly invitationRepository: InvitationRepository,
@@ -23,5 +25,8 @@ export class CancelInvitationUseCase {
     }
 
     await this.invitationRepository.delete(invitation.id);
+    this.logger.log(
+      `Invitation cancelled invitation=${invitation.id} by=${input.accountId}`,
+    );
   }
 }

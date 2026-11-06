@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Manual end-to-end check of public playlist listing and joining.
-# Requires a running API (make start), curl and jq.
+# Requires curl and jq.
+# Run through `make test-e2e`: the API must be in E2E mode to verify the accounts.
 #
-# Usage: ./scripts/test-playlist-join.sh [API_URL]
+# Usage: make test-e2e, or ./scripts/test-playlist-join.sh [API_URL]
 
 API="${1:-http://localhost:3000/api/v1}"
 . "$(dirname "$0")/lib.sh"

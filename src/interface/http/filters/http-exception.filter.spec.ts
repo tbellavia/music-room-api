@@ -6,10 +6,12 @@ import {
 import { PlaylistNotFound } from 'src/playlist/domain/errors/playlist-not-found.error';
 import { RequestValidationFailed } from 'src/interface/http/validation/request-validation-failed.error';
 import { HttpExceptionFilter } from './http-exception.filter';
+import { ERROR_CODE_LOCAL } from 'src/interface/http/middleware/request-logger.middleware';
 
 type FakeResponse = {
   status: jest.Mock<FakeResponse, [number]>;
   json: jest.Mock<void, [unknown]>;
+  locals: Record<string, unknown>;
 };
 
 describe('HttpExceptionFilter', () => {
@@ -34,10 +36,17 @@ describe('HttpExceptionFilter', () => {
     response = {
       status: jest.fn<FakeResponse, [number]>(),
       json: jest.fn<void, [unknown]>(),
+      locals: {},
     };
     response.status.mockReturnValue(response);
     const httpContext = { getResponse: () => response };
     host = { switchToHttp: () => httpContext } as unknown as ArgumentsHost;
+  });
+
+  it('leaves the error code to the request logger', () => {
+    send(new PlaylistNotFound());
+
+    expect(response.locals[ERROR_CODE_LOCAL]).toBe('PLAYLIST_NOT_FOUND');
   });
 
   it('sends a domain error with its status and code', () => {

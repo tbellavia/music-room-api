@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import {
   PLAYLIST_REPOSITORY,
@@ -39,6 +39,8 @@ import { PlaylistFull } from 'src/playlist/domain/errors/playlist-full.error';
 
 @Injectable()
 export class AddTrackUseCase {
+  private readonly logger = new Logger(AddTrackUseCase.name);
+
   constructor(
     @Inject(PLAYLIST_REPOSITORY)
     private readonly playlistRepository: PlaylistRepository,
@@ -90,6 +92,10 @@ export class AddTrackUseCase {
     // The limit and the last position are read then written: one edit at a time
     const track = await this.editLock.runExclusively(playlist.id, () =>
       this.addToPlaylist(playlist, music, input.accountId),
+    );
+
+    this.logger.log(
+      `Track added playlist=${playlist.id} track=${track.id} by=${input.accountId}`,
     );
 
     return {

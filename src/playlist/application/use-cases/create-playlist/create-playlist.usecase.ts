@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import {
   PLAYLIST_REPOSITORY,
@@ -14,6 +14,8 @@ import { Playlist } from 'src/playlist/domain/playlist.entity';
 
 @Injectable()
 export class CreatePlaylistUseCase {
+  private readonly logger = new Logger(CreatePlaylistUseCase.name);
+
   constructor(
     @Inject(PLAYLIST_REPOSITORY)
     private readonly playlistRepository: PlaylistRepository,
@@ -49,6 +51,10 @@ export class CreatePlaylistUseCase {
     });
 
     await this.playlistRepository.save(playlist);
+
+    this.logger.log(
+      `Playlist created playlist=${playlist.id} type=${input.type} owner=${input.ownerId}`,
+    );
 
     return {
       id: playlist.id,

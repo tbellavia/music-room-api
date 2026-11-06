@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   RegisterAccountInput,
   RegisterAccountOutput,
@@ -19,6 +19,8 @@ import { generateOtp } from 'src/shared/otp';
 
 @Injectable()
 export class RegisterAccountUseCase {
+  private readonly logger = new Logger(RegisterAccountUseCase.name);
+
   constructor(
     @Inject(ACCOUNT_REPOSITORY)
     private readonly repository: AccountRepository,
@@ -60,7 +62,10 @@ export class RegisterAccountUseCase {
     // Saved before sending: if the email fails, the account exists and the
     // user can ask for a new code, instead of receiving a code for nothing
     await this.repository.save(account);
+    this.logger.log(`Account registered account=${account.id}`);
+
     await this.verificationCodeSender.send({
+      accountId: account.id,
       email: account.email,
       code: otp.code,
     });
