@@ -9,6 +9,7 @@ import { AccountOrmEntity } from './infrastructure/persistence/typeorm-account.e
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SignInUseCase } from './application/use-cases/sign-in/sign-in.usecase';
+import { MailerService } from 'src/interface/mailer/mailer.service';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { SignInUseCase } from './application/use-cases/sign-in/sign-in.usecase';
     TypeOrmAccountRepository,
     RegisterAccountUseCase,
     SignInUseCase,
+    MailerService,
   ],
   exports: [JwtModule],
 })

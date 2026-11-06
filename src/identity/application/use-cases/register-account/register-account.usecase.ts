@@ -12,6 +12,9 @@ import { Account } from 'src/identity/domain/account.entity';
 import { randomUUID } from 'crypto';
 import { AccountAlreadyExistsError } from 'src/identity/domain/errors/account-already-exists.error';
 import { MailerService } from 'src/interface/mailer/mailer.service';
+import { OTP } from 'src/shared/otp';
+import { OTP_EXPIRY_MINUTES } from 'src/shared/constants';
+import { validationEmailTemplate } from 'src/shared/templates';
 
 @Injectable()
 export class RegisterAccountUseCase {
@@ -32,14 +35,23 @@ export class RegisterAccountUseCase {
       input.password,
     );
 
+    const otp = new OTP().generateWithExpiry(OTP_EXPIRY_MINUTES);
+
     const account = Account.local({
       id: randomUUID(),
       username: input.username,
       email: input.email,
       password: hashedPassword,
+      otp_code: otp.code,
+      otp_expiry: otp.expiry,
     });
 
     await this.repository.save(account);
+    await this.mailer.sendMail({
+      to: input.email,
+      subject: 'Votre code de validation',
+      html: validationEmailTemplate(otp.code),
+    });
     return { id: account.id };
   }
 }

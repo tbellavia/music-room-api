@@ -17,3 +17,5 @@ export const PLAYLIST_ZONE_RADIUS_METERS: number = 500;
 
 // Waiting tracks of a playlist (unplayed for VOTE, all of them for EDITOR)
 export const PLAYLIST_MAX_TRACKS: number = 200;
+
+export const OTP_EXPIRY_MINUTES: number = 15;
