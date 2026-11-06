@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { compareSync, genSalt, hash } from 'bcrypt-ts';
+import { PasswordHasher } from 'src/identity/application/ports/password-hasher';
 
 @Injectable()
-export class BcryptPasswordService {
+export class BcryptPasswordService implements PasswordHasher {
   constructor(private readonly config: ConfigService) {}
 
   async hash(password: string): Promise<string> {

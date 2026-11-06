@@ -58,10 +58,13 @@
 }
 ```
 
-| Statut | Réponse |
-| --- | --- |
-| 201 | `{ id: string }` |
-| 409 | `ACCOUNT_ALREADY_EXISTS` |
+Crée un compte **inactif** et envoie par email un code de validation à 6 chiffres, valable 15 minutes. Le compte doit être validé via `POST /identity/verify` avant de pouvoir se connecter.
+
+| Statut | Réponse | Détail |
+| --- | --- | --- |
+| 201 | `{ id: string }` | |
+| 409 | `ACCOUNT_ALREADY_EXISTS` | Email ou username déjà utilisé |
+| 503 | `VERIFICATION_EMAIL_NOT_SENT` | Le compte **est créé** mais l'email n'est pas parti : demander un nouveau code via `POST /identity/verify/resend` |
 
 ### `POST /identity/login` · public
 
@@ -73,10 +76,52 @@
 }
 ```
 
-| Statut | Réponse |
-| --- | --- |
-| 201 | `{ access_token: string }` |
-| 401 | `INVALID_CREDENTIALS` |
+| Statut | Réponse | Détail |
+| --- | --- | --- |
+| 201 | `{ access_token: string }` | |
+| 401 | `INVALID_CREDENTIALS` | |
+| 403 | `ACCOUNT_NOT_ACTIVE` | Bons identifiants, mais compte pas encore validé |
+
+### `POST /identity/verify` · public
+
+Valide le compte avec le code reçu par email. Un compte Google est déjà validé.
+
+```ts
+// Body
+{
+  username: string  // 3-20 caractères
+  otp_code: string  // exactement 6 chiffres
+}
+```
+
+| Statut | Réponse | Détail |
+| --- | --- | --- |
+| 201 | _(vide)_ | Compte validé, la connexion est possible |
+| 401 | `INVALID_CREDENTIALS` | Username inconnu |
+| 401 | `INVALID_OTP` | Code faux, expiré ou remplacé par un plus récent |
+| 409 | `ACCOUNT_ALREADY_ACTIVE` | |
+| 429 | `TOO_MANY_OTP_ATTEMPTS` | 5 codes faux pour ce code : en demander un nouveau |
+
+### `POST /identity/verify/resend` · public
+
+Génère un nouveau code (l'ancien devient invalide), remet le compteur d'essais à zéro et l'envoie par email.
+
+**Anti-spam :** un seul code toutes les **60 secondes** par compte, à compter du dernier code envoyé (inscription comprise). Cela empêche d'inonder la boîte mail d'un utilisateur, et de contourner la limite de 5 essais en redemandant un code en boucle. Côté client, désactiver le bouton « Renvoyer le code » pendant 60 s.
+
+```ts
+// Body
+{
+  username: string  // 3-20 caractères
+}
+```
+
+| Statut | Réponse | Détail |
+| --- | --- | --- |
+| 201 | _(vide)_ | |
+| 401 | `INVALID_CREDENTIALS` | Username inconnu |
+| 409 | `ACCOUNT_ALREADY_ACTIVE` | |
+| 429 | `OTP_RESEND_TOO_SOON` | Moins de 60 s depuis le dernier code : aucun email envoyé, le code précédent reste valable |
+| 503 | `VERIFICATION_EMAIL_NOT_SENT` | Nouveau code enregistré mais non envoyé : réessayer après 60 s |
 
 ### `GET /identity/profile`
 

@@ -5,11 +5,9 @@ import {
 } from '../../ports/account.repository';
 import { VerifyAccountInput } from './verify-account.contracts';
 import { AccountNotFound } from 'src/identity/domain/errors/account-not-found.error';
-import { AuthMethod } from 'src/identity/domain/auth-method.enum';
-import { Account } from 'src/identity/domain/account.entity';
-import { OTP } from 'src/shared/otp';
 import { AccountAlreadyActive } from 'src/identity/domain/errors/account-already-active.error';
-import { InvalidOTP } from 'src/identity/domain/errors/invalid-otp.error';
+import { TooManyOtpAttempts } from 'src/identity/domain/errors/too-many-otp-attempts.error';
+import { OTP_MAX_ATTEMPTS } from 'src/shared/constants';
 
 @Injectable()
 export class VerifyAccountUseCase {
@@ -18,38 +16,28 @@ export class VerifyAccountUseCase {
     private readonly repository: AccountRepository,
   ) {}
 
-  async execute(input: VerifyAccountInput) {
+  async execute(input: VerifyAccountInput): Promise<void> {
     const account = await this.repository.findByUsername(input.username);
 
     if (!account) {
       throw new AccountNotFound();
     }
-    if (this.isAlreadyActive(account)) {
+    // Checked here too so that an active account does not consume attempts
+    if (account.is_active) {
       throw new AccountAlreadyActive();
     }
-    console.log(account);
-    console.log('====================');
-    console.log(input);
-    if (!this.isValidOTP(account, input.otp_code)) {
-      throw new InvalidOTP();
-    }
-    account.activate();
-    await this.repository.save(account);
-  }
 
-  private isValidOTP(account: Account, otp_code: string | null): boolean {
-    const otp = new OTP();
-
-    return (
-      account.otp_code === otp_code &&
-      !otp.hasExpired(account.otp_expiry as Date)
+    // The attempt is consumed before comparing the code: parallel guesses
+    // are bounded by the database, not by the counter loaded above
+    const hasAttemptLeft = await this.repository.consumeOtpAttempt(
+      account.id,
+      OTP_MAX_ATTEMPTS,
     );
-  }
+    if (!hasAttemptLeft) {
+      throw new TooManyOtpAttempts();
+    }
 
-  private isAlreadyActive(account: Account): boolean {
-    const isOAuthAccount = account.auth_method !== AuthMethod.LOCAL;
-    const isAlreadyActive = !account.otp_code && !account.otp_expiry;
-
-    return isAlreadyActive || isOAuthAccount;
+    account.activate(input.otp_code, new Date());
+    await this.repository.save(account);
   }
 }

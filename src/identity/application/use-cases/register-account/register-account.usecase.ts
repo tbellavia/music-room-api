@@ -7,27 +7,36 @@ import {
   ACCOUNT_REPOSITORY,
   AccountRepository,
 } from '../../ports/account.repository';
-import { BcryptPasswordService } from 'src/identity/infrastructure/crypto/bcrypt-password.service';
+import {
+  VERIFICATION_CODE_SENDER,
+  VerificationCodeSender,
+} from '../../ports/verification-code-sender';
+import { PASSWORD_HASHER, PasswordHasher } from '../../ports/password-hasher';
 import { Account } from 'src/identity/domain/account.entity';
 import { randomUUID } from 'crypto';
 import { AccountAlreadyExistsError } from 'src/identity/domain/errors/account-already-exists.error';
-import { MailerService } from 'src/interface/mailer/mailer.service';
-import { OTP } from 'src/shared/otp';
-import { OTP_EXPIRY_MINUTES } from 'src/shared/constants';
-import { validationEmailTemplate } from 'src/shared/templates';
+import { generateOtp } from 'src/shared/otp';
 
 @Injectable()
 export class RegisterAccountUseCase {
   constructor(
     @Inject(ACCOUNT_REPOSITORY)
     private readonly repository: AccountRepository,
-    private readonly passwordHasher: BcryptPasswordService,
-    private readonly mailer: MailerService,
+    @Inject(PASSWORD_HASHER)
+    private readonly passwordHasher: PasswordHasher,
+    @Inject(VERIFICATION_CODE_SENDER)
+    private readonly verificationCodeSender: VerificationCodeSender,
   ) {}
 
   async execute(input: RegisterAccountInput): Promise<RegisterAccountOutput> {
-    const found = await this.repository.findByEmail(input.email);
-    if (found) {
+    const accountWithSameEmail = await this.repository.findByEmail(input.email);
+    if (accountWithSameEmail) {
+      throw new AccountAlreadyExistsError();
+    }
+    const accountWithSameUsername = await this.repository.findByUsername(
+      input.username,
+    );
+    if (accountWithSameUsername) {
       throw new AccountAlreadyExistsError();
     }
 
@@ -35,7 +44,8 @@ export class RegisterAccountUseCase {
       input.password,
     );
 
-    const otp = new OTP().generateWithExpiry(OTP_EXPIRY_MINUTES);
+    const now = new Date();
+    const otp = generateOtp(now);
 
     const account = Account.local({
       id: randomUUID(),
@@ -44,14 +54,16 @@ export class RegisterAccountUseCase {
       password: hashedPassword,
       otp_code: otp.code,
       otp_expiry: otp.expiry,
+      otp_sent_at: now,
     });
 
-    await this.mailer.sendMail({
-      to: input.email,
-      subject: 'Votre code de validation',
-      html: validationEmailTemplate(otp.code),
-    });
+    // Saved before sending: if the email fails, the account exists and the
+    // user can ask for a new code, instead of receiving a code for nothing
     await this.repository.save(account);
+    await this.verificationCodeSender.send({
+      email: account.email,
+      code: otp.code,
+    });
     return { id: account.id };
   }
 }

@@ -1,34 +1,42 @@
-export class OTP {
-  generateWithExpiry(minutes: number): {
-    code: string;
-    expiry: Date;
-  } {
-    return {
-      code: this.generateOTP(),
-      expiry: this.createExpiryDateInMinutes(minutes),
-    };
+import { randomInt, timingSafeEqual } from 'crypto';
+import { OTP_EXPIRY_MINUTES, OTP_LENGTH } from 'src/shared/constants';
+
+export type GeneratedOtp = {
+  code: string;
+  expiry: Date;
+};
+
+export function generateOtp(now: Date): GeneratedOtp {
+  return {
+    code: generateOtpCode(),
+    expiry: computeOtpExpiry(now),
+  };
+}
+
+// Constant-time comparison: the response time does not leak how many
+// leading digits are right
+export function isSameOtpCode(expectedCode: string, receivedCode: string) {
+  const expectedBuffer = Buffer.from(expectedCode);
+  const receivedBuffer = Buffer.from(receivedCode);
+
+  if (expectedBuffer.length !== receivedBuffer.length) {
+    return false;
   }
+  return timingSafeEqual(expectedBuffer, receivedBuffer);
+}
 
-  hasExpired(expiryDate: Date): boolean {
-    const date = new Date();
+// randomInt relies on a cryptographically secure generator, unlike Math.random
+function generateOtpCode(): string {
+  let code = '';
 
-    return date.getTime() > expiryDate.getTime();
+  for (let i = 0; i < OTP_LENGTH; i++) {
+    code += randomInt(0, 10).toString();
   }
+  return code;
+}
 
-  private generateOTP(): string {
-    const digits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-    let otp = '';
+function computeOtpExpiry(now: Date): Date {
+  const expiryInMilliseconds = OTP_EXPIRY_MINUTES * 60 * 1000;
 
-    for (let i = 0; i < 6; i++) {
-      otp += digits[Math.floor(Math.random() * digits.length)];
-    }
-    return otp;
-  }
-
-  private createExpiryDateInMinutes(minutes: number): Date {
-    const expiryDate = new Date();
-    expiryDate.setMinutes(expiryDate.getMinutes() + minutes);
-
-    return expiryDate;
-  }
+  return new Date(now.getTime() + expiryInMilliseconds);
 }

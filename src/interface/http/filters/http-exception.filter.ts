@@ -41,6 +41,7 @@ import { PlaylistFull } from 'src/playlist/domain/errors/playlist-full.error';
 import { NotAnEditorPlaylist } from 'src/playlist/domain/errors/not-an-editor-playlist.error';
 import { InvalidMove } from 'src/playlist/domain/errors/invalid-move.error';
 import {
+  OTP_RESEND_COOLDOWN_SECONDS,
   PLAYLIST_MAX_TRACKS,
   PLAYLIST_ZONE_RADIUS_METERS,
 } from 'src/shared/constants';
@@ -54,6 +55,9 @@ import { RequestValidationFailed } from 'src/interface/http/validation/request-v
 import { AccountNotActive } from 'src/identity/domain/errors/account-not-active.error';
 import { AccountAlreadyActive } from 'src/identity/domain/errors/account-already-active.error';
 import { InvalidOTP } from 'src/identity/domain/errors/invalid-otp.error';
+import { TooManyOtpAttempts } from 'src/identity/domain/errors/too-many-otp-attempts.error';
+import { OtpResendTooSoon } from 'src/identity/domain/errors/otp-resend-too-soon.error';
+import { VerificationEmailNotSent } from 'src/identity/domain/errors/verification-email-not-sent.error';
 
 type ErrorResponse = {
   status: number;
@@ -110,7 +114,32 @@ const DOMAIN_ERRORS = new Map<unknown, ErrorResponse>([
     {
       status: 401,
       error: 'INVALID_OTP',
-      message: 'Invalid otp',
+      message: 'Invalid or expired code',
+    },
+  ],
+  [
+    TooManyOtpAttempts,
+    {
+      status: 429,
+      error: 'TOO_MANY_OTP_ATTEMPTS',
+      message: 'Too many wrong codes, request a new one',
+    },
+  ],
+  [
+    OtpResendTooSoon,
+    {
+      status: 429,
+      error: 'OTP_RESEND_TOO_SOON',
+      message: `Wait ${OTP_RESEND_COOLDOWN_SECONDS} seconds between two codes`,
+    },
+  ],
+  // The account is saved before the email is sent: only the email is missing
+  [
+    VerificationEmailNotSent,
+    {
+      status: 503,
+      error: 'VERIFICATION_EMAIL_NOT_SENT',
+      message: 'Verification email could not be sent, request a new code',
     },
   ],
   // social

@@ -1,4 +1,6 @@
-export function validationEmailTemplate(otp: string): string {
+import { OTP_EXPIRY_MINUTES } from 'src/shared/constants';
+
+export function verificationCodeTemplate(code: string): string {
   return `
 <!doctype html>
 <html lang="fr">
@@ -6,7 +8,7 @@ export function validationEmailTemplate(otp: string): string {
   <meta charset="utf-8">
   <meta name="x-apple-disable-message-reformatting">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Code de réinitialisation</title>
+  <title>Code de validation</title>
   <style>
     body { margin:0; padding:0; background:#f6f9fc; color:#1a202c; }
     .wrapper { width:100%; padding:24px; background:#f6f9fc; }
@@ -41,8 +43,9 @@ export function validationEmailTemplate(otp: string): string {
     <div class="container" role="article" aria-roledescription="email">
       <div class="content">
         <p>Bonjour,</p>
-        <p>Voici votre code de validation:</p>
-        <span class="otp">${otp}</span>
+        <p>Voici votre code de validation :</p>
+        <span class="otp">${code}</span>
+        <p class="muted">Ce code est valable ${OTP_EXPIRY_MINUTES} minutes.</p>
         <p class="muted">Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet e-mail.</p>
       </div>
     </div>
