@@ -8,6 +8,7 @@ import { AccountNotFound } from 'src/identity/domain/errors/account-not-found.er
 import { BcryptPasswordService } from 'src/identity/infrastructure/crypto/bcrypt-password.service';
 import { Unauthorized } from 'src/identity/domain/errors/unauthorized.error';
 import { JwtService } from '@nestjs/jwt';
+import { AccountNotActive } from 'src/identity/domain/errors/account-not-active.error';
 
 @Injectable()
 export class SignInUseCase {
@@ -27,6 +28,9 @@ export class SignInUseCase {
 
     if (!this.passwordService.compare(input.password, account.password)) {
       throw new Unauthorized();
+    }
+    if (!account.is_active) {
+      throw new AccountNotActive();
     }
 
     const payload = { sub: account.id, username: account.username };
