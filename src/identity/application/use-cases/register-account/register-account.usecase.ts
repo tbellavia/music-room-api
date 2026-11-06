@@ -11,6 +11,7 @@ import { BcryptPasswordService } from 'src/identity/infrastructure/crypto/bcrypt
 import { Account } from 'src/identity/domain/account.entity';
 import { randomUUID } from 'crypto';
 import { AccountAlreadyExistsError } from 'src/identity/domain/errors/account-already-exists.error';
+import { MailerService } from 'src/interface/mailer/mailer.service';
 
 @Injectable()
 export class RegisterAccountUseCase {
@@ -18,6 +19,7 @@ export class RegisterAccountUseCase {
     @Inject(ACCOUNT_REPOSITORY)
     private readonly repository: AccountRepository,
     private readonly passwordHasher: BcryptPasswordService,
+    private readonly mailer: MailerService,
   ) {}
 
   async execute(input: RegisterAccountInput): Promise<RegisterAccountOutput> {
