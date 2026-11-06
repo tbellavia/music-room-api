@@ -17,4 +17,10 @@ export class AccountOrmEntity {
 
   @Column({ type: 'enum', enum: AuthMethod })
   auth_method: AuthMethod;
+
+  @Column({ type: 'varchar', length: 6, nullable: true, default: null })
+  otp_code?: string;
+
+  @Column({ type: 'boolean', default: false })
+  is_active: boolean;
 }

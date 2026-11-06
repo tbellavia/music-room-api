@@ -10,6 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import { SocialModule } from './social/social.module';
 import { MusicModule } from './music/music.module';
 import { PlaylistModule } from './playlist/playlist.module';
+import { MailerService } from './interface/mailer/mailer.service';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { PlaylistModule } from './playlist/playlist.module';
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
+    MailerService,
   ],
 })
 export class AppModule {}

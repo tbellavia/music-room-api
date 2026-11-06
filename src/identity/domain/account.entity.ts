@@ -6,6 +6,8 @@ export class Account {
     public readonly username: string,
     public readonly email: string,
     public readonly password: string,
+    public readonly otp_code: string | null,
+    public readonly is_active: boolean,
     public readonly auth_method: AuthMethod,
   ) {}
 
@@ -20,6 +22,8 @@ export class Account {
       infos.username,
       infos.email,
       infos.password,
+      null,
+      false,
       AuthMethod.LOCAL,
     );
   }
@@ -35,6 +39,8 @@ export class Account {
       infos.email,
       infos.username,
       infos.password,
+      null,
+      true,
       AuthMethod.GOOGLE,
     );
   }
