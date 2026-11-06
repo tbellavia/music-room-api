@@ -4,12 +4,15 @@ import { RegisterAccountDto } from './dto/register-account.dto';
 import { SignInDto } from './dto/sign-in.dto';
 import { SignInUseCase } from 'src/identity/application/use-cases/sign-in/sign-in.usecase';
 import { Public } from 'src/interface/http/decorators/public.decorator';
+import { VerifyDto } from './dto/verify.dto';
+import { VerifyAccountUseCase } from 'src/identity/application/use-cases/verify/verify-account.usecase';
 
 @Controller('identity')
 export class IdentityController {
   constructor(
     private readonly registerAccount: RegisterAccountUseCase,
     private readonly signInAccount: SignInUseCase,
+    private readonly verifyAccount: VerifyAccountUseCase,
   ) {}
 
   @Public()
@@ -28,6 +31,15 @@ export class IdentityController {
     return await this.signInAccount.execute({
       username: signInDto.username,
       password: signInDto.password,
+    });
+  }
+
+  @Public()
+  @Post('verify')
+  async verify(@Body() verifyDto: VerifyDto) {
+    await this.verifyAccount.execute({
+      username: verifyDto.username,
+      otp_code: verifyDto.otp_code,
     });
   }
 

@@ -10,6 +10,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SignInUseCase } from './application/use-cases/sign-in/sign-in.usecase';
 import { MailerService } from 'src/interface/mailer/mailer.service';
+import { VerifyAccountUseCase } from './application/use-cases/verify/verify-account.usecase';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { MailerService } from 'src/interface/mailer/mailer.service';
     TypeOrmAccountRepository,
     RegisterAccountUseCase,
     SignInUseCase,
+    VerifyAccountUseCase,
     MailerService,
   ],
   exports: [JwtModule],

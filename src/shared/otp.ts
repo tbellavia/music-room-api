@@ -9,6 +9,12 @@ export class OTP {
     };
   }
 
+  hasExpired(expiryDate: Date): boolean {
+    const date = new Date();
+
+    return date.getTime() > expiryDate.getTime();
+  }
+
   private generateOTP(): string {
     const digits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
     let otp = '';
