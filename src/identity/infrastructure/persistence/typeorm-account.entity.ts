@@ -24,6 +24,12 @@ export class AccountOrmEntity {
   @Column({ type: 'timestamp', nullable: true, default: null })
   otp_expiry: Date | null;
 
+  @Column({ type: 'timestamp', nullable: true, default: null })
+  otp_sent_at: Date | null;
+
+  @Column({ type: 'int', default: 0 })
+  otp_attempts: number;
+
   @Column({ type: 'boolean', default: false })
   is_active: boolean;
 }

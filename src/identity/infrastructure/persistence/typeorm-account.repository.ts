@@ -3,7 +3,7 @@ import { AccountRepository } from '../../application/ports/account.repository';
 import { Account } from '../../domain/account.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AccountOrmEntity } from './typeorm-account.entity';
-import { Repository } from 'typeorm';
+import { LessThan, Repository } from 'typeorm';
 import { AccountAlreadyExistsError } from '../../domain/errors/account-already-exists.error';
 import { isUniqueViolation } from '../../../infrastructure/database/error-utils';
 
@@ -38,9 +38,11 @@ export class TypeOrmAccountRepository implements AccountRepository {
     try {
       await this.repository.save(this.toOrm(account));
     } catch (error) {
+      // Two registrations racing on the same email or username
       if (isUniqueViolation(error)) {
         throw new AccountAlreadyExistsError();
       }
+      throw error;
     }
   }
 
@@ -54,6 +56,21 @@ export class TypeOrmAccountRepository implements AccountRepository {
     return this.toDomain(entity);
   }
 
+  // A single UPDATE ... WHERE otp_attempts < max: the check and the increment
+  // cannot be interleaved by another request
+  async consumeOtpAttempt(
+    accountId: string,
+    maxAttempts: number,
+  ): Promise<boolean> {
+    const result = await this.repository.increment(
+      { id: accountId, otp_attempts: LessThan(maxAttempts) },
+      'otp_attempts',
+      1,
+    );
+
+    return result.affected === 1;
+  }
+
   private toDomain(orm: AccountOrmEntity): Account {
     return new Account(
       orm.id,
@@ -62,6 +79,8 @@ export class TypeOrmAccountRepository implements AccountRepository {
       orm.password,
       orm.otp_code,
       orm.otp_expiry,
+      orm.otp_sent_at,
+      orm.otp_attempts,
       orm.is_active,
       orm.auth_method,
     );
@@ -75,6 +94,8 @@ export class TypeOrmAccountRepository implements AccountRepository {
       password: account.password,
       otp_code: account.otp_code,
       otp_expiry: account.otp_expiry,
+      otp_sent_at: account.otp_sent_at,
+      otp_attempts: account.otp_attempts,
       is_active: account.is_active,
       auth_method: account.auth_method,
     };

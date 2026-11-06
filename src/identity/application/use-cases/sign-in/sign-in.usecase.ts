@@ -5,7 +5,7 @@ import {
   AccountRepository,
 } from '../../ports/account.repository';
 import { AccountNotFound } from 'src/identity/domain/errors/account-not-found.error';
-import { BcryptPasswordService } from 'src/identity/infrastructure/crypto/bcrypt-password.service';
+import { PASSWORD_HASHER, PasswordHasher } from '../../ports/password-hasher';
 import { Unauthorized } from 'src/identity/domain/errors/unauthorized.error';
 import { JwtService } from '@nestjs/jwt';
 import { AccountNotActive } from 'src/identity/domain/errors/account-not-active.error';
@@ -15,7 +15,8 @@ export class SignInUseCase {
   constructor(
     @Inject(ACCOUNT_REPOSITORY)
     private readonly repository: AccountRepository,
-    private readonly passwordService: BcryptPasswordService,
+    @Inject(PASSWORD_HASHER)
+    private readonly passwordService: PasswordHasher,
     private readonly jwtService: JwtService,
   ) {}
 

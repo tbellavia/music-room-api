@@ -9,8 +9,11 @@ import { AccountOrmEntity } from './infrastructure/persistence/typeorm-account.e
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SignInUseCase } from './application/use-cases/sign-in/sign-in.usecase';
-import { MailerService } from 'src/interface/mailer/mailer.service';
 import { VerifyAccountUseCase } from './application/use-cases/verify/verify-account.usecase';
+import { ResendVerificationCodeUseCase } from './application/use-cases/resend-verification-code/resend-verification-code.usecase';
+import { VERIFICATION_CODE_SENDER } from './application/ports/verification-code-sender';
+import { PASSWORD_HASHER } from './application/ports/password-hasher';
+import { NodemailerVerificationCodeSender } from './infrastructure/mail/nodemailer-verification-code-sender';
 
 @Module({
   imports: [
@@ -31,12 +34,19 @@ import { VerifyAccountUseCase } from './application/use-cases/verify/verify-acco
       provide: ACCOUNT_REPOSITORY,
       useClass: TypeOrmAccountRepository,
     },
-    BcryptPasswordService,
+    {
+      provide: VERIFICATION_CODE_SENDER,
+      useClass: NodemailerVerificationCodeSender,
+    },
+    {
+      provide: PASSWORD_HASHER,
+      useClass: BcryptPasswordService,
+    },
     TypeOrmAccountRepository,
     RegisterAccountUseCase,
     SignInUseCase,
     VerifyAccountUseCase,
-    MailerService,
+    ResendVerificationCodeUseCase,
   ],
   exports: [JwtModule],
 })

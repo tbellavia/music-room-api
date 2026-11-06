@@ -6,6 +6,8 @@ import { SignInUseCase } from 'src/identity/application/use-cases/sign-in/sign-i
 import { Public } from 'src/interface/http/decorators/public.decorator';
 import { VerifyDto } from './dto/verify.dto';
 import { VerifyAccountUseCase } from 'src/identity/application/use-cases/verify/verify-account.usecase';
+import { ResendVerificationCodeDto } from './dto/resend-verification-code.dto';
+import { ResendVerificationCodeUseCase } from 'src/identity/application/use-cases/resend-verification-code/resend-verification-code.usecase';
 
 @Controller('identity')
 export class IdentityController {
@@ -13,6 +15,7 @@ export class IdentityController {
     private readonly registerAccount: RegisterAccountUseCase,
     private readonly signInAccount: SignInUseCase,
     private readonly verifyAccount: VerifyAccountUseCase,
+    private readonly resendVerificationCode: ResendVerificationCodeUseCase,
   ) {}
 
   @Public()
@@ -40,6 +43,14 @@ export class IdentityController {
     await this.verifyAccount.execute({
       username: verifyDto.username,
       otp_code: verifyDto.otp_code,
+    });
+  }
+
+  @Public()
+  @Post('verify/resend')
+  async resendCode(@Body() resendDto: ResendVerificationCodeDto) {
+    await this.resendVerificationCode.execute({
+      username: resendDto.username,
     });
   }
 
