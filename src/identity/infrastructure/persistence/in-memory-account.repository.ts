@@ -1,6 +1,7 @@
 import { AccountRepository } from 'src/identity/application/ports/account.repository';
 import { Account } from 'src/identity/domain/account.entity';
-import { AccountAlreadyExistsError } from 'src/identity/domain/errors/account-already-exists.error';
+import { EmailAlreadyExists } from 'src/identity/domain/errors/email-already-exists.error';
+import { UsernameAlreadyExists } from 'src/identity/domain/errors/username-already-exists.error';
 
 // Test double for use-case specs: no database involved.
 // Stores and returns copies, like a database: modifying a loaded account does
@@ -38,10 +39,11 @@ export class InMemoryAccountRepository implements AccountRepository {
   save(account: Account): Promise<void> {
     for (const storedAccount of this.accounts.values()) {
       const isOtherAccount = storedAccount.id !== account.id;
-      const isSameEmail = storedAccount.email === account.email;
-      const isSameUsername = storedAccount.username === account.username;
-      if (isOtherAccount && (isSameEmail || isSameUsername)) {
-        return Promise.reject(new AccountAlreadyExistsError());
+      if (isOtherAccount && storedAccount.email === account.email) {
+        return Promise.reject(new EmailAlreadyExists());
+      }
+      if (isOtherAccount && storedAccount.username === account.username) {
+        return Promise.reject(new UsernameAlreadyExists());
       }
     }
     this.accounts.set(account.id, this.copy(account));

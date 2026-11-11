@@ -7,7 +7,8 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { AccountAlreadyExistsError } from 'src/identity/domain/errors/account-already-exists.error';
+import { EmailAlreadyExists } from 'src/identity/domain/errors/email-already-exists.error';
+import { UsernameAlreadyExists } from 'src/identity/domain/errors/username-already-exists.error';
 import { AccountNotFound } from 'src/identity/domain/errors/account-not-found.error';
 import { Unauthorized } from 'src/identity/domain/errors/unauthorized.error';
 import { AlreadyParticipant } from 'src/playlist/domain/errors/already-participant.error';
@@ -70,11 +71,19 @@ type ErrorResponse = {
 const DOMAIN_ERRORS = new Map<unknown, ErrorResponse>([
   // identity
   [
-    AccountAlreadyExistsError,
+    EmailAlreadyExists,
     {
       status: 409,
-      error: 'ACCOUNT_ALREADY_EXISTS',
-      message: 'Account already exists',
+      error: 'EMAIL_ALREADY_EXISTS',
+      message: 'This email is already used',
+    },
+  ],
+  [
+    UsernameAlreadyExists,
+    {
+      status: 409,
+      error: 'USERNAME_ALREADY_EXISTS',
+      message: 'This username is already taken',
     },
   ],
   // Same response for both, so login does not reveal which usernames exist

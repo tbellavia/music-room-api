@@ -1,15 +1,21 @@
 import { AuthMethod } from 'src/identity/domain/auth-method.enum';
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { Column, Entity, PrimaryColumn, Unique } from 'typeorm';
+
+// Named so that a violation tells which field is already used
+export const ACCOUNT_EMAIL_UNIQUE_CONSTRAINT = 'UQ_accounts_email';
+export const ACCOUNT_USERNAME_UNIQUE_CONSTRAINT = 'UQ_accounts_username';
 
 @Entity('accounts')
+@Unique(ACCOUNT_EMAIL_UNIQUE_CONSTRAINT, ['email'])
+@Unique(ACCOUNT_USERNAME_UNIQUE_CONSTRAINT, ['username'])
 export class AccountOrmEntity {
   @PrimaryColumn()
   id: string;
 
-  @Column({ unique: true })
+  @Column()
   email: string;
 
-  @Column({ unique: true })
+  @Column()
   username: string;
 
   @Column()

@@ -2,10 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { AccountRepository } from '../../application/ports/account.repository';
 import { Account } from '../../domain/account.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { AccountOrmEntity } from './typeorm-account.entity';
+import {
+  ACCOUNT_EMAIL_UNIQUE_CONSTRAINT,
+  ACCOUNT_USERNAME_UNIQUE_CONSTRAINT,
+  AccountOrmEntity,
+} from './typeorm-account.entity';
 import { LessThan, Repository } from 'typeorm';
-import { AccountAlreadyExistsError } from '../../domain/errors/account-already-exists.error';
-import { isUniqueViolation } from '../../../infrastructure/database/error-utils';
+import { EmailAlreadyExists } from '../../domain/errors/email-already-exists.error';
+import { UsernameAlreadyExists } from '../../domain/errors/username-already-exists.error';
+import { violatedUniqueConstraint } from '../../../infrastructure/database/error-utils';
 
 @Injectable()
 export class TypeOrmAccountRepository implements AccountRepository {
@@ -39,8 +44,12 @@ export class TypeOrmAccountRepository implements AccountRepository {
       await this.repository.save(this.toOrm(account));
     } catch (error) {
       // Two registrations racing on the same email or username
-      if (isUniqueViolation(error)) {
-        throw new AccountAlreadyExistsError();
+      const constraint = violatedUniqueConstraint(error);
+      if (constraint === ACCOUNT_EMAIL_UNIQUE_CONSTRAINT) {
+        throw new EmailAlreadyExists();
+      }
+      if (constraint === ACCOUNT_USERNAME_UNIQUE_CONSTRAINT) {
+        throw new UsernameAlreadyExists();
       }
       throw error;
     }

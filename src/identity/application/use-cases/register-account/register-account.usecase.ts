@@ -14,7 +14,8 @@ import {
 import { PASSWORD_HASHER, PasswordHasher } from '../../ports/password-hasher';
 import { Account } from 'src/identity/domain/account.entity';
 import { randomUUID } from 'crypto';
-import { AccountAlreadyExistsError } from 'src/identity/domain/errors/account-already-exists.error';
+import { EmailAlreadyExists } from 'src/identity/domain/errors/email-already-exists.error';
+import { UsernameAlreadyExists } from 'src/identity/domain/errors/username-already-exists.error';
 import { generateOtp } from 'src/shared/otp';
 
 @Injectable()
@@ -33,13 +34,13 @@ export class RegisterAccountUseCase {
   async execute(input: RegisterAccountInput): Promise<RegisterAccountOutput> {
     const accountWithSameEmail = await this.repository.findByEmail(input.email);
     if (accountWithSameEmail) {
-      throw new AccountAlreadyExistsError();
+      throw new EmailAlreadyExists();
     }
     const accountWithSameUsername = await this.repository.findByUsername(
       input.username,
     );
     if (accountWithSameUsername) {
-      throw new AccountAlreadyExistsError();
+      throw new UsernameAlreadyExists();
     }
 
     const hashedPassword: string = await this.passwordHasher.hash(

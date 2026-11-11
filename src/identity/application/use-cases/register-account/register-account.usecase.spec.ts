@@ -2,7 +2,8 @@ import { InMemoryAccountRepository } from 'src/identity/infrastructure/persisten
 import { InMemoryVerificationCodeSender } from 'src/identity/infrastructure/mail/in-memory-verification-code-sender';
 import { FakePasswordHasher } from 'src/identity/infrastructure/crypto/fake-password-hasher';
 import { Account } from 'src/identity/domain/account.entity';
-import { AccountAlreadyExistsError } from 'src/identity/domain/errors/account-already-exists.error';
+import { EmailAlreadyExists } from 'src/identity/domain/errors/email-already-exists.error';
+import { UsernameAlreadyExists } from 'src/identity/domain/errors/username-already-exists.error';
 import { VerificationEmailNotSent } from 'src/identity/domain/errors/verification-email-not-sent.error';
 import { RegisterAccountInput } from './register-account.contracts';
 import { RegisterAccountUseCase } from './register-account.usecase';
@@ -64,7 +65,7 @@ describe('RegisterAccountUseCase', () => {
 
     const registration = useCase.execute(sameEmailInput);
 
-    await expect(registration).rejects.toThrow(AccountAlreadyExistsError);
+    await expect(registration).rejects.toThrow(EmailAlreadyExists);
     expect(sender.sentMails).toHaveLength(1);
   });
 
@@ -74,8 +75,33 @@ describe('RegisterAccountUseCase', () => {
 
     const registration = useCase.execute(sameUsernameInput);
 
-    await expect(registration).rejects.toThrow(AccountAlreadyExistsError);
+    await expect(registration).rejects.toThrow(UsernameAlreadyExists);
     expect(sender.sentMails).toHaveLength(1);
+  });
+
+  it('reports the email first when both are already used', async () => {
+    await useCase.execute(aliceInput);
+
+    const registration = useCase.execute(aliceInput);
+
+    await expect(registration).rejects.toThrow(EmailAlreadyExists);
+  });
+
+  it('tells which field is taken when two registrations race on the same username', async () => {
+    const bobInput = { ...aliceInput, email: 'bob@example.com' };
+
+    // Both pass the checks before either is saved: the unique constraint decides
+    const results = await Promise.allSettled([
+      useCase.execute(aliceInput),
+      useCase.execute(bobInput),
+    ]);
+
+    const statuses = results.map((result) => result.status);
+    expect(statuses).toEqual(['fulfilled', 'rejected']);
+    const bobResult = results[1];
+    if (bobResult.status === 'rejected') {
+      expect(bobResult.reason).toBeInstanceOf(UsernameAlreadyExists);
+    }
   });
 
   it('keeps the account when the email fails, so a new code can be asked', async () => {
