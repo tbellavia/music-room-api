@@ -33,7 +33,7 @@ non respectée, par exemple :
 { "status": 400, "error": "USERNAME_TOO_SHORT", "message": "username must be longer than or equal to 3 characters" }
 ```
 
-- Une seule erreur est renvoyée : celle du **premier champ invalide**, dans l'ordre du body documenté pour la route.
+- Une seule erreur est renvoyée : celle du **premier champ invalide**, dans l'ordre du body documenté pour la route. Les lignes 400 de chaque route suivent ce même ordre.
   Une fois ce champ corrigé, la requête suivante signale le suivant.
 - Pour un champ donné, la vérification du type passe en premier : un champ absent ou du mauvais type donne
   `<CHAMP>_INVALID`, jamais `_TOO_SHORT` ou `_OUT_OF_RANGE`.
@@ -113,6 +113,13 @@ Crée un compte **inactif** et envoie par email un code de validation à 6 chiff
 | Statut | Réponse | Détail |
 | --- | --- | --- |
 | 201 | `{ id: string }` | |
+| 400 | `USERNAME_INVALID` | Absent ou pas une chaîne |
+| 400 | `USERNAME_TOO_SHORT` | Moins de 3 caractères |
+| 400 | `USERNAME_TOO_LONG` | Plus de 20 caractères |
+| 400 | `EMAIL_INVALID` | Absent ou pas un email |
+| 400 | `PASSWORD_INVALID` | Absent ou pas une chaîne |
+| 400 | `PASSWORD_TOO_WEAK` | Moins de 12 caractères, ou sans minuscule, majuscule, chiffre et symbole |
+| 400 | `PASSWORD_TOO_LONG` | Plus de 72 caractères |
 | 409 | `EMAIL_ALREADY_EXISTS` | Email déjà utilisé (signalé en premier si l'email et le username sont tous deux pris) |
 | 409 | `USERNAME_ALREADY_EXISTS` | Username déjà utilisé |
 | 503 | `VERIFICATION_EMAIL_NOT_SENT` | Le compte **est créé** mais l'email n'est pas parti : demander un nouveau code via `POST /identity/verify/resend` |
@@ -130,6 +137,8 @@ Crée un compte **inactif** et envoie par email un code de validation à 6 chiff
 | Statut | Réponse | Détail |
 | --- | --- | --- |
 | 201 | `{ access_token: string }` | |
+| 400 | `USERNAME_INVALID` | Absent ou pas une chaîne |
+| 400 | `PASSWORD_INVALID` | Absent ou pas une chaîne |
 | 401 | `INVALID_CREDENTIALS` | |
 | 403 | `ACCOUNT_NOT_ACTIVE` | Bons identifiants, mais compte pas encore validé |
 
@@ -148,6 +157,10 @@ Valide le compte avec le code reçu par email. Un compte Google est déjà valid
 | Statut | Réponse | Détail |
 | --- | --- | --- |
 | 201 | _(vide)_ | Compte validé, la connexion est possible |
+| 400 | `USERNAME_INVALID` | Absent ou pas une chaîne |
+| 400 | `USERNAME_TOO_SHORT` | Moins de 3 caractères |
+| 400 | `USERNAME_TOO_LONG` | Plus de 20 caractères |
+| 400 | `OTP_CODE_INVALID` | Absent ou pas exactement 6 chiffres |
 | 401 | `INVALID_CREDENTIALS` | Username inconnu |
 | 401 | `INVALID_OTP` | Code faux, expiré ou remplacé par un plus récent |
 | 409 | `ACCOUNT_ALREADY_ACTIVE` | |
@@ -169,6 +182,9 @@ Génère un nouveau code (l'ancien devient invalide), remet le compteur d'essais
 | Statut | Réponse | Détail |
 | --- | --- | --- |
 | 201 | _(vide)_ | |
+| 400 | `USERNAME_INVALID` | Absent ou pas une chaîne |
+| 400 | `USERNAME_TOO_SHORT` | Moins de 3 caractères |
+| 400 | `USERNAME_TOO_LONG` | Plus de 20 caractères |
 | 401 | `INVALID_CREDENTIALS` | Username inconnu |
 | 409 | `ACCOUNT_ALREADY_ACTIVE` | |
 | 429 | `OTP_RESEND_TOO_SOON` | Moins de 60 s depuis le dernier code : aucun email envoyé, le code précédent reste valable |
@@ -282,6 +298,20 @@ Créer une playlist.
 | Statut | Réponse | Détail |
 | --- | --- | --- |
 | 201 | `{ id: string }` | |
+| 400 | `PLAYLIST_TYPE_INVALID` | Ni `VOTE` ni `EDITOR` |
+| 400 | `NAME_INVALID` | Absent ou pas une chaîne |
+| 400 | `NAME_TOO_SHORT` | Vide |
+| 400 | `NAME_TOO_LONG` | Plus de 100 caractères |
+| 400 | `DESCRIPTION_INVALID` | Absent ou pas une chaîne |
+| 400 | `DESCRIPTION_TOO_LONG` | Plus de 500 caractères |
+| 400 | `IS_PRIVATE_INVALID` | Pas un booléen |
+| 400 | `LICENSE_INVALID` | Ni `EVERYONE` ni `INVITED_ONLY` |
+| 400 | `BEGIN_AT_INVALID` | Pas une date |
+| 400 | `END_AT_INVALID` | Pas une date |
+| 400 | `LATITUDE_INVALID` | Absent ou pas un nombre |
+| 400 | `LATITUDE_OUT_OF_RANGE` | Hors de -90..90 |
+| 400 | `LONGITUDE_INVALID` | Absent ou pas un nombre |
+| 400 | `LONGITUDE_OUT_OF_RANGE` | Hors de -180..180 |
 | 400 | `INVALID_PLAYLIST_PERIOD` | |
 | 400 | `PLAYLIST_END_IN_PAST` | |
 | 409 | `PLAYLIST_ALREADY_EXISTS` | Même nom pour le même owner |
@@ -324,6 +354,10 @@ Rejoindre une playlist publique en cours (commencée et non terminée), en étan
 | Statut | Réponse | Détail |
 | --- | --- | --- |
 | 201 | `{ participantId: string }` | |
+| 400 | `LATITUDE_INVALID` | Absent ou pas un nombre |
+| 400 | `LATITUDE_OUT_OF_RANGE` | Hors de -90..90 |
+| 400 | `LONGITUDE_INVALID` | Absent ou pas un nombre |
+| 400 | `LONGITUDE_OUT_OF_RANGE` | Hors de -180..180 |
 | 404 | `PLAYLIST_NOT_FOUND` | |
 | 403 | `PRIVATE_PLAYLIST` | |
 | 410 | `PLAYLIST_ENDED` | |
@@ -360,6 +394,7 @@ Inviter un compte. Réservé à l'owner et aux participants privilégiés, à to
 | Statut | Réponse | Détail |
 | --- | --- | --- |
 | 201 | `{ invitationId: string }` | |
+| 400 | `ACCOUNT_ID_INVALID` | Absent ou pas un UUID |
 | 404 | `PLAYLIST_NOT_FOUND` | |
 | 410 | `PLAYLIST_ENDED` | |
 | 403 | `INVITATION_FORBIDDEN` | Ni owner, ni participant privilégié |
@@ -457,12 +492,13 @@ Les invitations déjà envoyées par le participant restent valides.
 }
 ```
 
-| Statut | Réponse |
-| --- | --- |
-| 200 | *(vide)* |
-| 404 | `PLAYLIST_NOT_FOUND` |
-| 403 | `NOT_PLAYLIST_OWNER` |
-| 404 | `PARTICIPANT_NOT_FOUND` |
+| Statut | Réponse | Détail |
+| --- | --- | --- |
+| 200 | *(vide)* | |
+| 400 | `HAS_PRIVILEGE_INVALID` | Absent ou pas un booléen |
+| 404 | `PLAYLIST_NOT_FOUND` | |
+| 403 | `NOT_PLAYLIST_OWNER` | |
+| 404 | `PARTICIPANT_NOT_FOUND` | |
 
 ### `DELETE /playlists/:playlistId/participants/:participantId`
 
@@ -523,6 +559,11 @@ EDITOR : la musique est ajoutée à la fin de la playlist (on la déplace ensuit
 | Statut | Réponse | Détail |
 | --- | --- | --- |
 | 201 | `{ trackId: string }` | |
+| 400 | `VIDEO_ID_INVALID` | Absent ou pas un id YouTube (11 caractères) |
+| 400 | `LATITUDE_INVALID` | Pas un nombre |
+| 400 | `LATITUDE_OUT_OF_RANGE` | Hors de -90..90 |
+| 400 | `LONGITUDE_INVALID` | Pas un nombre |
+| 400 | `LONGITUDE_OUT_OF_RANGE` | Hors de -180..180 |
 | — | erreurs communes | |
 | 404 | `MUSIC_NOT_FOUND` | `videoId` inconnu de YouTube |
 | 409 | `TRACK_ALREADY_IN_PLAYLIST` | Déjà dans la playlist ; pour VOTE, elle peut revenir une fois jouée |
@@ -594,6 +635,8 @@ Déplacer une musique juste après une autre (`afterTrackId`), ou en tête (`aft
 | Statut | Réponse | Détail |
 | --- | --- | --- |
 | 200 | `{ version: number }` | Nouvelle version de la musique |
+| 400 | `AFTER_TRACK_ID_INVALID` | Absent, ou ni un UUID ni `null` |
+| 400 | `VERSION_INVALID` | Absent, ou pas un entier ≥ 1 |
 | — | erreurs communes | |
 | 400 | `NOT_AN_EDITOR_PLAYLIST` | |
 | 400 | `INVALID_MOVE` | Musique placée après elle-même |
@@ -624,28 +667,36 @@ Voter pour une musique (une seule fois, jamais pour une musique qu'on a proposé
 }
 ```
 
-| Statut | Réponse |
-| --- | --- |
-| 201 | `{ votes: number }` |
-| — | erreurs communes |
-| 400 | `NOT_A_VOTE_PLAYLIST` |
-| 404 | `TRACK_NOT_FOUND` |
-| 403 | `CANNOT_VOTE_OWN_TRACK` |
-| 409 | `ALREADY_VOTED` |
-| 409 | `TRACK_ALREADY_PLAYED` |
+| Statut | Réponse | Détail |
+| --- | --- | --- |
+| 201 | `{ votes: number }` | |
+| 400 | `LATITUDE_INVALID` | Pas un nombre |
+| 400 | `LATITUDE_OUT_OF_RANGE` | Hors de -90..90 |
+| 400 | `LONGITUDE_INVALID` | Pas un nombre |
+| 400 | `LONGITUDE_OUT_OF_RANGE` | Hors de -180..180 |
+| — | erreurs communes | |
+| 400 | `NOT_A_VOTE_PLAYLIST` | |
+| 404 | `TRACK_NOT_FOUND` | |
+| 403 | `CANNOT_VOTE_OWN_TRACK` | |
+| 409 | `ALREADY_VOTED` | |
+| 409 | `TRACK_ALREADY_PLAYED` | |
 
 ### `DELETE /playlists/:playlistId/tracks/:trackId/vote?latitude=…&longitude=…` · VOTE uniquement
 
 Retirer son vote. La position passe en query string (pas de body sur un `DELETE`).
 
-| Statut | Réponse |
-| --- | --- |
-| 200 | `{ votes: number }` |
-| — | erreurs communes |
-| 400 | `NOT_A_VOTE_PLAYLIST` |
-| 404 | `TRACK_NOT_FOUND` |
-| 404 | `VOTE_NOT_FOUND` |
-| 409 | `TRACK_ALREADY_PLAYED` |
+| Statut | Réponse | Détail |
+| --- | --- | --- |
+| 200 | `{ votes: number }` | |
+| 400 | `LATITUDE_INVALID` | Pas un nombre |
+| 400 | `LATITUDE_OUT_OF_RANGE` | Hors de -90..90 |
+| 400 | `LONGITUDE_INVALID` | Pas un nombre |
+| 400 | `LONGITUDE_OUT_OF_RANGE` | Hors de -180..180 |
+| — | erreurs communes | |
+| 400 | `NOT_A_VOTE_PLAYLIST` | |
+| 404 | `TRACK_NOT_FOUND` | |
+| 404 | `VOTE_NOT_FOUND` | |
+| 409 | `TRACK_ALREADY_PLAYED` | |
 
 ### `DELETE /playlists/:playlistId/tracks/:trackId?latitude=…&longitude=…`
 
@@ -657,6 +708,10 @@ Supprimer une musique (et ses votes). La licence ne s'applique pas.
 | Statut | Réponse | Détail |
 | --- | --- | --- |
 | 200 | *(vide)* | |
+| 400 | `LATITUDE_INVALID` | Pas un nombre |
+| 400 | `LATITUDE_OUT_OF_RANGE` | Hors de -90..90 |
+| 400 | `LONGITUDE_INVALID` | Pas un nombre |
+| 400 | `LONGITUDE_OUT_OF_RANGE` | Hors de -180..180 |
 | 404 | `PLAYLIST_NOT_FOUND` | |
 | 403 | `NOT_PLAYLIST_MEMBER` | |
 | 404 | `TRACK_NOT_FOUND` | |
