@@ -63,7 +63,8 @@ Crée un compte **inactif** et envoie par email un code de validation à 6 chiff
 | Statut | Réponse | Détail |
 | --- | --- | --- |
 | 201 | `{ id: string }` | |
-| 409 | `ACCOUNT_ALREADY_EXISTS` | Email ou username déjà utilisé |
+| 409 | `EMAIL_ALREADY_EXISTS` | Email déjà utilisé (signalé en premier si l'email et le username sont tous deux pris) |
+| 409 | `USERNAME_ALREADY_EXISTS` | Username déjà utilisé |
 | 503 | `VERIFICATION_EMAIL_NOT_SENT` | Le compte **est créé** mais l'email n'est pas parti : demander un nouveau code via `POST /identity/verify/resend` |
 
 ### `POST /identity/login` · public
