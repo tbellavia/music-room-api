@@ -122,7 +122,7 @@ expect "unknown playlist → 404 PLAYLIST_NOT_FOUND" 404 PLAYLIST_NOT_FOUND
 
 section "Body validation"
 join "$BOB" "$PUBLIC" 95
-expect "latitude out of range → 400 VALIDATION_FAILED" 400 VALIDATION_FAILED
+expect "latitude out of range → 400 LATITUDE_OUT_OF_RANGE" 400 LATITUDE_OUT_OF_RANGE
 
 request POST "/playlists/$PUBLIC/join" "$BOB" "{\"latitude\":$PLAYLIST_LATITUDE}"
 expect "missing longitude → 400" 400

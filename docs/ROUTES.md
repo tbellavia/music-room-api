@@ -16,13 +16,63 @@
 
   | Statut | Réponse | Détail |
   | --- | --- | --- |
-  | 400 | `VALIDATION_FAILED` | Body, query ou paramètre invalide. `message` décrit **la première** contrainte non respectée (ex. `"username must be longer than or equal to 3 characters"`) ; une fois corrigée, la requête suivante signale la suivante |
+  | 400 | `<CHAMP>_…` | Body ou query invalide : voir [Erreurs de validation](#erreurs-de-validation) |
+  | 400 | `UNKNOWN_FIELD` | Champ non prévu par la route (ex. `"property isAdmin should not exist"`) |
+  | 400 | `INVALID_JSON` | Body qui n'est pas du JSON valide |
+  | 413 | `PAYLOAD_TOO_LARGE` | Body de plus de 100 ko |
   | 401 | `UNAUTHORIZED` | Token absent, invalide ou expiré |
   | 404 | `NOT_FOUND` | Route inconnue |
   | 500 | `INTERNAL_SERVER_ERROR` | Erreur inattendue |
 
+## Erreurs de validation
+
+Quand un body ou une query string est invalide, l'API répond 400 avec un code propre au champ et à la règle
+non respectée, par exemple :
+
+```json
+{ "status": 400, "error": "USERNAME_TOO_SHORT", "message": "username must be longer than or equal to 3 characters" }
+```
+
+- Une seule erreur est renvoyée : celle du **premier champ invalide**, dans l'ordre du body documenté pour la route.
+  Une fois ce champ corrigé, la requête suivante signale le suivant.
+- Pour un champ donné, la vérification du type passe en premier : un champ absent ou du mauvais type donne
+  `<CHAMP>_INVALID`, jamais `_TOO_SHORT` ou `_OUT_OF_RANGE`.
+- `message` est le texte de class-validator, en anglais, pour le debug ; l'app s'appuie sur `error`.
+- `VALIDATION_FAILED` reste possible en repli si une règle n'a pas de code (un test empêche ce cas).
+
+| Code | Champ | Règle | Routes |
+| --- | --- | --- | --- |
+| `USERNAME_INVALID` | `username` | Absent ou pas une chaîne | register, login, verify, verify/resend |
+| `USERNAME_TOO_SHORT` | `username` | Moins de 3 caractères | register, verify, verify/resend |
+| `USERNAME_TOO_LONG` | `username` | Plus de 20 caractères | register, verify, verify/resend |
+| `EMAIL_INVALID` | `email` | Absent ou pas un email | register |
+| `PASSWORD_INVALID` | `password` | Absent ou pas une chaîne | register, login |
+| `PASSWORD_TOO_WEAK` | `password` | Moins de 12 caractères, ou sans minuscule, majuscule, chiffre et symbole | register |
+| `PASSWORD_TOO_LONG` | `password` | Plus de 72 caractères | register |
+| `OTP_CODE_INVALID` | `otp_code` | Pas exactement 6 chiffres | verify |
+| `PLAYLIST_TYPE_INVALID` | `type` | Ni `VOTE` ni `EDITOR` | `POST /playlists` |
+| `NAME_INVALID` | `name` | Absent ou pas une chaîne | `POST /playlists` |
+| `NAME_TOO_SHORT` | `name` | Vide | `POST /playlists` |
+| `NAME_TOO_LONG` | `name` | Plus de 100 caractères | `POST /playlists` |
+| `DESCRIPTION_INVALID` | `description` | Absent ou pas une chaîne | `POST /playlists` |
+| `DESCRIPTION_TOO_LONG` | `description` | Plus de 500 caractères | `POST /playlists` |
+| `IS_PRIVATE_INVALID` | `isPrivate` | Pas un booléen | `POST /playlists` |
+| `LICENSE_INVALID` | `license` | Ni `EVERYONE` ni `INVITED_ONLY` | `POST /playlists` |
+| `BEGIN_AT_INVALID` | `beginAt` | Pas une date | `POST /playlists` |
+| `END_AT_INVALID` | `endAt` | Pas une date | `POST /playlists` |
+| `LATITUDE_INVALID` | `latitude` | Absent (quand obligatoire) ou pas un nombre | création, join, actions sur les musiques |
+| `LATITUDE_OUT_OF_RANGE` | `latitude` | Hors de -90..90 | création, join, actions sur les musiques |
+| `LONGITUDE_INVALID` | `longitude` | Absent (quand obligatoire) ou pas un nombre | création, join, actions sur les musiques |
+| `LONGITUDE_OUT_OF_RANGE` | `longitude` | Hors de -180..180 | création, join, actions sur les musiques |
+| `ACCOUNT_ID_INVALID` | `accountId` | Pas un UUID | `POST /playlists/:playlistId/invitations` |
+| `HAS_PRIVILEGE_INVALID` | `hasPrivilege` | Pas un booléen | `PATCH /playlists/:playlistId/participants/:participantId` |
+| `VIDEO_ID_INVALID` | `videoId` | Pas un id YouTube (11 caractères) | `POST /playlists/:playlistId/tracks` |
+| `AFTER_TRACK_ID_INVALID` | `afterTrackId` | Absent, ou ni un UUID ni `null` | `PATCH …/tracks/:trackId/position` |
+| `VERSION_INVALID` | `version` | Pas un entier ≥ 1 | `PATCH …/tracks/:trackId/position` |
+
 ## Sommaire
 
+- [Erreurs de validation](#erreurs-de-validation)
 - [Health](#health)
 - [Identity](#identity)
 - [Social](#social)

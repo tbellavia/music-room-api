@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { PlaylistNotFound } from 'src/playlist/domain/errors/playlist-not-found.error';
 import { RequestValidationFailed } from 'src/interface/http/validation/request-validation-failed.error';
+import { InvalidJsonBody } from 'src/interface/http/errors/invalid-json-body.error';
+import { RequestBodyTooLarge } from 'src/interface/http/errors/request-body-too-large.error';
 import { HttpExceptionFilter } from './http-exception.filter';
 import { ERROR_CODE_LOCAL } from 'src/interface/http/middleware/request-logger.middleware';
 
@@ -60,8 +62,9 @@ describe('HttpExceptionFilter', () => {
     });
   });
 
-  it('sends a validation error with a single message', () => {
+  it('sends a validation error with its code and a single message', () => {
     const validationError = new RequestValidationFailed(
+      'EMAIL_INVALID',
       'email must be an email',
     );
 
@@ -70,8 +73,30 @@ describe('HttpExceptionFilter', () => {
     expect(sentStatus).toBe(400);
     expect(sentBody).toEqual({
       status: 400,
-      error: 'VALIDATION_FAILED',
+      error: 'EMAIL_INVALID',
       message: 'email must be an email',
+    });
+  });
+
+  it('sends an invalid JSON body in the same format', () => {
+    const { sentStatus, sentBody } = send(new InvalidJsonBody());
+
+    expect(sentStatus).toBe(400);
+    expect(sentBody).toEqual({
+      status: 400,
+      error: 'INVALID_JSON',
+      message: 'The request body is not valid JSON',
+    });
+  });
+
+  it('sends a too large body as a 413', () => {
+    const { sentStatus, sentBody } = send(new RequestBodyTooLarge());
+
+    expect(sentStatus).toBe(413);
+    expect(sentBody).toEqual({
+      status: 413,
+      error: 'PAYLOAD_TOO_LARGE',
+      message: 'The request body is too large',
     });
   });
 

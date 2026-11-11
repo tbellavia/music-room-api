@@ -18,45 +18,46 @@ import {
   PLAYLIST_NAME_MAX_LENGTH,
   PLAYLIST_NAME_MIN_LENGTH,
 } from 'src/shared/constants';
+import { withCode } from 'src/interface/http/validation/validation-code';
 
 export class CreatePlaylistDto {
-  @IsEnum(PlaylistType)
+  @IsEnum(PlaylistType, withCode('PLAYLIST_TYPE_INVALID'))
   type: PlaylistType;
 
-  @IsString()
-  @MinLength(PLAYLIST_NAME_MIN_LENGTH)
-  @MaxLength(PLAYLIST_NAME_MAX_LENGTH)
+  @IsString(withCode('NAME_INVALID'))
+  @MinLength(PLAYLIST_NAME_MIN_LENGTH, withCode('NAME_TOO_SHORT'))
+  @MaxLength(PLAYLIST_NAME_MAX_LENGTH, withCode('NAME_TOO_LONG'))
   name: string;
 
-  @IsString()
-  @MaxLength(PLAYLIST_DESCRIPTION_MAX_LENGTH)
+  @IsString(withCode('DESCRIPTION_INVALID'))
+  @MaxLength(PLAYLIST_DESCRIPTION_MAX_LENGTH, withCode('DESCRIPTION_TOO_LONG'))
   description: string;
 
   @IsOptional()
-  @IsBoolean()
+  @IsBoolean(withCode('IS_PRIVATE_INVALID'))
   isPrivate?: boolean;
 
   @IsOptional()
-  @IsEnum(PlaylistLicense)
+  @IsEnum(PlaylistLicense, withCode('LICENSE_INVALID'))
   license?: PlaylistLicense;
 
   @IsOptional()
   @Type(() => Date)
-  @IsDate()
+  @IsDate(withCode('BEGIN_AT_INVALID'))
   beginAt?: Date;
 
   @IsOptional()
   @Type(() => Date)
-  @IsDate()
+  @IsDate(withCode('END_AT_INVALID'))
   endAt?: Date;
 
-  @IsNumber()
-  @Min(-90)
-  @Max(90)
+  @IsNumber({}, withCode('LATITUDE_INVALID'))
+  @Min(-90, withCode('LATITUDE_OUT_OF_RANGE'))
+  @Max(90, withCode('LATITUDE_OUT_OF_RANGE'))
   latitude: number;
 
-  @IsNumber()
-  @Min(-180)
-  @Max(180)
+  @IsNumber({}, withCode('LONGITUDE_INVALID'))
+  @Min(-180, withCode('LONGITUDE_OUT_OF_RANGE'))
+  @Max(180, withCode('LONGITUDE_OUT_OF_RANGE'))
   longitude: number;
 }
