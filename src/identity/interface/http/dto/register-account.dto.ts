@@ -8,10 +8,10 @@ import {
 import { withCode } from 'src/interface/http/validation/validation-code';
 import {
   PASSWORD_MAX_LENGTH,
-  PASSWORD_MIN_LENGTH,
   USERNAME_MAX_LENGTH,
   USERNAME_MIN_LENGTH,
 } from 'src/shared/constants';
+import { STRONG_PASSWORD_OPTIONS } from './password-rules';
 
 export class RegisterAccountDto {
   @IsString(withCode('USERNAME_INVALID'))
@@ -23,16 +23,7 @@ export class RegisterAccountDto {
   email: string;
 
   @IsString(withCode('PASSWORD_INVALID'))
-  @IsStrongPassword(
-    {
-      minLength: PASSWORD_MIN_LENGTH,
-      minSymbols: 1,
-      minUppercase: 1,
-      minLowercase: 1,
-      minNumbers: 1,
-    },
-    withCode('PASSWORD_TOO_WEAK'),
-  )
+  @IsStrongPassword(STRONG_PASSWORD_OPTIONS, withCode('PASSWORD_TOO_WEAK'))
   @MaxLength(PASSWORD_MAX_LENGTH, withCode('PASSWORD_TOO_LONG'))
   password: string;
 }

@@ -27,7 +27,7 @@ export class Account {
     public readonly id: string,
     public readonly username: string,
     public readonly email: string,
-    public readonly password: string,
+    public password: string,
     public otp_code: string | null,
     public otp_expiry: Date | null,
     public otp_sent_at: Date | null,
@@ -90,6 +90,19 @@ export class Account {
     if (!this.isValidOtp(otpCode, now)) {
       throw new InvalidOTP();
     }
+    this.markAsActive();
+  }
+
+  // The reset code was received by email: it also proves that the email
+  // belongs to the user, so an unverified account becomes active
+  resetPassword(hashedPassword: string): void {
+    this.password = hashedPassword;
+    if (!this.is_active) {
+      this.markAsActive();
+    }
+  }
+
+  private markAsActive(): void {
     this.is_active = true;
     this.otp_code = null;
     this.otp_expiry = null;

@@ -86,17 +86,19 @@ section() {
   printf "\n${BOLD}%s${RESET}\n" "$1"
 }
 
-# verification_code ACCOUNT_ID -> prints the code the API logged for this account.
+# logged_code LABEL ACCOUNT_ID -> prints the last code the API logged for this
+# account, on a line "E2E <LABEL> account=<id> code=<code>".
 # Only works in E2E mode (make test-e2e): in normal mode the code is emailed.
 # Retries a few times: the log line can reach `docker logs` slightly later.
-verification_code() {
-  local account_id=$1
+logged_code() {
+  local label=$1
+  local account_id=$2
   local code
   local attempt
 
   for attempt in 1 2 3 4 5; do
     code=$(docker logs "$API_CONTAINER" 2>&1 \
-      | grep "E2E verification code account=$account_id " \
+      | grep "E2E $label account=$account_id " \
       | tail -n 1 \
       | sed -E 's/.*code=([0-9]{6}).*/\1/')
     if [ -n "$code" ]; then
@@ -106,6 +108,16 @@ verification_code() {
     sleep 1
   done
   return 1
+}
+
+# verification_code ACCOUNT_ID -> the code to verify the account
+verification_code() {
+  logged_code "verification code" "$1"
+}
+
+# password_reset_code ACCOUNT_ID -> the last code to reset the password
+password_reset_code() {
+  logged_code "password reset code" "$1"
 }
 
 # register USERNAME -> creates and verifies the account, prints its id

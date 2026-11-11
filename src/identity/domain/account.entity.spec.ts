@@ -173,4 +173,27 @@ describe('Account', () => {
       );
     });
   });
+
+  describe('resetPassword', () => {
+    it('replaces the password of an active account', () => {
+      const account = Account.local(localInfos);
+      account.activate(validCode, beforeExpiry);
+
+      account.resetPassword('new-hashed-password');
+
+      expect(account.password).toBe('new-hashed-password');
+      expect(account.is_active).toBe(true);
+    });
+
+    it('activates an unverified account and clears its verification code', () => {
+      const account = Account.local(localInfos);
+
+      account.resetPassword('new-hashed-password');
+
+      expect(account.is_active).toBe(true);
+      expect(account.otp_code).toBeNull();
+      expect(account.otp_expiry).toBeNull();
+      expect(account.otp_attempts).toBe(0);
+    });
+  });
 });
