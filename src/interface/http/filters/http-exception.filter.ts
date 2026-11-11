@@ -53,6 +53,8 @@ import { SelfFriendshipRequestError } from 'src/social/domain/errors/self-friend
 import { SelfFriendshipError } from 'src/social/domain/errors/self-friendship.error';
 import { UnknownFriendshipRequest } from 'src/social/domain/errors/unknown-friendship-request';
 import { RequestValidationFailed } from 'src/interface/http/validation/request-validation-failed.error';
+import { InvalidJsonBody } from 'src/interface/http/errors/invalid-json-body.error';
+import { RequestBodyTooLarge } from 'src/interface/http/errors/request-body-too-large.error';
 import { ERROR_CODE_LOCAL } from 'src/interface/http/middleware/request-logger.middleware';
 import { AccountNotActive } from 'src/identity/domain/errors/account-not-active.error';
 import { AccountAlreadyActive } from 'src/identity/domain/errors/account-already-active.error';
@@ -69,6 +71,23 @@ type ErrorResponse = {
 
 // Every domain error must be registered here, otherwise it ends up as a 500
 const DOMAIN_ERRORS = new Map<unknown, ErrorResponse>([
+  // request body, see translateRequestBodyError
+  [
+    InvalidJsonBody,
+    {
+      status: 400,
+      error: 'INVALID_JSON',
+      message: 'The request body is not valid JSON',
+    },
+  ],
+  [
+    RequestBodyTooLarge,
+    {
+      status: 413,
+      error: 'PAYLOAD_TOO_LARGE',
+      message: 'The request body is too large',
+    },
+  ],
   // identity
   [
     EmailAlreadyExists,
@@ -438,11 +457,11 @@ function errorResponse(exception: unknown): ErrorResponse {
     return domainError;
   }
 
-  // The message is the first broken constraint, see createValidationPipe
+  // The code and message of the first broken constraint, see createValidationPipe
   if (exception instanceof RequestValidationFailed) {
     return {
       status: 400,
-      error: 'VALIDATION_FAILED',
+      error: exception.code,
       message: exception.message,
     };
   }

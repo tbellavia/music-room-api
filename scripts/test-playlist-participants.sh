@@ -75,7 +75,7 @@ invite "$BOB" "$PRIVATE" "$CAROL_ID"
 expect "non member invites → 403 INVITATION_FORBIDDEN" 403 INVITATION_FORBIDDEN
 
 invite "$ALICE" "$PRIVATE" "not-a-uuid"
-expect "invalid accountId → 400 VALIDATION_FAILED" 400 VALIDATION_FAILED
+expect "invalid accountId → 400 ACCOUNT_ID_INVALID" 400 ACCOUNT_ID_INVALID
 
 invite "$ALICE" "$PRIVATE" "$UNKNOWN_ID"
 expect "unknown account → 404 ACCOUNT_NOT_FOUND" 404 ACCOUNT_NOT_FOUND
@@ -135,7 +135,7 @@ set_privilege "$ALICE" "$PRIVATE" "$UNKNOWN_ID" true
 expect "unknown participant → 404 PARTICIPANT_NOT_FOUND" 404 PARTICIPANT_NOT_FOUND
 
 request PATCH "/playlists/$PRIVATE/participants/$BOB_PARTICIPANT" "$ALICE" '{"hasPrivilege":"yes"}'
-expect "non boolean hasPrivilege → 400 VALIDATION_FAILED" 400 VALIDATION_FAILED
+expect "non boolean hasPrivilege → 400 HAS_PRIVILEGE_INVALID" 400 HAS_PRIVILEGE_INVALID
 
 set_privilege "$ALICE" "$PRIVATE" "$BOB_PARTICIPANT" true
 expect "owner promotes bob → 200" 200

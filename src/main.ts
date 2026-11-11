@@ -5,6 +5,7 @@ import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { createValidationPipe } from './interface/http/validation/validation-pipe';
 import { createRequestLogger } from './interface/http/middleware/request-logger.middleware';
+import { translateRequestBodyError } from './interface/http/middleware/request-body-error.middleware';
 import { API_PREFIX } from './shared/constants';
 import { isE2eMode } from './infrastructure/config/e2e-mode';
 
@@ -28,14 +29,18 @@ function logLevels(): LogLevel[] {
 }
 
 async function bootstrap() {
+  // The JSON parser is registered below, followed by its error translation
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: logLevels(),
+    bodyParser: false,
   });
   const logger = new Logger('Bootstrap');
 
   app.setGlobalPrefix(API_PREFIX);
   app.useGlobalPipes(createValidationPipe());
   app.use(createRequestLogger(new Logger('HTTP')));
+  app.useBodyParser('json');
+  app.use(translateRequestBodyError);
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);

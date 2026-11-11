@@ -161,10 +161,10 @@ move "$ALICE" "$RADIO" "$TRACK_1" "$UNKNOWN_ID" 1
 expect "unknown anchor track → 404 TRACK_NOT_FOUND" 404 TRACK_NOT_FOUND
 
 request PATCH "/playlists/$RADIO/tracks/$TRACK_1/position" "$ALICE" '{"version":1}'
-expect "missing afterTrackId → 400 VALIDATION_FAILED" 400 VALIDATION_FAILED
+expect "missing afterTrackId → 400 AFTER_TRACK_ID_INVALID" 400 AFTER_TRACK_ID_INVALID
 
 request PATCH "/playlists/$RADIO/tracks/$TRACK_1/position" "$ALICE" '{"afterTrackId":null,"version":0}'
-expect "invalid version → 400 VALIDATION_FAILED" 400 VALIDATION_FAILED
+expect "invalid version → 400 VERSION_INVALID" 400 VERSION_INVALID
 
 move "$ALICE" "$VOTE" "$TRACK_1" null 1
 expect "VOTE playlist → 400 NOT_AN_EDITOR_PLAYLIST" 400 NOT_AN_EDITOR_PLAYLIST
