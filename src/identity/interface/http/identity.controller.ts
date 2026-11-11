@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
 import { RegisterAccountUseCase } from 'src/identity/application/use-cases/register-account/register-account.usecase';
 import { RegisterAccountDto } from './dto/register-account.dto';
 import { SignInDto } from './dto/sign-in.dto';
@@ -8,6 +8,10 @@ import { VerifyDto } from './dto/verify.dto';
 import { VerifyAccountUseCase } from 'src/identity/application/use-cases/verify/verify-account.usecase';
 import { ResendVerificationCodeDto } from './dto/resend-verification-code.dto';
 import { ResendVerificationCodeUseCase } from 'src/identity/application/use-cases/resend-verification-code/resend-verification-code.usecase';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { RequestPasswordResetUseCase } from 'src/identity/application/use-cases/request-password-reset/request-password-reset.usecase';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ResetPasswordUseCase } from 'src/identity/application/use-cases/reset-password/reset-password.usecase';
 
 @Controller('identity')
 export class IdentityController {
@@ -16,6 +20,8 @@ export class IdentityController {
     private readonly signInAccount: SignInUseCase,
     private readonly verifyAccount: VerifyAccountUseCase,
     private readonly resendVerificationCode: ResendVerificationCodeUseCase,
+    private readonly requestPasswordReset: RequestPasswordResetUseCase,
+    private readonly resetAccountPassword: ResetPasswordUseCase,
   ) {}
 
   @Public()
@@ -51,6 +57,27 @@ export class IdentityController {
   async resendCode(@Body() resendDto: ResendVerificationCodeDto) {
     await this.resendVerificationCode.execute({
       username: resendDto.username,
+    });
+  }
+
+  // 202 whatever the email: the response never tells whether it has an account
+  @Public()
+  @Post('password/forgot')
+  @HttpCode(202)
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    await this.requestPasswordReset.execute({
+      email: forgotPasswordDto.email,
+    });
+  }
+
+  @Public()
+  @Post('password/reset')
+  @HttpCode(204)
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    await this.resetAccountPassword.execute({
+      email: resetPasswordDto.email,
+      otp_code: resetPasswordDto.otp_code,
+      new_password: resetPasswordDto.new_password,
     });
   }
 

@@ -45,11 +45,14 @@ non respectée, par exemple :
 | `USERNAME_INVALID` | `username` | Absent ou pas une chaîne | register, login, verify, verify/resend |
 | `USERNAME_TOO_SHORT` | `username` | Moins de 3 caractères | register, verify, verify/resend |
 | `USERNAME_TOO_LONG` | `username` | Plus de 20 caractères | register, verify, verify/resend |
-| `EMAIL_INVALID` | `email` | Absent ou pas un email | register |
+| `EMAIL_INVALID` | `email` | Absent ou pas un email | register, password/forgot, password/reset |
 | `PASSWORD_INVALID` | `password` | Absent ou pas une chaîne | register, login |
 | `PASSWORD_TOO_WEAK` | `password` | Moins de 12 caractères, ou sans minuscule, majuscule, chiffre et symbole | register |
 | `PASSWORD_TOO_LONG` | `password` | Plus de 72 caractères | register |
-| `OTP_CODE_INVALID` | `otp_code` | Pas exactement 6 chiffres | verify |
+| `OTP_CODE_INVALID` | `otp_code` | Pas exactement 6 chiffres | verify, password/reset |
+| `NEW_PASSWORD_INVALID` | `new_password` | Absent ou pas une chaîne | password/reset |
+| `NEW_PASSWORD_TOO_WEAK` | `new_password` | Mêmes règles que `PASSWORD_TOO_WEAK` | password/reset |
+| `NEW_PASSWORD_TOO_LONG` | `new_password` | Plus de 72 caractères | password/reset |
 | `PLAYLIST_TYPE_INVALID` | `type` | Ni `VOTE` ni `EDITOR` | `POST /playlists` |
 | `NAME_INVALID` | `name` | Absent ou pas une chaîne | `POST /playlists` |
 | `NAME_TOO_SHORT` | `name` | Vide | `POST /playlists` |
@@ -189,6 +192,58 @@ Génère un nouveau code (l'ancien devient invalide), remet le compteur d'essais
 | 409 | `ACCOUNT_ALREADY_ACTIVE` | |
 | 429 | `OTP_RESEND_TOO_SOON` | Moins de 60 s depuis le dernier code : aucun email envoyé, le code précédent reste valable |
 | 503 | `VERIFICATION_EMAIL_NOT_SENT` | Nouveau code enregistré mais non envoyé : réessayer après 60 s |
+
+### `POST /identity/password/forgot` · public
+
+Mot de passe oublié, étape 1 : envoie par email un code à 6 chiffres, valable 15 minutes, pour choisir un nouveau mot de passe.
+
+**La réponse ne révèle jamais si l'email a un compte** : même statut et même body (vide), sans attendre l'envoi du mail, pour un email inconnu, un compte Google, une demande trop rapprochée ou un échec d'envoi du mail. Côté client, afficher toujours « Si un compte existe pour cet email, un code vient d'être envoyé ».
+
+- Une nouvelle demande remplace le code précédent (qui devient invalide) et remet le compteur d'essais à zéro.
+- **Anti-spam :** une demande moins de **60 secondes** après le dernier code est ignorée (toujours 202, aucun email, le code précédent reste valable). Désactiver le bouton « Renvoyer le code » pendant 60 s.
+- Les codes de reset sont distincts des codes de validation de compte : l'un ne fonctionne jamais à la place de l'autre.
+
+```ts
+// Body
+{
+  email: string
+}
+```
+
+| Statut | Réponse | Détail |
+| --- | --- | --- |
+| 202 | _(vide)_ | Toujours, que l'email ait un compte ou non |
+| 400 | `EMAIL_INVALID` | Absent ou pas un email |
+
+### `POST /identity/password/reset` · public
+
+Mot de passe oublié, étape 2 : remplace le mot de passe avec le code reçu par email. Le code et le nouveau mot de passe peuvent être saisis sur le même écran.
+
+- Le code est à **usage unique** : si deux requêtes arrivent en même temps avec le bon code, une seule réussit.
+- **5 essais** par code ; au-delà, même le bon code est refusé : en demander un nouveau via `POST /identity/password/forgot`.
+- Un compte pas encore validé est **validé** par le reset (le code reçu par email prouve que l'adresse appartient à l'utilisateur).
+- Un email « votre mot de passe a été modifié » est envoyé au titulaire du compte.
+- Les tokens déjà délivrés restent valables jusqu'à leur expiration (60 min).
+
+```ts
+// Body
+{
+  email: string
+  otp_code: string      // exactement 6 chiffres
+  new_password: string  // 12-72 caractères, mot de passe fort
+}
+```
+
+| Statut | Réponse | Détail |
+| --- | --- | --- |
+| 204 | _(vide)_ | Mot de passe changé, la connexion avec le nouveau est possible |
+| 400 | `EMAIL_INVALID` | Absent ou pas un email |
+| 400 | `OTP_CODE_INVALID` | Absent ou pas exactement 6 chiffres |
+| 400 | `NEW_PASSWORD_INVALID` | Absent ou pas une chaîne |
+| 400 | `NEW_PASSWORD_TOO_WEAK` | Moins de 12 caractères, ou sans minuscule, majuscule, chiffre et symbole |
+| 400 | `NEW_PASSWORD_TOO_LONG` | Plus de 72 caractères |
+| 401 | `INVALID_OTP` | Code faux, expiré, déjà utilisé ou remplacé par un plus récent, aucun reset demandé, ou email inconnu (même erreur, pour ne rien révéler) |
+| 429 | `TOO_MANY_OTP_ATTEMPTS` | 5 codes faux pour ce code : en demander un nouveau |
 
 ### `GET /identity/profile`
 

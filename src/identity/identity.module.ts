@@ -19,10 +19,21 @@ import { PASSWORD_HASHER } from './application/ports/password-hasher';
 import { NodemailerVerificationCodeSender } from './infrastructure/mail/nodemailer-verification-code-sender';
 import { LoggingVerificationCodeSender } from './infrastructure/mail/logging-verification-code-sender';
 import { isE2eMode } from 'src/infrastructure/config/e2e-mode';
+import { PasswordResetOrmEntity } from './infrastructure/persistence/typeorm-password-reset.entity';
+import { PASSWORD_RESET_REPOSITORY } from './application/ports/password-reset.repository';
+import { TypeOrmPasswordResetRepository } from './infrastructure/persistence/typeorm-password-reset.repository';
+import {
+  PASSWORD_RESET_MAILER,
+  PasswordResetMailer,
+} from './application/ports/password-reset-mailer';
+import { LoggingPasswordResetMailer } from './infrastructure/mail/logging-password-reset-mailer';
+import { NodemailerPasswordResetMailer } from './infrastructure/mail/nodemailer-password-reset-mailer';
+import { RequestPasswordResetUseCase } from './application/use-cases/request-password-reset/request-password-reset.usecase';
+import { ResetPasswordUseCase } from './application/use-cases/reset-password/reset-password.usecase';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([AccountOrmEntity]),
+    TypeOrmModule.forFeature([AccountOrmEntity, PasswordResetOrmEntity]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -50,6 +61,20 @@ import { isE2eMode } from 'src/infrastructure/config/e2e-mode';
       },
     },
     {
+      provide: PASSWORD_RESET_REPOSITORY,
+      useClass: TypeOrmPasswordResetRepository,
+    },
+    {
+      provide: PASSWORD_RESET_MAILER,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService): PasswordResetMailer => {
+        if (isE2eMode(config)) {
+          return new LoggingPasswordResetMailer();
+        }
+        return new NodemailerPasswordResetMailer(config);
+      },
+    },
+    {
       provide: PASSWORD_HASHER,
       useClass: BcryptPasswordService,
     },
@@ -58,6 +83,8 @@ import { isE2eMode } from 'src/infrastructure/config/e2e-mode';
     SignInUseCase,
     VerifyAccountUseCase,
     ResendVerificationCodeUseCase,
+    RequestPasswordResetUseCase,
+    ResetPasswordUseCase,
   ],
   exports: [JwtModule],
 })

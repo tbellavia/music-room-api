@@ -13,6 +13,9 @@ export type ValidationCode =
   | 'PASSWORD_TOO_WEAK'
   | 'PASSWORD_TOO_LONG'
   | 'OTP_CODE_INVALID'
+  | 'NEW_PASSWORD_INVALID'
+  | 'NEW_PASSWORD_TOO_WEAK'
+  | 'NEW_PASSWORD_TOO_LONG'
   // playlists
   | 'PLAYLIST_TYPE_INVALID'
   | 'NAME_INVALID'
