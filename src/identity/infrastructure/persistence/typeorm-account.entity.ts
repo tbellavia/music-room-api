@@ -4,10 +4,13 @@ import { Column, Entity, PrimaryColumn, Unique } from 'typeorm';
 // Named so that a violation tells which field is already used
 export const ACCOUNT_EMAIL_UNIQUE_CONSTRAINT = 'UQ_accounts_email';
 export const ACCOUNT_USERNAME_UNIQUE_CONSTRAINT = 'UQ_accounts_username';
+export const ACCOUNT_GOOGLE_ID_UNIQUE_CONSTRAINT = 'UQ_accounts_google_id';
 
 @Entity('accounts')
 @Unique(ACCOUNT_EMAIL_UNIQUE_CONSTRAINT, ['email'])
 @Unique(ACCOUNT_USERNAME_UNIQUE_CONSTRAINT, ['username'])
+// Several NULL values do not violate it: only Google accounts have one
+@Unique(ACCOUNT_GOOGLE_ID_UNIQUE_CONSTRAINT, ['google_id'])
 export class AccountOrmEntity {
   @PrimaryColumn()
   id: string;
@@ -18,11 +21,14 @@ export class AccountOrmEntity {
   @Column()
   username: string;
 
-  @Column()
-  password: string;
+  @Column({ type: 'varchar', nullable: true, default: null })
+  password: string | null;
 
   @Column({ type: 'enum', enum: AuthMethod })
   auth_method: AuthMethod;
+
+  @Column({ type: 'varchar', nullable: true, default: null })
+  google_id: string | null;
 
   @Column({ type: 'varchar', length: 6, nullable: true, default: null })
   otp_code: string | null;

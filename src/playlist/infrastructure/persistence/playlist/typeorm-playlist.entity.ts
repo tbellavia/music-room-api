@@ -49,11 +49,12 @@ export class PlaylistOrmEntity {
   @Column({ type: 'timestamptz', nullable: true })
   end_at: Date | null;
 
-  @Column({ type: 'double precision' })
-  latitude: number;
+  // null for an EDITOR playlist
+  @Column({ type: 'double precision', nullable: true })
+  latitude: number | null;
 
-  @Column({ type: 'double precision' })
-  longitude: number;
+  @Column({ type: 'double precision', nullable: true })
+  longitude: number | null;
 
   @Column({ type: 'varchar', length: 2048, nullable: true })
   cover_path: string | null;

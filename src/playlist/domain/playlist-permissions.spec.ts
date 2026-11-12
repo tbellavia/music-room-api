@@ -1,3 +1,4 @@
+import { playlistInfos } from './playlist-test-infos';
 import { CreatePlaylistInfos, Playlist } from './playlist.entity';
 import { JoinMethod } from './join-method.enum';
 import { PlaylistType } from './playlist-type.enum';
@@ -65,7 +66,7 @@ function buildTrack(addedBy: string = 'author-id') {
 }
 
 function buildPlaylist(overrides: Partial<CreatePlaylistInfos> = {}) {
-  return Playlist.create({ ...defaultInfos, ...overrides });
+  return Playlist.create(playlistInfos(defaultInfos, overrides));
 }
 
 function buildParticipant(

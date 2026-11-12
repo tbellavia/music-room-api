@@ -1,3 +1,4 @@
+import { playlistInfos } from 'src/playlist/domain/playlist-test-infos';
 import { InMemoryPlaylistRepository } from 'src/playlist/infrastructure/persistence/playlist/in-memory-playlist.repository';
 import { InMemoryParticipantRepository } from 'src/playlist/infrastructure/persistence/participant/in-memory-participant.repository';
 import { InMemoryTrackRepository } from 'src/playlist/infrastructure/persistence/track/in-memory-track.repository';
@@ -60,7 +61,7 @@ describe('VoteForTrackUseCase', () => {
   let useCase: VoteForTrackUseCase;
 
   async function givenPlaylist(overrides: Partial<CreatePlaylistInfos> = {}) {
-    const playlist = Playlist.create({ ...defaultInfos, ...overrides });
+    const playlist = Playlist.create(playlistInfos(defaultInfos, overrides));
     await playlistRepository.save(playlist);
   }
 

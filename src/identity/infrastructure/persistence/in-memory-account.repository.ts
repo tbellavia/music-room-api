@@ -35,6 +35,15 @@ export class InMemoryAccountRepository implements AccountRepository {
     return Promise.resolve(null);
   }
 
+  findByGoogleId(googleId: string): Promise<Account | null> {
+    for (const account of this.accounts.values()) {
+      if (account.google_id === googleId) {
+        return Promise.resolve(this.copy(account));
+      }
+    }
+    return Promise.resolve(null);
+  }
+
   // Same unique constraints as the database on email and username
   save(account: Account): Promise<void> {
     for (const storedAccount of this.accounts.values()) {
@@ -71,6 +80,7 @@ export class InMemoryAccountRepository implements AccountRepository {
       account.otp_attempts,
       account.is_active,
       account.auth_method,
+      account.google_id,
     );
   }
 }

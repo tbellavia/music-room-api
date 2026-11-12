@@ -89,7 +89,7 @@ INVITED_ONLY=$(create_playlist "$ALICE" \
 PRIVATE=$(create_playlist "$ALICE" \
   "{\"type\":\"VOTE\",\"name\":\"Private $SUFFIX\",\"description\":\"\",\"isPrivate\":true,$LOCATION}") || exit 1
 EDITOR=$(create_playlist "$ALICE" \
-  "{\"type\":\"EDITOR\",\"name\":\"Editor $SUFFIX\",\"description\":\"\",$LOCATION}") || exit 1
+  "{\"type\":\"EDITOR\",\"name\":\"Editor $SUFFIX\",\"description\":\"\"}") || exit 1
 
 request POST "/playlists/$PUBLIC/join" "$BOB" "{$ON_SITE}"
 BOB_PARTICIPANT=$(json_field participantId)

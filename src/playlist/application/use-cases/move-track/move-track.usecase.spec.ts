@@ -31,8 +31,6 @@ const defaultInfos: CreatePlaylistInfos = {
   ownerId: 'owner-id',
   name: 'Radio',
   description: '',
-  latitude: 48.8966,
-  longitude: 2.3184,
 };
 
 // Moves the first track (version 1) to the end, as the owner
@@ -285,7 +283,11 @@ describe('MoveTrackUseCase', () => {
     });
 
     it('rejects a VOTE playlist', async () => {
-      await givenPlaylist({ type: PlaylistType.VOTE });
+      await givenPlaylist({
+        type: PlaylistType.VOTE,
+        latitude: 48.8966,
+        longitude: 2.3184,
+      });
 
       await expect(useCase.execute(moveFirstToEnd)).rejects.toThrow(
         NotAnEditorPlaylist,

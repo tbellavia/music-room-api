@@ -197,8 +197,6 @@ describe('DeleteTrackUseCase', () => {
         ownerId: 'owner-id',
         name: 'Radio',
         description: '',
-        latitude: PLAYLIST_LATITUDE,
-        longitude: PLAYLIST_LONGITUDE,
       });
       await playlistRepository.save(editorPlaylist);
 

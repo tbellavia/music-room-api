@@ -1,4 +1,6 @@
 import { InvalidPlaylistPeriod } from './errors/invalid-playlist-period.error';
+import { LocationNotAllowed } from './errors/location-not-allowed.error';
+import { LocationRequired } from './errors/location-required.error';
 import { PlaylistType } from './playlist-type.enum';
 import { CreatePlaylistInfos, Playlist } from './playlist.entity';
 
@@ -28,6 +30,46 @@ describe('Playlist', () => {
       expect(playlist.beginAt).toBeNull();
       expect(playlist.endAt).toBeNull();
       expect(playlist.coverPath).toBeNull();
+    });
+
+    it('keeps the location of a vote playlist', () => {
+      const playlist = build();
+
+      expect(playlist.latitude).toBe(48.8966);
+      expect(playlist.longitude).toBe(2.3184);
+    });
+
+    it('rejects a vote playlist without location', () => {
+      expect(() => build({ latitude: null, longitude: null })).toThrow(
+        LocationRequired,
+      );
+    });
+
+    it('rejects a vote playlist with only one coordinate', () => {
+      expect(() => build({ longitude: undefined })).toThrow(LocationRequired);
+    });
+
+    it('creates an editor playlist without location', () => {
+      const playlist = build({
+        type: PlaylistType.EDITOR,
+        latitude: undefined,
+        longitude: undefined,
+      });
+
+      expect(playlist.latitude).toBeNull();
+      expect(playlist.longitude).toBeNull();
+    });
+
+    it('rejects an editor playlist with a location', () => {
+      expect(() => build({ type: PlaylistType.EDITOR })).toThrow(
+        LocationNotAllowed,
+      );
+    });
+
+    it('rejects an editor playlist with only one coordinate', () => {
+      expect(() =>
+        build({ type: PlaylistType.EDITOR, latitude: undefined }),
+      ).toThrow(LocationNotAllowed);
     });
 
     it('accepts an end date without begin date', () => {
@@ -138,6 +180,18 @@ describe('Playlist', () => {
           latitude: 48.8966 - 600 * ONE_METER_IN_LATITUDE_DEGREES,
           longitude: 2.3184,
         }),
+      ).toBe(false);
+    });
+
+    it('is false for an editor playlist, which has no zone', () => {
+      const editorPlaylist = build({
+        type: PlaylistType.EDITOR,
+        latitude: null,
+        longitude: null,
+      });
+
+      expect(
+        editorPlaylist.isWithinZone({ latitude: 48.8966, longitude: 2.3184 }),
       ).toBe(false);
     });
   });
