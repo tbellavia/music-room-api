@@ -3,11 +3,16 @@ import {
   ACCOUNT_REPOSITORY,
   AccountRepository,
 } from '../../ports/account.repository';
-import { VerifyAccountInput } from './verify-account.contracts';
+import {
+  VerifyAccountInput,
+  VerifyAccountOutput,
+} from './verify-account.contracts';
 import { AccountNotFound } from 'src/identity/domain/errors/account-not-found.error';
 import { AccountAlreadyActive } from 'src/identity/domain/errors/account-already-active.error';
 import { TooManyOtpAttempts } from 'src/identity/domain/errors/too-many-otp-attempts.error';
 import { OTP_MAX_ATTEMPTS } from 'src/shared/constants';
+import { JwtService } from '@nestjs/jwt';
+import { signAccessToken } from '../../access-token';
 
 @Injectable()
 export class VerifyAccountUseCase {
@@ -16,9 +21,12 @@ export class VerifyAccountUseCase {
   constructor(
     @Inject(ACCOUNT_REPOSITORY)
     private readonly repository: AccountRepository,
+    private readonly jwtService: JwtService,
   ) {}
 
-  async execute(input: VerifyAccountInput): Promise<void> {
+  // The code proves access to the mailbox of the account: the user is signed
+  // in right away, without calling login after
+  async execute(input: VerifyAccountInput): Promise<VerifyAccountOutput> {
     const account = await this.repository.findByUsername(input.username);
 
     if (!account) {
@@ -42,5 +50,9 @@ export class VerifyAccountUseCase {
     account.activate(input.otp_code, new Date());
     await this.repository.save(account);
     this.logger.log(`Account verified account=${account.id}`);
+
+    return {
+      access_token: signAccessToken(this.jwtService, account),
+    };
   }
 }

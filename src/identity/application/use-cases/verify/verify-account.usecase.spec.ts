@@ -1,3 +1,4 @@
+import { JwtService } from '@nestjs/jwt';
 import { InMemoryAccountRepository } from 'src/identity/infrastructure/persistence/in-memory-account.repository';
 import { Account } from 'src/identity/domain/account.entity';
 import { AccountNotFound } from 'src/identity/domain/errors/account-not-found.error';
@@ -12,8 +13,14 @@ const wrongCode = '654321';
 const inOneHour = new Date(Date.now() + 60 * 60 * 1000);
 const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
 
+type AccessTokenPayload = {
+  sub: string;
+  username: string;
+};
+
 describe('VerifyAccountUseCase', () => {
   let repository: InMemoryAccountRepository;
+  let jwtService: JwtService;
   let useCase: VerifyAccountUseCase;
 
   async function givenLocalAccount(otpExpiry: Date = inOneHour) {
@@ -39,7 +46,8 @@ describe('VerifyAccountUseCase', () => {
 
   beforeEach(() => {
     repository = new InMemoryAccountRepository();
-    useCase = new VerifyAccountUseCase(repository);
+    jwtService = new JwtService({ secret: 'test-secret' });
+    useCase = new VerifyAccountUseCase(repository, jwtService);
   });
 
   it('activates the account with the right code', async () => {
@@ -50,6 +58,19 @@ describe('VerifyAccountUseCase', () => {
     const account = await storedAccount();
     expect(account.is_active).toBe(true);
     expect(account.otp_code).toBeNull();
+  });
+
+  it('returns a token of the verified account, to skip the login', async () => {
+    await givenLocalAccount();
+
+    const output = await useCase.execute({
+      username: 'alice',
+      otp_code: validCode,
+    });
+
+    const payload = jwtService.verify<AccessTokenPayload>(output.access_token);
+    expect(payload.sub).toBe('account-id');
+    expect(payload.username).toBe('alice');
   });
 
   it('rejects an unknown username', async () => {
