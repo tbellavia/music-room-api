@@ -11,15 +11,15 @@ API="${1:-http://localhost:3000/api/v1}"
 NEW_PASSWORD='NewPassword456!y'
 WRONG_CODE='000000'
 
-# forgot_password EMAIL
+# forgot_password USERNAME
 forgot_password() {
-  request POST /identity/password/forgot "" "{\"email\":\"$1\"}"
+  request POST /identity/password/forgot "" "{\"username\":\"$1\"}"
 }
 
-# reset_password EMAIL CODE NEW_PASSWORD
+# reset_password USERNAME CODE NEW_PASSWORD
 reset_password() {
   request POST /identity/password/reset "" \
-    "{\"email\":\"$1\",\"otp_code\":\"$2\",\"new_password\":\"$3\"}"
+    "{\"username\":\"$1\",\"otp_code\":\"$2\",\"new_password\":\"$3\"}"
 }
 
 # sign_in USERNAME PASSWORD
@@ -42,27 +42,26 @@ preflight
 
 section "Setup"
 ALICE="alice$SUFFIX"
-ALICE_EMAIL="$ALICE@test.com"
 ALICE_ID=$(register "$ALICE") || exit 1
 BOB="bob$SUFFIX"
 BOB_ID=$(register "$BOB") || exit 1
 echo "  alice=$ALICE_ID bob=$BOB_ID"
 
 section "Forgot password"
-forgot_password "unknown$SUFFIX@test.com"
-expect "unknown email → 202" 202
-UNKNOWN_EMAIL_BODY=$BODY
+forgot_password "unknown$SUFFIX"
+expect "unknown username → 202" 202
+UNKNOWN_USERNAME_BODY=$BODY
 
-forgot_password "$ALICE_EMAIL"
-expect "existing email → 202" 202
-if [ "$BODY" = "$UNKNOWN_EMAIL_BODY" ]; then
-  pass "same body for an existing and an unknown email"
+forgot_password "$ALICE"
+expect "existing username → 202" 202
+if [ "$BODY" = "$UNKNOWN_USERNAME_BODY" ]; then
+  pass "same body for an existing and an unknown username"
 else
-  fail "same body for an existing and an unknown email" "unknown: $UNKNOWN_EMAIL_BODY, existing: $BODY"
+  fail "same body for an existing and an unknown username" "unknown: $UNKNOWN_USERNAME_BODY, existing: $BODY"
 fi
 ALICE_CODE=$(reset_code_of "$ALICE_ID") || exit 1
 
-forgot_password "$ALICE_EMAIL"
+forgot_password "$ALICE"
 expect "second request within 60 s → 202" 202
 SECOND_CODE=$(reset_code_of "$ALICE_ID") || exit 1
 if [ "$SECOND_CODE" = "$ALICE_CODE" ]; then
@@ -71,24 +70,24 @@ else
   fail "no new code within the cooldown" "a new code was sent: $SECOND_CODE"
 fi
 
-forgot_password "not-an-email"
-expect "invalid email → 400 EMAIL_INVALID" 400 EMAIL_INVALID
+forgot_password "ab"
+expect "username too short → 400 USERNAME_TOO_SHORT" 400 USERNAME_TOO_SHORT
 
 section "Reset password: errors"
-reset_password "$ALICE_EMAIL" "$WRONG_CODE" "$NEW_PASSWORD"
+reset_password "$ALICE" "$WRONG_CODE" "$NEW_PASSWORD"
 expect "wrong code → 401 INVALID_OTP" 401 INVALID_OTP
 
-reset_password "unknown$SUFFIX@test.com" "$ALICE_CODE" "$NEW_PASSWORD"
-expect "unknown email → 401 INVALID_OTP" 401 INVALID_OTP
+reset_password "unknown$SUFFIX" "$ALICE_CODE" "$NEW_PASSWORD"
+expect "unknown username → 401 INVALID_OTP" 401 INVALID_OTP
 
-reset_password "$ALICE_EMAIL" "$ALICE_CODE" "weak"
+reset_password "$ALICE" "$ALICE_CODE" "weak"
 expect "weak password → 400 NEW_PASSWORD_TOO_WEAK" 400 NEW_PASSWORD_TOO_WEAK
 
-reset_password "$ALICE_EMAIL" "12" "$NEW_PASSWORD"
+reset_password "$ALICE" "12" "$NEW_PASSWORD"
 expect "code of 2 digits → 400 OTP_CODE_INVALID" 400 OTP_CODE_INVALID
 
 section "Reset password"
-reset_password "$ALICE_EMAIL" "$ALICE_CODE" "$NEW_PASSWORD"
+reset_password "$ALICE" "$ALICE_CODE" "$NEW_PASSWORD"
 expect "right code → 204" 204
 
 sign_in "$ALICE" "$PASSWORD"
@@ -97,7 +96,7 @@ expect "old password → 401 INVALID_CREDENTIALS" 401 INVALID_CREDENTIALS
 sign_in "$ALICE" "$NEW_PASSWORD"
 expect "new password → 201" 201
 
-reset_password "$ALICE_EMAIL" "$ALICE_CODE" "Other$NEW_PASSWORD"
+reset_password "$ALICE" "$ALICE_CODE" "Other$NEW_PASSWORD"
 expect "code used twice → 401 INVALID_OTP" 401 INVALID_OTP
 
 if docker logs "$API_CONTAINER" 2>&1 | grep -q "E2E password changed account=$ALICE_ID"; then
@@ -107,14 +106,14 @@ else
 fi
 
 section "Too many attempts"
-forgot_password "$BOB@test.com"
+forgot_password "$BOB"
 BOB_CODE=$(reset_code_of "$BOB_ID") || exit 1
 for attempt in 1 2 3 4 5; do
-  reset_password "$BOB@test.com" "$WRONG_CODE" "$NEW_PASSWORD"
+  reset_password "$BOB" "$WRONG_CODE" "$NEW_PASSWORD"
 done
 expect "5th wrong code → 401 INVALID_OTP" 401 INVALID_OTP
 
-reset_password "$BOB@test.com" "$BOB_CODE" "$NEW_PASSWORD"
+reset_password "$BOB" "$BOB_CODE" "$NEW_PASSWORD"
 expect "right code after 5 wrong ones → 429 TOO_MANY_OTP_ATTEMPTS" 429 TOO_MANY_OTP_ATTEMPTS
 
 section "Unverified account"
@@ -126,9 +125,9 @@ CAROL_ID=$(echo "$BODY" | jq -r '.id // empty')
 sign_in "$CAROL" "$PASSWORD"
 expect "unverified account cannot sign in → 403 ACCOUNT_NOT_ACTIVE" 403 ACCOUNT_NOT_ACTIVE
 
-forgot_password "$CAROL@test.com"
+forgot_password "$CAROL"
 CAROL_CODE=$(reset_code_of "$CAROL_ID") || exit 1
-reset_password "$CAROL@test.com" "$CAROL_CODE" "$NEW_PASSWORD"
+reset_password "$CAROL" "$CAROL_CODE" "$NEW_PASSWORD"
 expect "reset of an unverified account → 204" 204
 
 sign_in "$CAROL" "$NEW_PASSWORD"

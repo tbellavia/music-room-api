@@ -16,9 +16,10 @@ import { AuthMethod } from 'src/identity/domain/auth-method.enum';
 import { PasswordReset } from 'src/identity/domain/password-reset.entity';
 import { generateOtp, hashOtpCode } from 'src/shared/otp';
 
-// Never fails and never tells whether the email has an account: the client
-// gets the same answer for an unknown email, a Google account or a request
+// Never fails and never tells whether the username has an account: the client
+// gets the same answer for an unknown username, a Google account or a request
 // sent too soon. Only the logs know which case it was.
+// The code goes to the email of the account, never to an address from the request.
 @Injectable()
 export class RequestPasswordResetUseCase {
   private readonly logger = new Logger(RequestPasswordResetUseCase.name);
@@ -33,7 +34,7 @@ export class RequestPasswordResetUseCase {
   ) {}
 
   async execute(input: RequestPasswordResetInput): Promise<void> {
-    const account = await this.accountRepository.findByEmail(input.email);
+    const account = await this.accountRepository.findByUsername(input.username);
     if (!account) {
       return;
     }
@@ -63,7 +64,7 @@ export class RequestPasswordResetUseCase {
     this.logger.log(`Password reset requested account=${account.id}`);
 
     // Not awaited: sending takes time, which would tell an existing account
-    // from an unknown email. A failure is only logged, for the same reason.
+    // from an unknown username. A failure is only logged, for the same reason.
     const sending = this.mailer.sendResetCode({
       accountId: account.id,
       email: account.email,

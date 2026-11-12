@@ -34,9 +34,9 @@ export class ResetPasswordUseCase {
   ) {}
 
   async execute(input: ResetPasswordInput): Promise<void> {
-    // An unknown email gets the same error as a wrong code: nothing tells
-    // whether the email has an account
-    const account = await this.accountRepository.findByEmail(input.email);
+    // An unknown username gets the same error as a wrong code: nothing tells
+    // whether the username has an account
+    const account = await this.accountRepository.findByUsername(input.username);
     if (!account) {
       throw new InvalidOTP();
     }

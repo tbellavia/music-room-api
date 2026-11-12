@@ -60,13 +60,13 @@ export class IdentityController {
     });
   }
 
-  // 202 whatever the email: the response never tells whether it has an account
+  // 202 whatever the username: the response never tells whether it has an account
   @Public()
   @Post('password/forgot')
   @HttpCode(202)
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
     await this.requestPasswordReset.execute({
-      email: forgotPasswordDto.email,
+      username: forgotPasswordDto.username,
     });
   }
 
@@ -75,7 +75,7 @@ export class IdentityController {
   @HttpCode(204)
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     await this.resetAccountPassword.execute({
-      email: resetPasswordDto.email,
+      username: resetPasswordDto.username,
       otp_code: resetPasswordDto.otp_code,
       new_password: resetPasswordDto.new_password,
     });

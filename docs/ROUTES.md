@@ -42,10 +42,10 @@ non respectée, par exemple :
 
 | Code | Champ | Règle | Routes |
 | --- | --- | --- | --- |
-| `USERNAME_INVALID` | `username` | Absent ou pas une chaîne | register, login, verify, verify/resend |
-| `USERNAME_TOO_SHORT` | `username` | Moins de 3 caractères | register, verify, verify/resend |
-| `USERNAME_TOO_LONG` | `username` | Plus de 20 caractères | register, verify, verify/resend |
-| `EMAIL_INVALID` | `email` | Absent ou pas un email | register, password/forgot, password/reset |
+| `USERNAME_INVALID` | `username` | Absent ou pas une chaîne | register, login, verify, verify/resend, password/forgot, password/reset |
+| `USERNAME_TOO_SHORT` | `username` | Moins de 3 caractères | register, verify, verify/resend, password/forgot, password/reset |
+| `USERNAME_TOO_LONG` | `username` | Plus de 20 caractères | register, verify, verify/resend, password/forgot, password/reset |
+| `EMAIL_INVALID` | `email` | Absent ou pas un email | register |
 | `PASSWORD_INVALID` | `password` | Absent ou pas une chaîne | register, login |
 | `PASSWORD_TOO_WEAK` | `password` | Moins de 12 caractères, ou sans minuscule, majuscule, chiffre et symbole | register |
 | `PASSWORD_TOO_LONG` | `password` | Plus de 72 caractères | register |
@@ -195,9 +195,9 @@ Génère un nouveau code (l'ancien devient invalide), remet le compteur d'essais
 
 ### `POST /identity/password/forgot` · public
 
-Mot de passe oublié, étape 1 : envoie par email un code à 6 chiffres, valable 15 minutes, pour choisir un nouveau mot de passe.
+Mot de passe oublié, étape 1 : à partir du username, envoie un code à 6 chiffres, valable 15 minutes, à l'**email du compte** (jamais à une adresse fournie dans la requête), pour choisir un nouveau mot de passe.
 
-**La réponse ne révèle jamais si l'email a un compte** : même statut et même body (vide), sans attendre l'envoi du mail, pour un email inconnu, un compte Google, une demande trop rapprochée ou un échec d'envoi du mail. Côté client, afficher toujours « Si un compte existe pour cet email, un code vient d'être envoyé ».
+**La réponse ne révèle jamais si le username a un compte** : même statut et même body (vide), sans attendre l'envoi du mail, pour un username inconnu, un compte Google, une demande trop rapprochée ou un échec d'envoi du mail. Côté client, afficher toujours « Si ce compte existe, un code vient d'être envoyé à son adresse email ».
 
 - Une nouvelle demande remplace le code précédent (qui devient invalide) et remet le compteur d'essais à zéro.
 - **Anti-spam :** une demande moins de **60 secondes** après le dernier code est ignorée (toujours 202, aucun email, le code précédent reste valable). Désactiver le bouton « Renvoyer le code » pendant 60 s.
@@ -206,18 +206,20 @@ Mot de passe oublié, étape 1 : envoie par email un code à 6 chiffres, valable
 ```ts
 // Body
 {
-  email: string
+  username: string  // 3-20 caractères
 }
 ```
 
 | Statut | Réponse | Détail |
 | --- | --- | --- |
-| 202 | _(vide)_ | Toujours, que l'email ait un compte ou non |
-| 400 | `EMAIL_INVALID` | Absent ou pas un email |
+| 202 | _(vide)_ | Toujours, que le username ait un compte ou non |
+| 400 | `USERNAME_INVALID` | Absent ou pas une chaîne |
+| 400 | `USERNAME_TOO_SHORT` | Moins de 3 caractères |
+| 400 | `USERNAME_TOO_LONG` | Plus de 20 caractères |
 
 ### `POST /identity/password/reset` · public
 
-Mot de passe oublié, étape 2 : remplace le mot de passe avec le code reçu par email. Le code et le nouveau mot de passe peuvent être saisis sur le même écran.
+Mot de passe oublié, étape 2 : remplace le mot de passe avec le code reçu par email. L'app renvoie le username saisi à l'étape 1 ; le code et le nouveau mot de passe peuvent être saisis sur le même écran.
 
 - Le code est à **usage unique** : si deux requêtes arrivent en même temps avec le bon code, une seule réussit.
 - **5 essais** par code ; au-delà, même le bon code est refusé : en demander un nouveau via `POST /identity/password/forgot`.
@@ -228,7 +230,7 @@ Mot de passe oublié, étape 2 : remplace le mot de passe avec le code reçu par
 ```ts
 // Body
 {
-  email: string
+  username: string      // 3-20 caractères
   otp_code: string      // exactement 6 chiffres
   new_password: string  // 12-72 caractères, mot de passe fort
 }
@@ -237,12 +239,14 @@ Mot de passe oublié, étape 2 : remplace le mot de passe avec le code reçu par
 | Statut | Réponse | Détail |
 | --- | --- | --- |
 | 204 | _(vide)_ | Mot de passe changé, la connexion avec le nouveau est possible |
-| 400 | `EMAIL_INVALID` | Absent ou pas un email |
+| 400 | `USERNAME_INVALID` | Absent ou pas une chaîne |
+| 400 | `USERNAME_TOO_SHORT` | Moins de 3 caractères |
+| 400 | `USERNAME_TOO_LONG` | Plus de 20 caractères |
 | 400 | `OTP_CODE_INVALID` | Absent ou pas exactement 6 chiffres |
 | 400 | `NEW_PASSWORD_INVALID` | Absent ou pas une chaîne |
 | 400 | `NEW_PASSWORD_TOO_WEAK` | Moins de 12 caractères, ou sans minuscule, majuscule, chiffre et symbole |
 | 400 | `NEW_PASSWORD_TOO_LONG` | Plus de 72 caractères |
-| 401 | `INVALID_OTP` | Code faux, expiré, déjà utilisé ou remplacé par un plus récent, aucun reset demandé, ou email inconnu (même erreur, pour ne rien révéler) |
+| 401 | `INVALID_OTP` | Code faux, expiré, déjà utilisé ou remplacé par un plus récent, aucun reset demandé, ou username inconnu (même erreur, pour ne rien révéler) |
 | 429 | `TOO_MANY_OTP_ATTEMPTS` | 5 codes faux pour ce code : en demander un nouveau |
 
 ### `GET /identity/profile`
