@@ -64,9 +64,9 @@ non respectée, par exemple :
 | `LICENSE_INVALID` | `license` | Ni `EVERYONE` ni `INVITED_ONLY` | `POST /playlists` |
 | `BEGIN_AT_INVALID` | `beginAt` | Pas une date | `POST /playlists` |
 | `END_AT_INVALID` | `endAt` | Pas une date | `POST /playlists` |
-| `LATITUDE_INVALID` | `latitude` | Absent (quand obligatoire) ou pas un nombre | création, join, actions sur les musiques |
+| `LATITUDE_INVALID` | `latitude` | Absent (quand obligatoire : création d'une playlist VOTE) ou pas un nombre | création, join, actions sur les musiques |
 | `LATITUDE_OUT_OF_RANGE` | `latitude` | Hors de -90..90 | création, join, actions sur les musiques |
-| `LONGITUDE_INVALID` | `longitude` | Absent (quand obligatoire) ou pas un nombre | création, join, actions sur les musiques |
+| `LONGITUDE_INVALID` | `longitude` | Absent (quand obligatoire : création d'une playlist VOTE) ou pas un nombre | création, join, actions sur les musiques |
 | `LONGITUDE_OUT_OF_RANGE` | `longitude` | Hors de -180..180 | création, join, actions sur les musiques |
 | `ACCOUNT_ID_INVALID` | `accountId` | Pas un UUID | `POST /playlists/:playlistId/invitations` |
 | `HAS_PRIVILEGE_INVALID` | `hasPrivilege` | Pas un booléen | `PATCH /playlists/:playlistId/participants/:participantId` |
@@ -360,7 +360,7 @@ Annuler une demande envoyée. Réservé à l'émetteur de la demande.
 
 ### `POST /playlists`
 
-Créer une playlist.
+Créer une playlist. Seule une playlist **VOTE** a une position : ses participants doivent être à 500 m maximum pour la rejoindre et agir sur ses musiques. Une playlist **EDITOR** est une collaboration à distance : elle n'a pas de position, et `latitude` / `longitude` ne doivent pas être envoyés.
 
 ```ts
 // Body
@@ -372,8 +372,8 @@ Créer une playlist.
   license?: "EVERYONE" | "INVITED_ONLY"  // défaut "EVERYONE", voir Musiques
   beginAt?: string          // ISO 8601
   endAt?: string            // ISO 8601, dans le futur et strictement après beginAt
-  latitude: number          // -90..90
-  longitude: number         // -180..180
+  latitude?: number         // -90..90, obligatoire pour VOTE, interdit pour EDITOR
+  longitude?: number        // -180..180, obligatoire pour VOTE, interdit pour EDITOR
 }
 ```
 
@@ -390,10 +390,11 @@ Créer une playlist.
 | 400 | `LICENSE_INVALID` | Ni `EVERYONE` ni `INVITED_ONLY` |
 | 400 | `BEGIN_AT_INVALID` | Pas une date |
 | 400 | `END_AT_INVALID` | Pas une date |
-| 400 | `LATITUDE_INVALID` | Absent ou pas un nombre |
-| 400 | `LATITUDE_OUT_OF_RANGE` | Hors de -90..90 |
-| 400 | `LONGITUDE_INVALID` | Absent ou pas un nombre |
-| 400 | `LONGITUDE_OUT_OF_RANGE` | Hors de -180..180 |
+| 400 | `LATITUDE_INVALID` | VOTE : absent ou pas un nombre |
+| 400 | `LATITUDE_OUT_OF_RANGE` | VOTE : hors de -90..90 |
+| 400 | `LONGITUDE_INVALID` | VOTE : absent ou pas un nombre |
+| 400 | `LONGITUDE_OUT_OF_RANGE` | VOTE : hors de -180..180 |
+| 400 | `LOCATION_NOT_ALLOWED` | EDITOR : `latitude` ou `longitude` envoyé, quelle que soit sa valeur |
 | 400 | `INVALID_PLAYLIST_PERIOD` | |
 | 400 | `PLAYLIST_END_IN_PAST` | |
 | 409 | `PLAYLIST_ALREADY_EXISTS` | Même nom pour le même owner |
@@ -414,8 +415,8 @@ Liste les playlists publiques non terminées (celles qui n'ont pas encore commen
     description: string
     beginAt: string | null
     endAt: string | null
-    latitude: number
-    longitude: number
+    latitude: number | null   // null pour une playlist EDITOR
+    longitude: number | null  // null pour une playlist EDITOR
     coverPath: string | null
   }[]
 }
@@ -423,29 +424,32 @@ Liste les playlists publiques non terminées (celles qui n'ont pas encore commen
 
 ### `POST /playlists/:playlistId/join`
 
-Rejoindre une playlist publique en cours (commencée et non terminée), en étant à **500 m maximum** de sa position.
+Rejoindre une playlist publique en cours (commencée et non terminée).
+
+- **VOTE** : il faut être à **500 m maximum** de sa position. Sans position, ou avec une seule coordonnée, l'appelant est considéré hors zone.
+- **EDITOR** : pas de position à envoyer (body vide `{}` ou absent). Une position envoyée est ignorée.
 
 ```ts
 // Body
 {
-  latitude: number   // -90..90
-  longitude: number  // -180..180
+  latitude?: number   // -90..90, nécessaire pour VOTE
+  longitude?: number  // -180..180, nécessaire pour VOTE
 }
 ```
 
 | Statut | Réponse | Détail |
 | --- | --- | --- |
 | 201 | `{ participantId: string }` | |
-| 400 | `LATITUDE_INVALID` | Absent ou pas un nombre |
+| 400 | `LATITUDE_INVALID` | Pas un nombre |
 | 400 | `LATITUDE_OUT_OF_RANGE` | Hors de -90..90 |
-| 400 | `LONGITUDE_INVALID` | Absent ou pas un nombre |
+| 400 | `LONGITUDE_INVALID` | Pas un nombre |
 | 400 | `LONGITUDE_OUT_OF_RANGE` | Hors de -180..180 |
 | 404 | `PLAYLIST_NOT_FOUND` | |
 | 403 | `PRIVATE_PLAYLIST` | |
 | 410 | `PLAYLIST_ENDED` | |
 | 403 | `PLAYLIST_NOT_STARTED` | |
 | 409 | `ALREADY_PARTICIPANT` | Déjà membre, ou owner de la playlist |
-| 403 | `OUTSIDE_PLAYLIST_ZONE` | |
+| 403 | `OUTSIDE_PLAYLIST_ZONE` | VOTE uniquement : à plus de 500 m, ou position absente |
 
 ### `POST /playlists/:playlistId/leave`
 

@@ -20,6 +20,8 @@ import { PlaylistEnded } from 'src/playlist/domain/errors/playlist-ended.error';
 import { PlaylistNotStarted } from 'src/playlist/domain/errors/playlist-not-started.error';
 import { AlreadyParticipant } from 'src/playlist/domain/errors/already-participant.error';
 import { OutsidePlaylistZone } from 'src/playlist/domain/errors/outside-playlist-zone.error';
+import { Playlist } from 'src/playlist/domain/playlist.entity';
+import { Coordinates } from 'src/playlist/domain/geo';
 
 @Injectable()
 export class JoinPlaylistUseCase {
@@ -53,12 +55,10 @@ export class JoinPlaylistUseCase {
     }
     await this.throwIfAlreadyParticipant(input);
 
-    const position = {
-      latitude: input.latitude,
-      longitude: input.longitude,
-    };
-    if (!playlist.isWithinZone(position)) {
-      throw new OutsidePlaylistZone();
+    // An EDITOR playlist is a remote collaboration: no zone to be in. For a
+    // VOTE playlist, a missing position counts as being outside the zone.
+    if (playlist.isVotePlaylist()) {
+      this.throwIfOutsideZone(playlist, input.position);
     }
 
     const participant = Participant.create({
@@ -76,6 +76,15 @@ export class JoinPlaylistUseCase {
     return {
       participantId: participant.id,
     };
+  }
+
+  private throwIfOutsideZone(
+    playlist: Playlist,
+    position: Coordinates | null,
+  ): void {
+    if (position === null || !playlist.isWithinZone(position)) {
+      throw new OutsidePlaylistZone();
+    }
   }
 
   private async throwIfAlreadyParticipant(input: JoinPlaylistInput) {

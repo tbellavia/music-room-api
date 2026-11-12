@@ -40,8 +40,6 @@ describe('ListMyInvitationsUseCase', () => {
       ownerId: 'owner-id',
       name: 'Road trip',
       description: '',
-      latitude: 48.8966,
-      longitude: 2.3184,
     });
     await playlistRepository.save(playlist);
     accountDirectory.add({ id: 'owner-id', username: 'owner' });
