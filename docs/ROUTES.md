@@ -170,7 +170,7 @@ Connexion avec Google. L'app obtient un `id_token` avec le SDK Google Sign-In (i
 
 ### `POST /identity/verify` · public
 
-Valide le compte avec le code reçu par email. Un compte Google est déjà validé.
+Valide le compte avec le code reçu par email et **connecte l'utilisateur** : la réponse contient un `access_token`, comme `POST /identity/login`, donc pas besoin d'appeler `login` ensuite. Un compte Google est déjà validé.
 
 ```ts
 // Body
@@ -182,7 +182,7 @@ Valide le compte avec le code reçu par email. Un compte Google est déjà valid
 
 | Statut | Réponse | Détail |
 | --- | --- | --- |
-| 201 | _(vide)_ | Compte validé, la connexion est possible |
+| 201 | `{ access_token: string }` | Compte validé et connecté |
 | 400 | `USERNAME_INVALID` | Absent ou pas une chaîne |
 | 400 | `USERNAME_TOO_SHORT` | Moins de 3 caractères |
 | 400 | `USERNAME_TOO_LONG` | Plus de 20 caractères |

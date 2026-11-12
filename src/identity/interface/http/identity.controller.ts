@@ -59,7 +59,7 @@ export class IdentityController {
   @Public()
   @Post('verify')
   async verify(@Body() verifyDto: VerifyDto) {
-    await this.verifyAccount.execute({
+    return await this.verifyAccount.execute({
       username: verifyDto.username,
       otp_code: verifyDto.otp_code,
     });
