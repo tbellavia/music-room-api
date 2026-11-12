@@ -12,7 +12,6 @@ API="${1:-http://localhost:3000/api/v1}"
 # 42 Paris
 PLAYLIST_LATITUDE=48.8966
 PLAYLIST_LONGITUDE=2.3184
-ON_SITE="\"latitude\":$PLAYLIST_LATITUDE,\"longitude\":$PLAYLIST_LONGITUDE"
 
 ONE_MORE_TIME="FGBhQbmPwH8"
 NEVER_GONNA="dQw4w9WgXcQ"
@@ -93,14 +92,15 @@ echo "  owner: alice$SUFFIX, joins: bob$SUFFIX, invited: carol$SUFFIX, stranger:
 
 LOCATION="\"latitude\":$PLAYLIST_LATITUDE,\"longitude\":$PLAYLIST_LONGITUDE"
 RADIO=$(create_playlist "$ALICE" \
-  "{\"type\":\"EDITOR\",\"name\":\"Radio $SUFFIX\",\"description\":\"\",$LOCATION}") || exit 1
+  "{\"type\":\"EDITOR\",\"name\":\"Radio $SUFFIX\",\"description\":\"\"}") || exit 1
 INVITED_ONLY=$(create_playlist "$ALICE" \
-  "{\"type\":\"EDITOR\",\"name\":\"Invited $SUFFIX\",\"description\":\"\",\"license\":\"INVITED_ONLY\",$LOCATION}") || exit 1
+  "{\"type\":\"EDITOR\",\"name\":\"Invited $SUFFIX\",\"description\":\"\",\"license\":\"INVITED_ONLY\"}") || exit 1
 VOTE=$(create_playlist "$ALICE" \
   "{\"type\":\"VOTE\",\"name\":\"Vote $SUFFIX\",\"description\":\"\",$LOCATION}") || exit 1
 
-request POST "/playlists/$RADIO/join" "$BOB" "{$ON_SITE}"
-request POST "/playlists/$INVITED_ONLY/join" "$BOB" "{$ON_SITE}"
+# An EDITOR playlist has no location: joined without position
+request POST "/playlists/$RADIO/join" "$BOB" "{}"
+request POST "/playlists/$INVITED_ONLY/join" "$BOB" "{}"
 request POST "/playlists/$INVITED_ONLY/invitations" "$ALICE" "{\"accountId\":\"$CAROL_ID\"}"
 request POST "/playlists/invitations/$(json_field invitationId)/accept" "$CAROL"
 echo "  playlists: radio (EDITOR, EVERYONE), invited only (EDITOR), vote"

@@ -30,6 +30,13 @@ import { LoggingPasswordResetMailer } from './infrastructure/mail/logging-passwo
 import { NodemailerPasswordResetMailer } from './infrastructure/mail/nodemailer-password-reset-mailer';
 import { RequestPasswordResetUseCase } from './application/use-cases/request-password-reset/request-password-reset.usecase';
 import { ResetPasswordUseCase } from './application/use-cases/reset-password/reset-password.usecase';
+import {
+  GOOGLE_TOKEN_VERIFIER,
+  GoogleTokenVerifier,
+} from './application/ports/google-token-verifier';
+import { E2eGoogleTokenVerifier } from './infrastructure/google/e2e-google-token-verifier';
+import { GoogleAuthTokenVerifier } from './infrastructure/google/google-auth-token-verifier';
+import { SignInWithGoogleUseCase } from './application/use-cases/sign-in-with-google/sign-in-with-google.usecase';
 
 @Module({
   imports: [
@@ -75,6 +82,17 @@ import { ResetPasswordUseCase } from './application/use-cases/reset-password/res
       },
     },
     {
+      provide: GOOGLE_TOKEN_VERIFIER,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService): GoogleTokenVerifier => {
+        if (isE2eMode(config)) {
+          return new E2eGoogleTokenVerifier();
+        }
+        const clientId = config.getOrThrow<string>('GOOGLE_CLIENT_ID');
+        return new GoogleAuthTokenVerifier(clientId);
+      },
+    },
+    {
       provide: PASSWORD_HASHER,
       useClass: BcryptPasswordService,
     },
@@ -85,6 +103,7 @@ import { ResetPasswordUseCase } from './application/use-cases/reset-password/res
     ResendVerificationCodeUseCase,
     RequestPasswordResetUseCase,
     ResetPasswordUseCase,
+    SignInWithGoogleUseCase,
   ],
   exports: [JwtModule],
 })

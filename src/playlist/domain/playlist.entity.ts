@@ -1,5 +1,7 @@
 import { PLAYLIST_ZONE_RADIUS_METERS } from 'src/shared/constants';
 import { InvalidPlaylistPeriod } from './errors/invalid-playlist-period.error';
+import { LocationNotAllowed } from './errors/location-not-allowed.error';
+import { LocationRequired } from './errors/location-required.error';
 import { Coordinates, distanceInMeters } from './geo';
 import { PlaylistType } from './playlist-type.enum';
 import { PlaylistLicense } from './playlist-license.enum';
@@ -14,8 +16,10 @@ export type CreatePlaylistInfos = {
   license?: PlaylistLicense;
   beginAt?: Date | null;
   endAt?: Date | null;
-  latitude: number;
-  longitude: number;
+  // Required for a VOTE playlist (participants must be on site), forbidden for
+  // an EDITOR playlist (remote collaboration)
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export class Playlist {
@@ -29,8 +33,9 @@ export class Playlist {
     public license: PlaylistLicense,
     public beginAt: Date | null,
     public endAt: Date | null,
-    public latitude: number,
-    public longitude: number,
+    // null for an EDITOR playlist
+    public latitude: number | null,
+    public longitude: number | null,
     public coverPath: string | null,
   ) {}
 
@@ -38,6 +43,7 @@ export class Playlist {
     if (infos.beginAt && infos.endAt && infos.endAt <= infos.beginAt) {
       throw new InvalidPlaylistPeriod();
     }
+    Playlist.throwIfInvalidLocation(infos);
 
     return new Playlist(
       infos.id,
@@ -49,10 +55,26 @@ export class Playlist {
       infos.license ?? PlaylistLicense.EVERYONE,
       infos.beginAt ?? null,
       infos.endAt ?? null,
-      infos.latitude,
-      infos.longitude,
+      infos.latitude ?? null,
+      infos.longitude ?? null,
       null,
     );
+  }
+
+  private static throwIfInvalidLocation(infos: CreatePlaylistInfos): void {
+    const hasLatitude = infos.latitude !== undefined && infos.latitude !== null;
+    const hasLongitude =
+      infos.longitude !== undefined && infos.longitude !== null;
+
+    if (infos.type === PlaylistType.EDITOR) {
+      if (hasLatitude || hasLongitude) {
+        throw new LocationNotAllowed();
+      }
+      return;
+    }
+    if (!hasLatitude || !hasLongitude) {
+      throw new LocationRequired();
+    }
   }
 
   isOwner(accountId: string): boolean {
@@ -85,7 +107,15 @@ export class Playlist {
     return this.hasBegun(now) && !this.hasEnded(now);
   }
 
+  // A playlist without location (EDITOR) has no zone to be in
   isWithinZone(position: Coordinates): boolean {
-    return distanceInMeters(this, position) <= PLAYLIST_ZONE_RADIUS_METERS;
+    if (this.latitude === null || this.longitude === null) {
+      return false;
+    }
+    const location: Coordinates = {
+      latitude: this.latitude,
+      longitude: this.longitude,
+    };
+    return distanceInMeters(location, position) <= PLAYLIST_ZONE_RADIUS_METERS;
   }
 }

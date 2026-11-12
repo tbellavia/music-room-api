@@ -88,7 +88,7 @@ describe('RequestPasswordResetUseCase', () => {
       id: 'bob-id',
       username: 'bob',
       email: 'bob@example.com',
-      password: 'random',
+      google_id: 'google-sub',
     });
     await accountRepository.save(bob);
 

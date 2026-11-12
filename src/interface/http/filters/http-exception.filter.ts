@@ -41,6 +41,8 @@ import { TrackVersionConflict } from 'src/playlist/domain/errors/track-version-c
 import { PlaylistFull } from 'src/playlist/domain/errors/playlist-full.error';
 import { NotAnEditorPlaylist } from 'src/playlist/domain/errors/not-an-editor-playlist.error';
 import { InvalidMove } from 'src/playlist/domain/errors/invalid-move.error';
+import { LocationNotAllowed } from 'src/playlist/domain/errors/location-not-allowed.error';
+import { LocationRequired } from 'src/playlist/domain/errors/location-required.error';
 import {
   OTP_RESEND_COOLDOWN_SECONDS,
   PLAYLIST_MAX_TRACKS,
@@ -62,6 +64,7 @@ import { InvalidOTP } from 'src/identity/domain/errors/invalid-otp.error';
 import { TooManyOtpAttempts } from 'src/identity/domain/errors/too-many-otp-attempts.error';
 import { OtpResendTooSoon } from 'src/identity/domain/errors/otp-resend-too-soon.error';
 import { VerificationEmailNotSent } from 'src/identity/domain/errors/verification-email-not-sent.error';
+import { InvalidGoogleToken } from 'src/identity/domain/errors/invalid-google-token.error';
 
 type ErrorResponse = {
   status: number;
@@ -162,6 +165,14 @@ const DOMAIN_ERRORS = new Map<unknown, ErrorResponse>([
       message: `Wait ${OTP_RESEND_COOLDOWN_SECONDS} seconds between two codes`,
     },
   ],
+  [
+    InvalidGoogleToken,
+    {
+      status: 401,
+      error: 'INVALID_GOOGLE_TOKEN',
+      message: 'Invalid or expired Google token',
+    },
+  ],
   // The account is saved before the email is sent: only the email is missing
   [
     VerificationEmailNotSent,
@@ -235,6 +246,25 @@ const DOMAIN_ERRORS = new Map<unknown, ErrorResponse>([
       status: 400,
       error: 'INVALID_PLAYLIST_PERIOD',
       message: 'Playlist end must be after its beginning',
+    },
+  ],
+  // An EDITOR playlist is a remote collaboration: it has no location
+  [
+    LocationNotAllowed,
+    {
+      status: 400,
+      error: 'LOCATION_NOT_ALLOWED',
+      message:
+        'An EDITOR playlist has no location: do not send latitude and longitude',
+    },
+  ],
+  // Normally caught by the validation first (LATITUDE_INVALID, LONGITUDE_INVALID)
+  [
+    LocationRequired,
+    {
+      status: 400,
+      error: 'LOCATION_REQUIRED',
+      message: 'A VOTE playlist needs a latitude and a longitude',
     },
   ],
   [

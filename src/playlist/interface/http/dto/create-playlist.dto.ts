@@ -10,6 +10,7 @@ import {
   MaxLength,
   Min,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 import { PlaylistType } from 'src/playlist/domain/playlist-type.enum';
 import { PlaylistLicense } from 'src/playlist/domain/playlist-license.enum';
@@ -19,6 +20,12 @@ import {
   PLAYLIST_NAME_MIN_LENGTH,
 } from 'src/shared/constants';
 import { withCode } from 'src/interface/http/validation/validation-code';
+
+// An invalid type is reported on `type`: the coordinates are then still
+// checked, like for a VOTE playlist
+function isVotePlaylist(dto: CreatePlaylistDto): boolean {
+  return dto.type !== PlaylistType.EDITOR;
+}
 
 export class CreatePlaylistDto {
   @IsEnum(PlaylistType, withCode('PLAYLIST_TYPE_INVALID'))
@@ -51,13 +58,17 @@ export class CreatePlaylistDto {
   @IsDate(withCode('END_AT_INVALID'))
   endAt?: Date;
 
+  // Validated for a VOTE playlist only. For an EDITOR playlist, the domain
+  // rejects any value sent with LOCATION_NOT_ALLOWED.
+  @ValidateIf(isVotePlaylist)
   @IsNumber({}, withCode('LATITUDE_INVALID'))
   @Min(-90, withCode('LATITUDE_OUT_OF_RANGE'))
   @Max(90, withCode('LATITUDE_OUT_OF_RANGE'))
-  latitude: number;
+  latitude?: number;
 
+  @ValidateIf(isVotePlaylist)
   @IsNumber({}, withCode('LONGITUDE_INVALID'))
   @Min(-180, withCode('LONGITUDE_OUT_OF_RANGE'))
   @Max(180, withCode('LONGITUDE_OUT_OF_RANGE'))
-  longitude: number;
+  longitude?: number;
 }

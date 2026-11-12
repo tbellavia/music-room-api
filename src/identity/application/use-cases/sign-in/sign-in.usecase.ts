@@ -9,6 +9,7 @@ import { PASSWORD_HASHER, PasswordHasher } from '../../ports/password-hasher';
 import { Unauthorized } from 'src/identity/domain/errors/unauthorized.error';
 import { JwtService } from '@nestjs/jwt';
 import { AccountNotActive } from 'src/identity/domain/errors/account-not-active.error';
+import { signAccessToken } from '../../access-token';
 
 @Injectable()
 export class SignInUseCase {
@@ -29,6 +30,11 @@ export class SignInUseCase {
       throw new AccountNotFound();
     }
 
+    // A Google account has no password: same answer as a wrong password, so
+    // the login route does not reveal how an account was created
+    if (account.password === null) {
+      throw new Unauthorized();
+    }
     if (!this.passwordService.compare(input.password, account.password)) {
       throw new Unauthorized();
     }
@@ -38,9 +44,8 @@ export class SignInUseCase {
 
     this.logger.log(`Account signed in account=${account.id}`);
 
-    const payload = { sub: account.id, username: account.username };
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: signAccessToken(this.jwtService, account),
     };
   }
 }

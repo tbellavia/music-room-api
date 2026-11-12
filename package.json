@@ -29,6 +29,7 @@
     "bcrypt-ts": "^8.0.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
+    "google-auth-library": "^11.3.4",
     "joi": "^18.2.1",
     "nodemailer": "^10.3.1",
     "pg": "^8.21.0",

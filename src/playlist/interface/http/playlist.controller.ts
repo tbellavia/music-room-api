@@ -22,6 +22,7 @@ import { RemoveParticipantUseCase } from 'src/playlist/application/use-cases/rem
 import { LeavePlaylistUseCase } from 'src/playlist/application/use-cases/leave-playlist/leave-playlist.usecase';
 import { CreatePlaylistDto } from './dto/create-playlist.dto';
 import { JoinPlaylistDto } from './dto/join-playlist.dto';
+import { toPosition } from './dto/position.dto';
 import { InviteParticipantDto } from './dto/invite-participant.dto';
 import { UpdateParticipantPrivilegeDto } from './dto/update-participant-privilege.dto';
 
@@ -75,8 +76,7 @@ export class PlaylistController {
     return await this.joinPlaylist.execute({
       playlistId,
       accountId,
-      latitude: joinPlaylistDto.latitude,
-      longitude: joinPlaylistDto.longitude,
+      position: toPosition(joinPlaylistDto),
     });
   }
 

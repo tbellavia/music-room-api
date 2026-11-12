@@ -19,7 +19,7 @@ export type CreateGoogleAccountInfos = {
   id: string;
   username: string;
   email: string;
-  password: string;
+  google_id: string;
 };
 
 export class Account {
@@ -27,13 +27,16 @@ export class Account {
     public readonly id: string,
     public readonly username: string,
     public readonly email: string,
-    public password: string,
+    // null for a Google account: it never signs in with a password
+    public password: string | null,
     public otp_code: string | null,
     public otp_expiry: Date | null,
     public otp_sent_at: Date | null,
     public otp_attempts: number,
     public is_active: boolean,
     public readonly auth_method: AuthMethod,
+    // The `sub` of the Google identity: unlike the email, it never changes
+    public readonly google_id: string | null,
   ) {}
 
   // A local account stays inactive until its email is verified with the code
@@ -49,6 +52,7 @@ export class Account {
       0,
       false,
       AuthMethod.LOCAL,
+      null,
     );
   }
 
@@ -58,13 +62,14 @@ export class Account {
       infos.id,
       infos.username,
       infos.email,
-      infos.password,
+      null,
       null,
       null,
       null,
       0,
       true,
       AuthMethod.GOOGLE,
+      infos.google_id,
     );
   }
 

@@ -4,6 +4,8 @@ import { PlaylistLicense } from 'src/playlist/domain/playlist-license.enum';
 import { PlaylistAlreadyExists } from 'src/playlist/domain/errors/playlist-already-exists.error';
 import { InvalidPlaylistPeriod } from 'src/playlist/domain/errors/invalid-playlist-period.error';
 import { PlaylistEndInPast } from 'src/playlist/domain/errors/playlist-end-in-past.error';
+import { LocationNotAllowed } from 'src/playlist/domain/errors/location-not-allowed.error';
+import { LocationRequired } from 'src/playlist/domain/errors/location-required.error';
 import { CreatePlaylistUseCase } from './create-playlist.usecase';
 import { CreatePlaylistInput } from './create-playlist.contracts';
 
@@ -18,6 +20,13 @@ describe('CreatePlaylistUseCase', () => {
     description: 'Une soirée à 42',
     latitude: 48.8966,
     longitude: 2.3184,
+  };
+
+  const editorInput: CreatePlaylistInput = {
+    ownerId: 'owner-id',
+    type: PlaylistType.EDITOR,
+    name: 'Radio',
+    description: 'Une radio collaborative',
   };
 
   beforeEach(() => {
@@ -35,15 +44,49 @@ describe('CreatePlaylistUseCase', () => {
     expect(saved?.isPrivate).toBe(false);
   });
 
-  it('creates an editor playlist', async () => {
-    const { id } = await useCase.execute({
-      ...input,
-      type: PlaylistType.EDITOR,
-    });
+  it('saves the location of a vote playlist', async () => {
+    const { id } = await useCase.execute(input);
+
+    const saved = await repository.findById(id);
+    expect(saved?.latitude).toBe(48.8966);
+    expect(saved?.longitude).toBe(2.3184);
+  });
+
+  it('creates an editor playlist without location', async () => {
+    const { id } = await useCase.execute(editorInput);
 
     const saved = await repository.findById(id);
     expect(saved).not.toBeNull();
     expect(saved?.type).toBe(PlaylistType.EDITOR);
+    expect(saved?.latitude).toBeNull();
+    expect(saved?.longitude).toBeNull();
+  });
+
+  it('rejects an editor playlist sent with a location, without saving it', async () => {
+    const creation = useCase.execute({
+      ...editorInput,
+      latitude: 48.8966,
+      longitude: 2.3184,
+    });
+
+    await expect(creation).rejects.toThrow(LocationNotAllowed);
+    expect(repository.playlists.size).toBe(0);
+  });
+
+  it('rejects an editor playlist sent with a latitude only', async () => {
+    const creation = useCase.execute({ ...editorInput, latitude: 48.8966 });
+
+    await expect(creation).rejects.toThrow(LocationNotAllowed);
+  });
+
+  it('rejects a vote playlist without location', async () => {
+    const creation = useCase.execute({
+      ...input,
+      latitude: undefined,
+      longitude: undefined,
+    });
+
+    await expect(creation).rejects.toThrow(LocationRequired);
   });
 
   it('uses the EVERYONE license by default', async () => {
@@ -85,7 +128,7 @@ describe('CreatePlaylistUseCase', () => {
     await useCase.execute(input);
 
     await expect(
-      useCase.execute({ ...input, type: PlaylistType.EDITOR }),
+      useCase.execute({ ...editorInput, name: input.name }),
     ).rejects.toThrow(PlaylistAlreadyExists);
     expect(repository.playlists.size).toBe(1);
   });

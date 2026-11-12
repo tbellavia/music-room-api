@@ -125,7 +125,7 @@ describe('VerifyAccountUseCase', () => {
       id: 'account-id',
       username: 'alice',
       email: 'alice@example.com',
-      password: 'hashed-password',
+      google_id: 'google-sub',
     });
     await repository.save(googleAccount);
 

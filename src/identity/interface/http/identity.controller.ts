@@ -12,6 +12,8 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { RequestPasswordResetUseCase } from 'src/identity/application/use-cases/request-password-reset/request-password-reset.usecase';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ResetPasswordUseCase } from 'src/identity/application/use-cases/reset-password/reset-password.usecase';
+import { GoogleSignInDto } from './dto/google-sign-in.dto';
+import { SignInWithGoogleUseCase } from 'src/identity/application/use-cases/sign-in-with-google/sign-in-with-google.usecase';
 
 @Controller('identity')
 export class IdentityController {
@@ -22,6 +24,7 @@ export class IdentityController {
     private readonly resendVerificationCode: ResendVerificationCodeUseCase,
     private readonly requestPasswordReset: RequestPasswordResetUseCase,
     private readonly resetAccountPassword: ResetPasswordUseCase,
+    private readonly signInWithGoogle: SignInWithGoogleUseCase,
   ) {}
 
   @Public()
@@ -40,6 +43,16 @@ export class IdentityController {
     return await this.signInAccount.execute({
       username: signInDto.username,
       password: signInDto.password,
+    });
+  }
+
+  // 200 whether the account is created or already exists: the app does the same
+  @Public()
+  @Post('google')
+  @HttpCode(200)
+  async googleSignIn(@Body() googleSignInDto: GoogleSignInDto) {
+    return await this.signInWithGoogle.execute({
+      id_token: googleSignInDto.id_token,
     });
   }
 

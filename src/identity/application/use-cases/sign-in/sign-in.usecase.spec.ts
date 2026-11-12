@@ -73,6 +73,23 @@ describe('SignInUseCase', () => {
     await expect(signIn).rejects.toThrow(Unauthorized);
   });
 
+  it('rejects a google account, which has no password', async () => {
+    const googleAccount = Account.google({
+      id: 'account-id',
+      username: 'alice',
+      email: 'alice@gmail.com',
+      google_id: 'google-sub',
+    });
+    await repository.save(googleAccount);
+
+    const signIn = useCase.execute({
+      username: 'alice',
+      password: alicePassword,
+    });
+
+    await expect(signIn).rejects.toThrow(Unauthorized);
+  });
+
   it('rejects an unknown username', async () => {
     const signIn = useCase.execute({
       username: 'unknown',

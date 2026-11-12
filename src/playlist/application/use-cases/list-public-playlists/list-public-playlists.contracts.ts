@@ -10,8 +10,9 @@ export type PublicPlaylist = {
   description: string;
   beginAt: Date | null;
   endAt: Date | null;
-  latitude: number;
-  longitude: number;
+  // null for an EDITOR playlist
+  latitude: number | null;
+  longitude: number | null;
   coverPath: string | null;
 };
 

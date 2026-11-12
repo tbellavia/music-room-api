@@ -1,3 +1,4 @@
+import { playlistInfos } from 'src/playlist/domain/playlist-test-infos';
 import { InMemoryPlaylistRepository } from 'src/playlist/infrastructure/persistence/playlist/in-memory-playlist.repository';
 import { JoinMethod } from 'src/playlist/domain/join-method.enum';
 import { InMemoryParticipantRepository } from 'src/playlist/infrastructure/persistence/participant/in-memory-participant.repository';
@@ -35,9 +36,13 @@ const defaultInfos: CreatePlaylistInfos = {
 const input: JoinPlaylistInput = {
   playlistId: 'playlist-id',
   accountId: 'joiner-id',
-  latitude: PLAYLIST_LATITUDE + 400 * ONE_METER_IN_LATITUDE_DEGREES,
-  longitude: PLAYLIST_LONGITUDE,
+  position: {
+    latitude: PLAYLIST_LATITUDE + 400 * ONE_METER_IN_LATITUDE_DEGREES,
+    longitude: PLAYLIST_LONGITUDE,
+  },
 };
+
+const withoutPosition: JoinPlaylistInput = { ...input, position: null };
 
 describe('JoinPlaylistUseCase', () => {
   let playlistRepository: InMemoryPlaylistRepository;
@@ -45,7 +50,7 @@ describe('JoinPlaylistUseCase', () => {
   let useCase: JoinPlaylistUseCase;
 
   async function givenPlaylist(overrides: Partial<CreatePlaylistInfos> = {}) {
-    const playlist = Playlist.create({ ...defaultInfos, ...overrides });
+    const playlist = Playlist.create(playlistInfos(defaultInfos, overrides));
     await playlistRepository.save(playlist);
   }
 
@@ -80,10 +85,22 @@ describe('JoinPlaylistUseCase', () => {
     expect(participant?.joinedVia).toBe(JoinMethod.JOIN);
   });
 
-  it('lets a user join an editor playlist', async () => {
+  it('lets a user join an editor playlist without position', async () => {
     await givenPlaylist({ type: PlaylistType.EDITOR });
 
-    await useCase.execute(input);
+    await useCase.execute(withoutPosition);
+
+    expect(participantRepository.participants.size).toBe(1);
+  });
+
+  it('ignores the position sent to join an editor playlist', async () => {
+    await givenPlaylist({ type: PlaylistType.EDITOR });
+    const farAwayInput: JoinPlaylistInput = {
+      ...input,
+      position: { latitude: 0, longitude: 0 },
+    };
+
+    await useCase.execute(farAwayInput);
 
     expect(participantRepository.participants.size).toBe(1);
   });
@@ -154,12 +171,24 @@ describe('JoinPlaylistUseCase', () => {
   it('rejects a position farther than 500 m', async () => {
     await givenPlaylist();
 
-    const farInput = {
+    const farInput: JoinPlaylistInput = {
       ...input,
-      latitude: PLAYLIST_LATITUDE + 600 * ONE_METER_IN_LATITUDE_DEGREES,
+      position: {
+        latitude: PLAYLIST_LATITUDE + 600 * ONE_METER_IN_LATITUDE_DEGREES,
+        longitude: PLAYLIST_LONGITUDE,
+      },
     };
 
     await expect(useCase.execute(farInput)).rejects.toThrow(
+      OutsidePlaylistZone,
+    );
+    expect(participantRepository.participants.size).toBe(0);
+  });
+
+  it('rejects a vote playlist joined without position, as outside the zone', async () => {
+    await givenPlaylist();
+
+    await expect(useCase.execute(withoutPosition)).rejects.toThrow(
       OutsidePlaylistZone,
     );
     expect(participantRepository.participants.size).toBe(0);

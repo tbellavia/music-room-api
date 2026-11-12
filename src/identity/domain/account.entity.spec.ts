@@ -35,6 +35,7 @@ describe('Account', () => {
       expect(account.otp_expiry).toEqual(expiry);
       expect(account.otp_attempts).toBe(0);
       expect(account.auth_method).toBe(AuthMethod.LOCAL);
+      expect(account.google_id).toBeNull();
     });
 
     it('creates a google account already active, without code', () => {
@@ -42,7 +43,7 @@ describe('Account', () => {
         id: 'account-id',
         username: 'alice',
         email: 'alice@example.com',
-        password: 'hashed-password',
+        google_id: 'google-sub',
       });
 
       expect(account.is_active).toBe(true);
@@ -50,12 +51,24 @@ describe('Account', () => {
       expect(account.auth_method).toBe(AuthMethod.GOOGLE);
     });
 
+    it('creates a google account without password, with its google id', () => {
+      const account = Account.google({
+        id: 'account-id',
+        username: 'alice',
+        email: 'alice@example.com',
+        google_id: 'google-sub',
+      });
+
+      expect(account.password).toBeNull();
+      expect(account.google_id).toBe('google-sub');
+    });
+
     it('keeps the username and the email of a google account in place', () => {
       const account = Account.google({
         id: 'account-id',
         username: 'alice',
         email: 'alice@example.com',
-        password: 'hashed-password',
+        google_id: 'google-sub',
       });
 
       expect(account.username).toBe('alice');

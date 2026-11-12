@@ -64,7 +64,7 @@ LOCATION="\"latitude\":$PLAYLIST_LATITUDE,\"longitude\":$PLAYLIST_LONGITUDE"
 PRIVATE=$(create_playlist "$ALICE" \
   "{\"type\":\"VOTE\",\"name\":\"Private $SUFFIX\",\"description\":\"\",\"isPrivate\":true,$LOCATION}") || exit 1
 FUTURE=$(create_playlist "$ALICE" \
-  "{\"type\":\"EDITOR\",\"name\":\"Future $SUFFIX\",\"description\":\"\",\"isPrivate\":true,\"beginAt\":\"2030-01-01T20:00:00Z\",$LOCATION}") || exit 1
+  "{\"type\":\"EDITOR\",\"name\":\"Future $SUFFIX\",\"description\":\"\",\"isPrivate\":true,\"beginAt\":\"2030-01-01T20:00:00Z\"}") || exit 1
 echo "  playlists created: private (running), future (not started)"
 
 section "POST /playlists/:playlistId/invitations (owner)"

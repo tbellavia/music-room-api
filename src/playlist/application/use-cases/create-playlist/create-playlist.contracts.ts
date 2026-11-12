@@ -10,8 +10,8 @@ export type CreatePlaylistInput = {
   license?: PlaylistLicense;
   beginAt?: Date;
   endAt?: Date;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
 };
 
 export type CreatePlaylistOutput = {
