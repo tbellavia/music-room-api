@@ -53,6 +53,7 @@ non respectée, par exemple :
 | `NEW_PASSWORD_INVALID` | `new_password` | Absent ou pas une chaîne | password/reset |
 | `NEW_PASSWORD_TOO_WEAK` | `new_password` | Mêmes règles que `PASSWORD_TOO_WEAK` | password/reset |
 | `NEW_PASSWORD_TOO_LONG` | `new_password` | Plus de 72 caractères | password/reset |
+| `ID_TOKEN_INVALID` | `id_token` | Absent, vide, pas une chaîne ou plus de 4096 caractères | google |
 | `PLAYLIST_TYPE_INVALID` | `type` | Ni `VOTE` ni `EDITOR` | `POST /playlists` |
 | `NAME_INVALID` | `name` | Absent ou pas une chaîne | `POST /playlists` |
 | `NAME_TOO_SHORT` | `name` | Vide | `POST /playlists` |
@@ -142,8 +143,30 @@ Crée un compte **inactif** et envoie par email un code de validation à 6 chiff
 | 201 | `{ access_token: string }` | |
 | 400 | `USERNAME_INVALID` | Absent ou pas une chaîne |
 | 400 | `PASSWORD_INVALID` | Absent ou pas une chaîne |
-| 401 | `INVALID_CREDENTIALS` | |
+| 401 | `INVALID_CREDENTIALS` | Aussi pour un compte Google, qui n'a pas de mot de passe : il se connecte via `POST /identity/google` |
 | 403 | `ACCOUNT_NOT_ACTIVE` | Bons identifiants, mais compte pas encore validé |
+
+### `POST /identity/google` · public
+
+Connexion avec Google. L'app obtient un `id_token` avec le SDK Google Sign-In (iOS : `GIDServerClientID` = le client ID **Web** de l'API, sinon le token est refusé), puis l'envoie ici. L'API vérifie le token auprès de Google (signature, émetteur, expiration, destinataire, email vérifié) et renvoie son propre `access_token`, comme `POST /identity/login`.
+
+- **Première connexion** : crée un compte Google, actif tout de suite et sans mot de passe. Le username est généré depuis l'email (`alice.martin@gmail.com` → `alicemartin`), avec 4 chiffres ajoutés s'il est déjà pris (`alicemartin0427`).
+- **Connexions suivantes** : le compte est retrouvé par l'identifiant Google, même si l'email du compte Google a changé.
+- Un compte Google ne peut pas utiliser `login`, `verify`, `verify/resend` ni `password/forgot`.
+
+```ts
+// Body
+{
+  id_token: string  // ID token Google (JWT)
+}
+```
+
+| Statut | Réponse | Détail |
+| --- | --- | --- |
+| 200 | `{ access_token: string }` | Compte créé ou existant |
+| 400 | `ID_TOKEN_INVALID` | Absent, vide, pas une chaîne ou plus de 4096 caractères |
+| 401 | `INVALID_GOOGLE_TOKEN` | Token invalide, expiré, émis pour une autre app, ou email non vérifié par Google |
+| 409 | `EMAIL_ALREADY_EXISTS` | L'email Google est celui d'un compte créé avec `register` : pas de liaison automatique, se connecter avec `login` |
 
 ### `POST /identity/verify` · public
 

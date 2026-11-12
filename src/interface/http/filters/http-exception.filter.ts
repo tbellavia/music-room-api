@@ -62,6 +62,7 @@ import { InvalidOTP } from 'src/identity/domain/errors/invalid-otp.error';
 import { TooManyOtpAttempts } from 'src/identity/domain/errors/too-many-otp-attempts.error';
 import { OtpResendTooSoon } from 'src/identity/domain/errors/otp-resend-too-soon.error';
 import { VerificationEmailNotSent } from 'src/identity/domain/errors/verification-email-not-sent.error';
+import { InvalidGoogleToken } from 'src/identity/domain/errors/invalid-google-token.error';
 
 type ErrorResponse = {
   status: number;
@@ -160,6 +161,14 @@ const DOMAIN_ERRORS = new Map<unknown, ErrorResponse>([
       status: 429,
       error: 'OTP_RESEND_TOO_SOON',
       message: `Wait ${OTP_RESEND_COOLDOWN_SECONDS} seconds between two codes`,
+    },
+  ],
+  [
+    InvalidGoogleToken,
+    {
+      status: 401,
+      error: 'INVALID_GOOGLE_TOKEN',
+      message: 'Invalid or expired Google token',
     },
   ],
   // The account is saved before the email is sent: only the email is missing

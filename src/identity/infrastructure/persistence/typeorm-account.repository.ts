@@ -65,6 +65,16 @@ export class TypeOrmAccountRepository implements AccountRepository {
     return this.toDomain(entity);
   }
 
+  async findByGoogleId(googleId: string): Promise<Account | null> {
+    const entity = await this.repository.findOneBy({ google_id: googleId });
+
+    if (!entity) {
+      return null;
+    }
+
+    return this.toDomain(entity);
+  }
+
   // A single UPDATE ... WHERE otp_attempts < max: the check and the increment
   // cannot be interleaved by another request
   async consumeOtpAttempt(
@@ -92,6 +102,7 @@ export class TypeOrmAccountRepository implements AccountRepository {
       orm.otp_attempts,
       orm.is_active,
       orm.auth_method,
+      orm.google_id,
     );
   }
 
@@ -107,6 +118,7 @@ export class TypeOrmAccountRepository implements AccountRepository {
       otp_attempts: account.otp_attempts,
       is_active: account.is_active,
       auth_method: account.auth_method,
+      google_id: account.google_id,
     };
   }
 }

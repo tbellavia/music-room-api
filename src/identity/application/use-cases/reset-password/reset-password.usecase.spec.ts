@@ -64,6 +64,9 @@ describe('ResetPasswordUseCase', () => {
 
   async function aliceCanSignInWith(password: string): Promise<boolean> {
     const account = await storedAlice();
+    if (account.password === null) {
+      return false;
+    }
     return hasher.compare(password, account.password);
   }
 
