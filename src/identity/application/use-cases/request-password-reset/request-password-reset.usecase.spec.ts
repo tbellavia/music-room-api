@@ -56,8 +56,8 @@ describe('RequestPasswordResetUseCase', () => {
     jest.restoreAllMocks();
   });
 
-  it('emails a code to the account', async () => {
-    await useCase.execute({ email: ALICE_EMAIL });
+  it('emails a code to the address of the account', async () => {
+    await useCase.execute({ username: 'alice' });
 
     expect(mailer.sentResetCodes).toHaveLength(1);
     const mail = mailer.sentResetCodes[0];
@@ -67,7 +67,7 @@ describe('RequestPasswordResetUseCase', () => {
   });
 
   it('stores only the hash of the code', async () => {
-    await useCase.execute({ email: ALICE_EMAIL });
+    await useCase.execute({ username: 'alice' });
 
     const reset = await resetRepository.findByAccountId('alice-id');
     const sentCode = mailer.sentResetCodes[0].code;
@@ -75,9 +75,9 @@ describe('RequestPasswordResetUseCase', () => {
     expect(reset?.codeHash).not.toBe(sentCode);
   });
 
-  it('answers the same way for an unknown email, without sending', async () => {
+  it('answers the same way for an unknown username, without sending', async () => {
     await expect(
-      useCase.execute({ email: 'unknown@example.com' }),
+      useCase.execute({ username: 'unknown' }),
     ).resolves.toBeUndefined();
 
     expect(mailer.sentResetCodes).toHaveLength(0);
@@ -92,7 +92,7 @@ describe('RequestPasswordResetUseCase', () => {
     });
     await accountRepository.save(bob);
 
-    await useCase.execute({ email: 'bob@example.com' });
+    await useCase.execute({ username: 'bob' });
 
     expect(mailer.sentResetCodes).toHaveLength(0);
     expect(resetRepository.resets.has('bob-id')).toBe(false);
@@ -101,7 +101,7 @@ describe('RequestPasswordResetUseCase', () => {
   it('ignores a new request before the end of the cooldown', async () => {
     await givenPendingReset(THIRTY_SECONDS);
 
-    await useCase.execute({ email: ALICE_EMAIL });
+    await useCase.execute({ username: 'alice' });
 
     expect(mailer.sentResetCodes).toHaveLength(0);
     const reset = await resetRepository.findByAccountId('alice-id');
@@ -111,7 +111,7 @@ describe('RequestPasswordResetUseCase', () => {
   it('replaces the previous code and its attempts once the cooldown is over', async () => {
     await givenPendingReset(TWO_MINUTES);
 
-    await useCase.execute({ email: ALICE_EMAIL });
+    await useCase.execute({ username: 'alice' });
 
     const reset = await resetRepository.findByAccountId('alice-id');
     const sentCode = mailer.sentResetCodes[0].code;
@@ -126,7 +126,7 @@ describe('RequestPasswordResetUseCase', () => {
     mailer.isFailing = true;
 
     await expect(
-      useCase.execute({ email: ALICE_EMAIL }),
+      useCase.execute({ username: 'alice' }),
     ).resolves.toBeUndefined();
 
     // The failure is logged once the sending promise has settled

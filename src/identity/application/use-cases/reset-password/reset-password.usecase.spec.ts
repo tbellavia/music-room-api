@@ -18,7 +18,7 @@ const NEW_PASSWORD = 'New-Password-1!';
 const FIFTEEN_MINUTES = 15 * 60 * 1000;
 
 const aliceInput: ResetPasswordInput = {
-  email: 'alice@example.com',
+  username: 'alice',
   otp_code: RESET_CODE,
   new_password: NEW_PASSWORD,
 };
@@ -197,10 +197,10 @@ describe('ResetPasswordUseCase', () => {
       await expect(useCase.execute(aliceInput)).rejects.toThrow(InvalidOTP);
     });
 
-    it('rejects an unknown email with the same error as a wrong code', async () => {
-      const unknownEmailInput = { ...aliceInput, email: 'unknown@example.com' };
+    it('rejects an unknown username with the same error as a wrong code', async () => {
+      const unknownUsernameInput = { ...aliceInput, username: 'unknown' };
 
-      await expect(useCase.execute(unknownEmailInput)).rejects.toThrow(
+      await expect(useCase.execute(unknownUsernameInput)).rejects.toThrow(
         InvalidOTP,
       );
     });
