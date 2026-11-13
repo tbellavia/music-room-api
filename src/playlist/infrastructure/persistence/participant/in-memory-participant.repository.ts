@@ -33,6 +33,16 @@ export class InMemoryParticipantRepository implements ParticipantRepository {
     return Promise.resolve(playlistParticipants);
   }
 
+  findByAccount(accountId: string): Promise<Participant[]> {
+    const accountParticipations: Participant[] = [];
+    for (const participant of this.participants.values()) {
+      if (participant.accountId === accountId) {
+        accountParticipations.push(participant);
+      }
+    }
+    return Promise.resolve(accountParticipations);
+  }
+
   save(participant: Participant): Promise<void> {
     this.participants.set(participant.id, participant);
     return Promise.resolve();

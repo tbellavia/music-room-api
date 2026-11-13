@@ -5,6 +5,7 @@ import { LocationRequired } from './errors/location-required.error';
 import { Coordinates, distanceInMeters } from './geo';
 import { PlaylistType } from './playlist-type.enum';
 import { PlaylistLicense } from './playlist-license.enum';
+import { PlaylistStatus } from './playlist-status.enum';
 
 export type CreatePlaylistInfos = {
   id: string;
@@ -20,6 +21,8 @@ export type CreatePlaylistInfos = {
   // an EDITOR playlist (remote collaboration)
   latitude?: number | null;
   longitude?: number | null;
+  // Defaults to now, set by tests that need a creation order
+  createdAt?: Date;
 };
 
 export class Playlist {
@@ -37,6 +40,7 @@ export class Playlist {
     public latitude: number | null,
     public longitude: number | null,
     public coverPath: string | null,
+    public readonly createdAt: Date,
   ) {}
 
   static create(infos: CreatePlaylistInfos): Playlist {
@@ -58,6 +62,7 @@ export class Playlist {
       infos.latitude ?? null,
       infos.longitude ?? null,
       null,
+      infos.createdAt ?? new Date(),
     );
   }
 
@@ -107,15 +112,49 @@ export class Playlist {
     return this.hasBegun(now) && !this.hasEnded(now);
   }
 
-  // A playlist without location (EDITOR) has no zone to be in
-  isWithinZone(position: Coordinates): boolean {
+  status(now: Date = new Date()): PlaylistStatus {
+    if (this.hasEnded(now)) {
+      return PlaylistStatus.ENDED;
+    }
+    if (!this.hasBegun(now)) {
+      return PlaylistStatus.UPCOMING;
+    }
+    return PlaylistStatus.LIVE;
+  }
+
+  // null for a playlist without location (EDITOR)
+  distanceFrom(position: Coordinates): number | null {
     if (this.latitude === null || this.longitude === null) {
-      return false;
+      return null;
     }
     const location: Coordinates = {
       latitude: this.latitude,
       longitude: this.longitude,
     };
-    return distanceInMeters(location, position) <= PLAYLIST_ZONE_RADIUS_METERS;
+    return distanceInMeters(location, position);
+  }
+
+  // A playlist without location (EDITOR) has no zone to be in
+  isWithinZone(position: Coordinates): boolean {
+    const distance = this.distanceFrom(position);
+    if (distance === null) {
+      return false;
+    }
+    return distance <= PLAYLIST_ZONE_RADIUS_METERS;
+  }
+
+  // Same rules as joining, without the membership checks: lets the client
+  // enable the join button before trying
+  canBeJoinedFrom(
+    position: Coordinates | null,
+    now: Date = new Date(),
+  ): boolean {
+    if (this.isPrivate || !this.isActive(now)) {
+      return false;
+    }
+    if (this.isEditorPlaylist()) {
+      return true;
+    }
+    return position !== null && this.isWithinZone(position);
   }
 }

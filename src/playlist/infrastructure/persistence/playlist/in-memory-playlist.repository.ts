@@ -31,6 +31,46 @@ export class InMemoryPlaylistRepository implements PlaylistRepository {
     return Promise.resolve(publicPlaylists);
   }
 
+  findByOwner(ownerId: string): Promise<Playlist[]> {
+    const ownedPlaylists: Playlist[] = [];
+    for (const playlist of this.playlists.values()) {
+      if (playlist.isOwner(ownerId)) {
+        ownedPlaylists.push(playlist);
+      }
+    }
+    return Promise.resolve(ownedPlaylists);
+  }
+
+  findByIds(ids: string[]): Promise<Playlist[]> {
+    const foundPlaylists: Playlist[] = [];
+    for (const id of ids) {
+      const playlist = this.playlists.get(id);
+      if (playlist) {
+        foundPlaylists.push(playlist);
+      }
+    }
+    return Promise.resolve(foundPlaylists);
+  }
+
+  async findRecentByOwner(ownerId: string, limit: number): Promise<Playlist[]> {
+    const ownedPlaylists = await this.findByOwner(ownerId);
+    const mostRecentFirst = ownedPlaylists.sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    );
+    return mostRecentFirst.slice(0, limit);
+  }
+
+  findPublicEvents(now: Date): Promise<Playlist[]> {
+    const events: Playlist[] = [];
+    for (const playlist of this.playlists.values()) {
+      const isEvent = !playlist.isPrivate && playlist.beginAt !== null;
+      if (isEvent && !playlist.hasEnded(now)) {
+        events.push(playlist);
+      }
+    }
+    return Promise.resolve(events);
+  }
+
   save(playlist: Playlist): Promise<void> {
     this.playlists.set(playlist.id, playlist);
     return Promise.resolve();
