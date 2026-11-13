@@ -6,10 +6,14 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { UserIdParam } from 'src/interface/http/decorators/user-param.decorator';
 import { CreatePlaylistUseCase } from 'src/playlist/application/use-cases/create-playlist/create-playlist.usecase';
 import { ListPublicPlaylistsUseCase } from 'src/playlist/application/use-cases/list-public-playlists/list-public-playlists.usecase';
+import { ListMyPlaylistsUseCase } from 'src/playlist/application/use-cases/list-my-playlists/list-my-playlists.usecase';
+import { ListMyRecentPlaylistsUseCase } from 'src/playlist/application/use-cases/list-my-recent-playlists/list-my-recent-playlists.usecase';
+import { ListPublicEventsUseCase } from 'src/playlist/application/use-cases/list-public-events/list-public-events.usecase';
 import { JoinPlaylistUseCase } from 'src/playlist/application/use-cases/join-playlist/join-playlist.usecase';
 import { InviteParticipantUseCase } from 'src/playlist/application/use-cases/invite-participant/invite-participant.usecase';
 import { ListMyInvitationsUseCase } from 'src/playlist/application/use-cases/list-my-invitations/list-my-invitations.usecase';
@@ -23,6 +27,8 @@ import { LeavePlaylistUseCase } from 'src/playlist/application/use-cases/leave-p
 import { CreatePlaylistDto } from './dto/create-playlist.dto';
 import { JoinPlaylistDto } from './dto/join-playlist.dto';
 import { toPosition } from './dto/position.dto';
+import { ListMyPlaylistsDto } from './dto/list-my-playlists.dto';
+import { ListPublicEventsDto } from './dto/list-public-events.dto';
 import { InviteParticipantDto } from './dto/invite-participant.dto';
 import { UpdateParticipantPrivilegeDto } from './dto/update-participant-privilege.dto';
 
@@ -31,6 +37,9 @@ export class PlaylistController {
   constructor(
     private readonly createPlaylist: CreatePlaylistUseCase,
     private readonly listPublicPlaylists: ListPublicPlaylistsUseCase,
+    private readonly listMyPlaylists: ListMyPlaylistsUseCase,
+    private readonly listMyRecentPlaylists: ListMyRecentPlaylistsUseCase,
+    private readonly listPublicEvents: ListPublicEventsUseCase,
     private readonly joinPlaylist: JoinPlaylistUseCase,
     private readonly inviteParticipant: InviteParticipantUseCase,
     private readonly listMyInvitations: ListMyInvitationsUseCase,
@@ -65,6 +74,35 @@ export class PlaylistController {
   @Get('public')
   async listPublic() {
     return await this.listPublicPlaylists.execute();
+  }
+
+  @Get('me')
+  async listMine(
+    @UserIdParam() accountId: string,
+    @Query() listMyPlaylistsDto: ListMyPlaylistsDto,
+  ) {
+    return await this.listMyPlaylists.execute({
+      accountId,
+      role: listMyPlaylistsDto.role,
+      status: listMyPlaylistsDto.status,
+      order: listMyPlaylistsDto.order,
+    });
+  }
+
+  @Get('me/recent')
+  async listMyRecent(@UserIdParam() accountId: string) {
+    return await this.listMyRecentPlaylists.execute({ accountId });
+  }
+
+  @Get('events')
+  async listEvents(
+    @UserIdParam() accountId: string,
+    @Query() listPublicEventsDto: ListPublicEventsDto,
+  ) {
+    return await this.listPublicEvents.execute({
+      accountId,
+      position: toPosition(listPublicEventsDto),
+    });
   }
 
   @Post(':playlistId/join')

@@ -64,12 +64,15 @@ non respectée, par exemple :
 | `LICENSE_INVALID` | `license` | Ni `EVERYONE` ni `INVITED_ONLY` | `POST /playlists` |
 | `BEGIN_AT_INVALID` | `beginAt` | Pas une date | `POST /playlists` |
 | `END_AT_INVALID` | `endAt` | Pas une date | `POST /playlists` |
-| `LATITUDE_INVALID` | `latitude` | Absent (quand obligatoire : création d'une playlist VOTE) ou pas un nombre | création, join, actions sur les musiques |
-| `LATITUDE_OUT_OF_RANGE` | `latitude` | Hors de -90..90 | création, join, actions sur les musiques |
-| `LONGITUDE_INVALID` | `longitude` | Absent (quand obligatoire : création d'une playlist VOTE) ou pas un nombre | création, join, actions sur les musiques |
-| `LONGITUDE_OUT_OF_RANGE` | `longitude` | Hors de -180..180 | création, join, actions sur les musiques |
+| `LATITUDE_INVALID` | `latitude` | Absent (quand obligatoire : création d'une playlist VOTE, ou `longitude` envoyée seule sur `GET /playlists/events`) ou pas un nombre | création, join, événements, actions sur les musiques |
+| `LATITUDE_OUT_OF_RANGE` | `latitude` | Hors de -90..90 | création, join, événements, actions sur les musiques |
+| `LONGITUDE_INVALID` | `longitude` | Absent (quand obligatoire : création d'une playlist VOTE, ou `latitude` envoyée seule sur `GET /playlists/events`) ou pas un nombre | création, join, événements, actions sur les musiques |
+| `LONGITUDE_OUT_OF_RANGE` | `longitude` | Hors de -180..180 | création, join, événements, actions sur les musiques |
 | `ACCOUNT_ID_INVALID` | `accountId` | Pas un UUID | `POST /playlists/:playlistId/invitations` |
 | `HAS_PRIVILEGE_INVALID` | `hasPrivilege` | Pas un booléen | `PATCH /playlists/:playlistId/participants/:participantId` |
+| `ROLE_INVALID` | `role` (query) | Ni `OWNER` ni `PARTICIPANT` | `GET /playlists/me` |
+| `STATUS_INVALID` | `status` (query) | Ni `UPCOMING`, ni `LIVE`, ni `ENDED` | `GET /playlists/me` |
+| `ORDER_INVALID` | `order` (query) | Ni `ASC` ni `DESC` | `GET /playlists/me` |
 | `VIDEO_ID_INVALID` | `videoId` | Pas un id YouTube (11 caractères) | `POST /playlists/:playlistId/tracks` |
 | `AFTER_TRACK_ID_INVALID` | `afterTrackId` | Absent, ou ni un UUID ni `null` | `PATCH …/tracks/:trackId/position` |
 | `VERSION_INVALID` | `version` | Pas un entier ≥ 1 | `PATCH …/tracks/:trackId/position` |
@@ -421,6 +424,106 @@ Liste les playlists publiques non terminées (celles qui n'ont pas encore commen
   }[]
 }
 ```
+
+### `GET /playlists/me?role=…&status=…&order=…`
+
+Toutes les playlists de l'appelant : celles qu'il a créées et celles qu'il a rejointes, privées et terminées comprises.
+Triées par date de création. Tous les paramètres sont optionnels.
+
+```ts
+// Query
+{
+  role?: "OWNER" | "PARTICIPANT"           // filtre, toutes par défaut
+  status?: "UPCOMING" | "LIVE" | "ENDED"   // filtre, toutes par défaut
+  order?: "ASC" | "DESC"                   // défaut DESC : la plus récente d'abord
+}
+```
+
+```ts
+// 200
+{
+  playlists: {
+    id: string
+    type: "VOTE" | "EDITOR"
+    license: "EVERYONE" | "INVITED_ONLY"
+    ownerId: string
+    name: string
+    description: string
+    isPrivate: boolean
+    beginAt: string | null
+    endAt: string | null
+    latitude: number | null   // null pour une playlist EDITOR
+    longitude: number | null  // null pour une playlist EDITOR
+    coverPath: string | null
+    createdAt: string
+    status: "UPCOMING" | "LIVE" | "ENDED"   // LIVE pour une playlist sans dates
+    role: "OWNER" | "PARTICIPANT"
+    hasPrivilege: boolean     // toujours true pour le propriétaire
+  }[]
+}
+```
+
+| Statut | Réponse | Détail |
+| --- | --- | --- |
+| 400 | `ROLE_INVALID` | |
+| 400 | `STATUS_INVALID` | |
+| 400 | `ORDER_INVALID` | |
+
+### `GET /playlists/me/recent`
+
+Les 10 dernières playlists créées par l'appelant, la plus récente d'abord (privées et terminées comprises).
+
+```ts
+// 200
+{
+  playlists: { ... }[]  // même format que GET /playlists/me, avec role toujours "OWNER"
+}
+```
+
+### `GET /playlists/events?latitude=…&longitude=…`
+
+Les 10 événements publics à découvrir. Un événement est une playlist **publique**, **avec une date de début** et **pas terminée** (celles en cours sont incluses).
+Les playlists que l'appelant a créées ou rejointes sont exclues.
+
+- **Sans position** : les plus proches dans le temps d'abord. Celles en cours passent donc avant celles à venir. Les deux types sont renvoyés.
+- **Avec position** : les plus proches géographiquement d'abord, sans limite de distance. Seules les playlists **VOTE** sont renvoyées (une EDITOR n'a pas de position).
+
+```ts
+// Query
+{
+  latitude?: number    // -90..90, à envoyer avec longitude
+  longitude?: number   // -180..180, à envoyer avec latitude
+}
+```
+
+```ts
+// 200
+{
+  events: {
+    id: string
+    type: "VOTE" | "EDITOR"
+    license: "EVERYONE" | "INVITED_ONLY"
+    ownerId: string
+    name: string
+    description: string
+    beginAt: string           // jamais null pour un événement
+    endAt: string | null
+    latitude: number | null   // null pour une playlist EDITOR
+    longitude: number | null  // null pour une playlist EDITOR
+    coverPath: string | null
+    status: "UPCOMING" | "LIVE"
+    distanceMeters: number | null  // arrondie au mètre, null sans position
+    canJoinHere: boolean      // le join passerait maintenant : en cours, et EDITOR ou à 500 m au plus
+  }[]
+}
+```
+
+| Statut | Réponse | Détail |
+| --- | --- | --- |
+| 400 | `LATITUDE_INVALID` | Pas un nombre, ou absente alors que `longitude` est envoyée |
+| 400 | `LATITUDE_OUT_OF_RANGE` | Hors de -90..90 |
+| 400 | `LONGITUDE_INVALID` | Pas un nombre, ou absente alors que `latitude` est envoyée |
+| 400 | `LONGITUDE_OUT_OF_RANGE` | Hors de -180..180 |
 
 ### `POST /playlists/:playlistId/join`
 

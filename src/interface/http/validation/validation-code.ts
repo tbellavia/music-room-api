@@ -34,6 +34,9 @@ export type ValidationCode =
   | 'LONGITUDE_OUT_OF_RANGE'
   | 'ACCOUNT_ID_INVALID'
   | 'HAS_PRIVILEGE_INVALID'
+  | 'ROLE_INVALID'
+  | 'STATUS_INVALID'
+  | 'ORDER_INVALID'
   // tracks
   | 'VIDEO_ID_INVALID'
   | 'AFTER_TRACK_ID_INVALID'

@@ -2,6 +2,7 @@ import { InvalidPlaylistPeriod } from './errors/invalid-playlist-period.error';
 import { LocationNotAllowed } from './errors/location-not-allowed.error';
 import { LocationRequired } from './errors/location-required.error';
 import { PlaylistType } from './playlist-type.enum';
+import { PlaylistStatus } from './playlist-status.enum';
 import { CreatePlaylistInfos, Playlist } from './playlist.entity';
 
 // One degree of latitude is ~111 195 meters
@@ -30,6 +31,16 @@ describe('Playlist', () => {
       expect(playlist.beginAt).toBeNull();
       expect(playlist.endAt).toBeNull();
       expect(playlist.coverPath).toBeNull();
+    });
+
+    it('records when it was created', () => {
+      const before = new Date();
+
+      const playlist = build();
+
+      expect(playlist.createdAt.getTime()).toBeGreaterThanOrEqual(
+        before.getTime(),
+      );
     });
 
     it('keeps the location of a vote playlist', () => {
@@ -193,6 +204,102 @@ describe('Playlist', () => {
       expect(
         editorPlaylist.isWithinZone({ latitude: 48.8966, longitude: 2.3184 }),
       ).toBe(false);
+    });
+  });
+
+  describe('status', () => {
+    const beginAt = new Date('2030-01-01T20:00:00Z');
+    const endAt = new Date('2030-01-02T04:00:00Z');
+    const playlist = build({ beginAt, endAt });
+
+    it('is upcoming before the beginning', () => {
+      const beforeBeginning = new Date('2030-01-01T19:00:00Z');
+
+      expect(playlist.status(beforeBeginning)).toBe(PlaylistStatus.UPCOMING);
+    });
+
+    it('is live from the beginning', () => {
+      expect(playlist.status(beginAt)).toBe(PlaylistStatus.LIVE);
+    });
+
+    it('is ended from the end', () => {
+      expect(playlist.status(endAt)).toBe(PlaylistStatus.ENDED);
+    });
+
+    it('is live when there is no period', () => {
+      const playlistWithoutPeriod = build();
+
+      expect(playlistWithoutPeriod.status()).toBe(PlaylistStatus.LIVE);
+    });
+  });
+
+  describe('distanceFrom', () => {
+    it('is the distance in meters to the location', () => {
+      const playlist = build({ latitude: 48.8966, longitude: 2.3184 });
+
+      const distance = playlist.distanceFrom({
+        latitude: 48.8966 + 400 * ONE_METER_IN_LATITUDE_DEGREES,
+        longitude: 2.3184,
+      });
+
+      expect(distance).toBeCloseTo(400, 0);
+    });
+
+    it('is null for an editor playlist, which has no location', () => {
+      const editorPlaylist = build({
+        type: PlaylistType.EDITOR,
+        latitude: null,
+        longitude: null,
+      });
+
+      expect(
+        editorPlaylist.distanceFrom({ latitude: 48.8966, longitude: 2.3184 }),
+      ).toBeNull();
+    });
+  });
+
+  describe('canBeJoinedFrom', () => {
+    const inZone = {
+      latitude: 48.8966 + 400 * ONE_METER_IN_LATITUDE_DEGREES,
+      longitude: 2.3184,
+    };
+    const outsideZone = {
+      latitude: 48.8966 + 600 * ONE_METER_IN_LATITUDE_DEGREES,
+      longitude: 2.3184,
+    };
+
+    it('is true for a live vote playlist from inside the zone', () => {
+      expect(build().canBeJoinedFrom(inZone)).toBe(true);
+    });
+
+    it('is false for a vote playlist from outside the zone', () => {
+      expect(build().canBeJoinedFrom(outsideZone)).toBe(false);
+    });
+
+    it('is false for a vote playlist without position', () => {
+      expect(build().canBeJoinedFrom(null)).toBe(false);
+    });
+
+    it('is true for a live editor playlist, from anywhere', () => {
+      const editorPlaylist = build({
+        type: PlaylistType.EDITOR,
+        latitude: null,
+        longitude: null,
+      });
+
+      expect(editorPlaylist.canBeJoinedFrom(null)).toBe(true);
+    });
+
+    it('is false for a playlist that has not begun yet', () => {
+      const upcomingPlaylist = build({ beginAt: new Date('2999-01-01') });
+
+      expect(upcomingPlaylist.canBeJoinedFrom(inZone)).toBe(false);
+    });
+
+    it('is false for a private playlist', () => {
+      const privatePlaylist = build({ isPrivate: true });
+
+      expect(privatePlaylist.canBeJoinedFrom(inZone)).toBe(false);
     });
   });
 });

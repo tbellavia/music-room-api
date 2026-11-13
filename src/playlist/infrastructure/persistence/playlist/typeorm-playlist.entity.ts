@@ -4,6 +4,7 @@ import { PlaylistLicense } from 'src/playlist/domain/playlist-license.enum';
 import {
   Column,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryColumn,
@@ -13,6 +14,8 @@ import {
 
 @Entity('playlists')
 @Unique(['owner_id', 'name'])
+// For the most recent playlists of an owner
+@Index(['owner_id', 'created_at'])
 export class PlaylistOrmEntity {
   @PrimaryColumn()
   id: string;
@@ -43,6 +46,8 @@ export class PlaylistOrmEntity {
   })
   license: PlaylistLicense;
 
+  // For the public events, sorted by beginning date
+  @Index()
   @Column({ type: 'timestamptz', nullable: true })
   begin_at: Date | null;
 
@@ -58,4 +63,8 @@ export class PlaylistOrmEntity {
 
   @Column({ type: 'varchar', length: 2048, nullable: true })
   cover_path: string | null;
+
+  // Rows created before this column existed get the date of the migration
+  @Column({ type: 'timestamptz', default: () => 'now()' })
+  created_at: Date;
 }

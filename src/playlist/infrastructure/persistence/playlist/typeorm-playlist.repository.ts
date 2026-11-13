@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, IsNull, MoreThan, Not, Repository } from 'typeorm';
 import { PlaylistRepository } from 'src/playlist/application/ports/playlist.repository';
 import { Playlist } from 'src/playlist/domain/playlist.entity';
 import { PlaylistAlreadyExists } from 'src/playlist/domain/errors/playlist-already-exists.error';
@@ -44,6 +44,42 @@ export class TypeOrmPlaylistRepository implements PlaylistRepository {
     return entities.map((entity) => this.toDomain(entity));
   }
 
+  async findByOwner(ownerId: string): Promise<Playlist[]> {
+    const entities = await this.repository.findBy({ owner_id: ownerId });
+
+    return entities.map((entity) => this.toDomain(entity));
+  }
+
+  async findByIds(ids: string[]): Promise<Playlist[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+    const entities = await this.repository.findBy({ id: In(ids) });
+
+    return entities.map((entity) => this.toDomain(entity));
+  }
+
+  async findRecentByOwner(ownerId: string, limit: number): Promise<Playlist[]> {
+    const entities = await this.repository.find({
+      where: { owner_id: ownerId },
+      order: { created_at: 'DESC' },
+      take: limit,
+    });
+
+    return entities.map((entity) => this.toDomain(entity));
+  }
+
+  async findPublicEvents(now: Date): Promise<Playlist[]> {
+    const isPublicEvent = { is_private: false, begin_at: Not(IsNull()) };
+    // Two conditions joined by OR: no end, or an end still to come
+    const entities = await this.repository.findBy([
+      { ...isPublicEvent, end_at: IsNull() },
+      { ...isPublicEvent, end_at: MoreThan(now) },
+    ]);
+
+    return entities.map((entity) => this.toDomain(entity));
+  }
+
   async save(playlist: Playlist): Promise<void> {
     try {
       await this.repository.save(this.toOrm(playlist));
@@ -70,6 +106,7 @@ export class TypeOrmPlaylistRepository implements PlaylistRepository {
       latitude: playlist.latitude,
       longitude: playlist.longitude,
       cover_path: playlist.coverPath,
+      created_at: playlist.createdAt,
     };
   }
 
@@ -87,6 +124,7 @@ export class TypeOrmPlaylistRepository implements PlaylistRepository {
       orm.latitude,
       orm.longitude,
       orm.cover_path,
+      orm.created_at,
     );
   }
 }

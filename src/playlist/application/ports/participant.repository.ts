@@ -7,6 +7,7 @@ export interface ParticipantRepository {
     accountId: string;
   }): Promise<Participant | null>;
   findByPlaylist(playlistId: string): Promise<Participant[]>;
+  findByAccount(accountId: string): Promise<Participant[]>;
   save(participant: Participant): Promise<void>;
   delete(id: string): Promise<void>;
 }

@@ -29,6 +29,9 @@ import { PLAYLIST_EDIT_LOCK } from './application/ports/playlist-edit-lock';
 import { InProcessPlaylistEditLock } from './infrastructure/locks/in-process-playlist-edit-lock';
 import { CreatePlaylistUseCase } from './application/use-cases/create-playlist/create-playlist.usecase';
 import { ListPublicPlaylistsUseCase } from './application/use-cases/list-public-playlists/list-public-playlists.usecase';
+import { ListMyPlaylistsUseCase } from './application/use-cases/list-my-playlists/list-my-playlists.usecase';
+import { ListMyRecentPlaylistsUseCase } from './application/use-cases/list-my-recent-playlists/list-my-recent-playlists.usecase';
+import { ListPublicEventsUseCase } from './application/use-cases/list-public-events/list-public-events.usecase';
 import { JoinPlaylistUseCase } from './application/use-cases/join-playlist/join-playlist.usecase';
 import { InviteParticipantUseCase } from './application/use-cases/invite-participant/invite-participant.usecase';
 import { ListMyInvitationsUseCase } from './application/use-cases/list-my-invitations/list-my-invitations.usecase';
@@ -101,6 +104,9 @@ import { MoveTrackUseCase } from './application/use-cases/move-track/move-track.
     },
     CreatePlaylistUseCase,
     ListPublicPlaylistsUseCase,
+    ListMyPlaylistsUseCase,
+    ListMyRecentPlaylistsUseCase,
+    ListPublicEventsUseCase,
     JoinPlaylistUseCase,
     InviteParticipantUseCase,
     ListMyInvitationsUseCase,

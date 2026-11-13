@@ -29,6 +29,12 @@ export class TypeOrmParticipantRepository implements ParticipantRepository {
     return entities.map((entity) => this.toDomain(entity));
   }
 
+  async findByAccount(accountId: string): Promise<Participant[]> {
+    const entities = await this.repository.findBy({ account_id: accountId });
+
+    return entities.map((entity) => this.toDomain(entity));
+  }
+
   async delete(id: string): Promise<void> {
     await this.repository.delete({ id });
   }
