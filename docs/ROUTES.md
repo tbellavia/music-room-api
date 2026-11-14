@@ -1,7 +1,7 @@
 # Music Room API — Routes
 
 - Toutes les routes sont préfixées par `/api/v1` (omis dans les titres ci-dessous).
-- Sauf mention **public**, elles exigent le header `Authorization: Bearer <access_token>`, sauf en [mode dev](#mode-dev-make-dev).
+- Sauf mention **public**, elles exigent le header `Authorization: Bearer <access_token>`. En dev, voir le [mode dev](#mode-dev-make-dev).
 - Toutes les erreurs ont la même forme :
 
   ```ts
@@ -81,27 +81,15 @@ non respectée, par exemple :
 
 ## Mode dev (`make dev`)
 
-Avec `ENVIRONMENT=dev`, le guard JWT laisse passer **toutes** les requêtes **sans lire le token**, même valide. L'API ne sait donc pas qui appelle.
-Les routes qui ont besoin de l'utilisateur connecté ne fonctionnent pas. Selon la route, on obtient une `500 INTERNAL_SERVER_ERROR`, une erreur 4xx trompeuse ou une réponse incomplète.
-`make start` (`ENVIRONMENT=prod`) rétablit l'authentification.
+Avec `ENVIRONMENT=dev` (voir le README), deux comptes déjà vérifiés existent : `dev1` et `dev2`, mot de passe `123`.
 
-**Utilisables en mode dev** : toutes les routes **public**, plus :
+```bash
+curl -X POST /api/v1/identity/login -H 'Content-Type: application/json' -d '{"username":"dev1","password":"123"}'
+```
 
-- `GET /identity/profile`
-- `GET /playlists/public`
-
-**Inutilisables en mode dev** (elles ont besoin de l'utilisateur connecté) :
-
-| Module | Routes |
-| --- | --- |
-| Social | `POST /social/friends/request/:receiverId`<br>`GET /social/friends/request/pending`<br>`POST /social/friends/request/:requestId/accept`<br>`DELETE /social/friends/request/:requestId/reject`<br>`DELETE /social/friends/request/:requestId/cancel` |
-| Playlists | `POST /playlists`<br>`GET /playlists/me`<br>`GET /playlists/me/recent`<br>`GET /playlists/events`<br>`POST /playlists/:playlistId/join`<br>`POST /playlists/:playlistId/leave` |
-| Invitations | `POST /playlists/:playlistId/invitations`<br>`GET /playlists/invitations`<br>`POST /playlists/invitations/:invitationId/accept`<br>`DELETE /playlists/invitations/:invitationId/decline`<br>`DELETE /playlists/invitations/:invitationId/cancel` |
-| Participants | `GET /playlists/:playlistId/participants`<br>`PATCH /playlists/:playlistId/participants/:participantId`<br>`DELETE /playlists/:playlistId/participants/:participantId` |
-| Musiques | `POST /playlists/:playlistId/tracks`<br>`GET /playlists/:playlistId/tracks`<br>`POST /playlists/:playlistId/tracks/:trackId/vote`<br>`DELETE /playlists/:playlistId/tracks/:trackId/vote`<br>`PATCH /playlists/:playlistId/tracks/:trackId/position`<br>`POST /playlists/:playlistId/tracks/:trackId/played`<br>`DELETE /playlists/:playlistId/tracks/:trackId` |
-| Temps réel | `GET /playlists/:playlistId/events` (SSE) |
-
-Une nouvelle route qui utilise `@UserIdParam()` doit être ajoutée à ce tableau.
+- Leur `access_token` est valable **30 jours** (60 minutes pour les autres comptes).
+- Toutes les routes s'utilisent comme en prod, avec le header `Authorization`.
+- Hors du mode dev, ces comptes n'existent pas, et leurs tokens donnent `401 UNAUTHORIZED`.
 
 ## Sommaire
 
@@ -320,6 +308,7 @@ Envoyer une demande d'ami.
 | --- | --- | --- |
 | 201 | `{ requestId: string }` | |
 | 400 | `SELF_FRIENDSHIP` | |
+| 404 | `RECEIVER_NOT_FOUND` | Aucun compte avec cet id |
 | 409 | `FRIENDSHIP_REQUEST_ALREADY_EXISTS` | Demande déjà en attente, dans un sens ou dans l'autre |
 | 409 | `FRIENDSHIP_ALREADY_EXISTS` | |
 

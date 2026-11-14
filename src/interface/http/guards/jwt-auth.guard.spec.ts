@@ -11,6 +11,11 @@ const JWT_SECRET = 'test-secret';
 const OTHER_SECRET = 'other-secret';
 
 const alice: JwtUser = { sub: 'alice-id', username: 'alice' };
+const dev1DevPayload: JwtUser = {
+  sub: 'dev1-id',
+  username: 'dev1',
+  dev: true,
+};
 
 type FakeRequest = {
   headers: { authorization?: string };
@@ -119,25 +124,51 @@ describe('JwtAuthGuard', () => {
   describe('in dev', () => {
     const guard = guardIn('dev');
 
-    it('lets a request without token through', async () => {
+    it('rejects a request without token, like in prod', async () => {
       const request: FakeRequest = { headers: {} };
 
       await expect(
         guard.canActivate(protectedContextFor(request)),
-      ).resolves.toBe(true);
+      ).rejects.toThrow(UnauthorizedException);
     });
 
-    it('lets an invalid token through, without checking it', async () => {
+    it('rejects an invalid token', async () => {
       const request = withBearer('not-a-jwt');
 
       await expect(
         guard.canActivate(protectedContextFor(request)),
-      ).resolves.toBe(true);
+      ).rejects.toThrow(UnauthorizedException);
       expect(request.user).toBeUndefined();
+    });
+
+    it('lets a dev token through and exposes its account', async () => {
+      const token = await jwtService.signAsync(dev1DevPayload);
+      const request = withBearer(token);
+
+      await guard.canActivate(protectedContextFor(request));
+
+      expect(request.user?.username).toBe('dev1');
     });
   });
 
-  // The bypass must stay limited to dev: the end-to-end scripts check the 401s
+  // A dev token is signed with the same secret: it must not open the API
+  // outside dev mode
+  describe('dev token outside dev mode', () => {
+    it.each(['prod', 'test', undefined])(
+      'is rejected with ENVIRONMENT=%s',
+      async (environment) => {
+        const guard = guardIn(environment);
+        const token = await jwtService.signAsync(dev1DevPayload);
+        const request = withBearer(token);
+
+        await expect(
+          guard.canActivate(protectedContextFor(request)),
+        ).rejects.toThrow(UnauthorizedException);
+        expect(request.user).toBeUndefined();
+      },
+    );
+  });
+
   describe('in test', () => {
     it('rejects a request without token', async () => {
       const guard = guardIn('test');

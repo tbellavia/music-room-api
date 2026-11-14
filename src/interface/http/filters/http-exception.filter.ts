@@ -54,6 +54,7 @@ import { FriendshipRequestNotFound } from 'src/social/domain/errors/friendship-r
 import { SelfFriendshipRequestError } from 'src/social/domain/errors/self-friendship-request.error';
 import { SelfFriendshipError } from 'src/social/domain/errors/self-friendship.error';
 import { UnknownFriendshipRequest } from 'src/social/domain/errors/unknown-friendship-request';
+import { FriendshipReceiverNotFound } from 'src/social/domain/errors/friendship-receiver-not-found.error';
 import { RequestValidationFailed } from 'src/interface/http/validation/request-validation-failed.error';
 import { InvalidJsonBody } from 'src/interface/http/errors/invalid-json-body.error';
 import { RequestBodyTooLarge } from 'src/interface/http/errors/request-body-too-large.error';
@@ -213,6 +214,14 @@ const DOMAIN_ERRORS = new Map<unknown, ErrorResponse>([
       status: 404,
       error: 'FRIENDSHIP_REQUEST_NOT_FOUND',
       message: 'Friendship request not found',
+    },
+  ],
+  [
+    FriendshipReceiverNotFound,
+    {
+      status: 404,
+      error: 'RECEIVER_NOT_FOUND',
+      message: 'The account to befriend does not exist',
     },
   ],
   [

@@ -10,6 +10,7 @@ import { Request } from 'express';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { ConfigService } from '@nestjs/config';
 import { JwtUser } from 'src/identity/types/jwt-user';
+import { isDevelopmentMode } from 'src/infrastructure/config/environment';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -24,11 +25,6 @@ export class JwtAuthGuard implements CanActivate {
     if (isPublic) {
       return true;
     }
-    const isDevelopment = this.isDevelopment();
-    if (isDevelopment) {
-      return true;
-    }
-
     const request: Request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
 
@@ -40,6 +36,11 @@ export class JwtAuthGuard implements CanActivate {
       const payload = await this.jwtService.verifyAsync<JwtUser>(token, {
         secret: this.configService.get<string>('JWT_SECRET'),
       });
+      // Same secret in every mode: without this check, a 30-day dev token
+      // would also open the API in prod
+      if (payload.dev === true && !isDevelopmentMode(this.configService)) {
+        throw new UnauthorizedException();
+      }
       request.user = payload;
     } catch {
       throw new UnauthorizedException();
@@ -53,12 +54,6 @@ export class JwtAuthGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-  }
-
-  private isDevelopment(): boolean {
-    const isDevelopment = this.configService.get<string>('ENVIRONMENT') ?? '';
-
-    return isDevelopment === 'dev';
   }
 
   private extractTokenFromHeader(request: Request) {

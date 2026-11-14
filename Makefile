@@ -4,7 +4,8 @@ start:
 stop:
 	@docker compose down
 
-# The JWT guard lets every request through: never for the defense
+# Creates the dev accounts dev1 / dev2 (password 123, 30-day tokens).
+# Any other mode deletes them at startup. Never for the defense.
 dev:
 	@ENVIRONMENT=dev docker compose --env-file .env up -d --build
 

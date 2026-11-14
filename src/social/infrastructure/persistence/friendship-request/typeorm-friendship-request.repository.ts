@@ -4,6 +4,8 @@ import { FriendshipRequestRepository } from 'src/social/application/ports/friend
 import { Repository } from 'typeorm';
 import { FriendshipRequest } from 'src/social/domain/friendship-request.entity';
 import { FriendshipRequestOrmEntity } from './typeorm-friendship-request.entity';
+import { isForeignKeyViolation } from 'src/infrastructure/database/error-utils';
+import { FriendshipReceiverNotFound } from 'src/social/domain/errors/friendship-receiver-not-found.error';
 
 @Injectable()
 export class TypeOrmFriendshipRequestRepository implements FriendshipRequestRepository {
@@ -68,7 +70,15 @@ export class TypeOrmFriendshipRequestRepository implements FriendshipRequestRepo
   }
 
   async save(request: FriendshipRequest): Promise<void> {
-    await this.repository.save(this.toOrm(request));
+    try {
+      await this.repository.save(this.toOrm(request));
+    } catch (error) {
+      // The receiver was deleted after the use-case checked it exists
+      if (isForeignKeyViolation(error)) {
+        throw new FriendshipReceiverNotFound();
+      }
+      throw error;
+    }
   }
 
   private toOrm(request: FriendshipRequest): FriendshipRequestOrmEntity {

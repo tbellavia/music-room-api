@@ -22,6 +22,13 @@ export type CreateGoogleAccountInfos = {
   google_id: string;
 };
 
+export type CreateDevAccountInfos = {
+  id: string;
+  username: string;
+  email: string;
+  password: string;
+};
+
 export class Account {
   constructor(
     public readonly id: string,
@@ -70,6 +77,23 @@ export class Account {
       true,
       AuthMethod.GOOGLE,
       infos.google_id,
+    );
+  }
+
+  // Dev mode only: already verified, the iOS developers sign in right away
+  static dev(infos: CreateDevAccountInfos): Account {
+    return new Account(
+      infos.id,
+      infos.username,
+      infos.email,
+      infos.password,
+      null,
+      null,
+      null,
+      0,
+      true,
+      AuthMethod.LOCAL,
+      null,
     );
   }
 

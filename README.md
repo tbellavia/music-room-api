@@ -52,7 +52,7 @@ N'ajoute **pas** `E2E_MODE` au `.env` : cette variable est réservée à `make t
 
 ```bash
 make start   # construit les images et démarre l'API, la base et Adminer (ENVIRONMENT=prod)
-make dev     # pareil, mais sans vérification du JWT : à réserver au développement iOS
+make dev     # pareil, en mode dev : comptes dev1 / dev2 (mot de passe 123), pour le développement iOS
 make stop    # arrête et supprime les conteneurs
 make re      # stop + rebuild + start (après un changement de dépendances ou de schéma)
 make test-e2e  # lance les tests de bout en bout, puis relance l'API en mode normal
@@ -63,7 +63,18 @@ make test-e2e  # lance les tests de bout en bout, puis relance l'API en mode nor
 | API | http://localhost:3000/api/v1 |
 | Adminer (interface web de la base) | http://localhost:8080 (serveur `db`, identifiants du `.env`) |
 
-`make dev` lance l'API avec `ENVIRONMENT=dev` : le guard JWT laisse passer **toutes** les requêtes, sans lire le token. Les routes qui ont besoin de l'utilisateur connecté ne fonctionnent donc pas : leur liste est dans [docs/ROUTES.md](docs/ROUTES.md#mode-dev-make-dev). N'utilise jamais ce mode pour la correction : `make start` repasse en `prod`.
+`make dev` lance l'API avec `ENVIRONMENT=dev`, pour le développement iOS :
+
+- Au démarrage, deux comptes déjà vérifiés sont créés s'ils n'existent pas : **`dev1`** et **`dev2`**, mot de passe **`123`**. Il n'y a pas besoin de s'inscrire : `POST /identity/login {"username":"dev1","password":"123"}`. Deux comptes, pour tester les interactions (invitation, vote sur la musique de l'autre, amis).
+- Le token de `dev1` / `dev2` est valable **30 jours**, au lieu de 60 minutes pour les autres comptes.
+- L'authentification est la même qu'en prod : sans token, `401`.
+
+Pour que ces comptes ne servent jamais en prod (leur mot de passe est public) :
+
+- **Dans tout autre mode** (`make start`, `make test-e2e`), `dev1` et `dev2` sont **supprimés au démarrage**, avec tout ce qu'ils possèdent (playlists, musiques, votes, invitations, par cascade). Leurs données de test sont donc perdues à chaque `make start`.
+- Un token dev est **refusé (401) hors du mode dev**, même s'il n'a pas expiré.
+
+N'utilise jamais ce mode pour la correction.
 
 L'API tourne en mode watch : une modification dans `src/` est rechargée automatiquement, sans relancer les conteneurs.
 

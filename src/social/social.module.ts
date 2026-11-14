@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { SocialController } from './interface/http/social.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AccountOrmEntity } from 'src/identity/infrastructure/persistence/typeorm-account.entity';
+import { ACCOUNT_DIRECTORY } from './application/ports/account-directory';
+import { TypeOrmAccountDirectory } from './infrastructure/persistence/account/typeorm-account-directory';
 import { FriendshipOrmEntity } from './infrastructure/persistence/friendship/typeorm-friendship.entity';
 import { FRIENDSHIP_REPOSITORY } from './application/ports/friendship.repository';
 import { TypeOrmFriendshipRepository } from './infrastructure/persistence/friendship/typeorm-friendship.repository';
@@ -15,13 +18,21 @@ import { RejectFriendshipUseCase } from './application/use-cases/reject-friendsh
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([FriendshipOrmEntity, FriendshipRequestOrmEntity]),
+    TypeOrmModule.forFeature([
+      FriendshipOrmEntity,
+      FriendshipRequestOrmEntity,
+      AccountOrmEntity,
+    ]),
   ],
   controllers: [SocialController],
   providers: [
     {
       provide: FRIENDSHIP_REPOSITORY,
       useClass: TypeOrmFriendshipRepository,
+    },
+    {
+      provide: ACCOUNT_DIRECTORY,
+      useClass: TypeOrmAccountDirectory,
     },
     {
       provide: FRIENDSHIP_REQUEST_REPOSITORY,

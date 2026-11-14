@@ -16,6 +16,11 @@ import {
   FriendshipRepository,
 } from '../../ports/friendship.repository';
 import { FriendshipAlreadyExists } from 'src/social/domain/errors/friendship-already-exists.error';
+import { FriendshipReceiverNotFound } from 'src/social/domain/errors/friendship-receiver-not-found.error';
+import {
+  ACCOUNT_DIRECTORY,
+  AccountDirectory,
+} from '../../ports/account-directory';
 
 @Injectable()
 export class RequestFriendshipUseCase {
@@ -26,6 +31,8 @@ export class RequestFriendshipUseCase {
     private readonly requestRepository: FriendshipRequestRepository,
     @Inject(FRIENDSHIP_REPOSITORY)
     private readonly friendshipRepository: FriendshipRepository,
+    @Inject(ACCOUNT_DIRECTORY)
+    private readonly accountDirectory: AccountDirectory,
   ) {}
 
   async execute(
@@ -33,6 +40,11 @@ export class RequestFriendshipUseCase {
   ): Promise<RequestFriendshipOutput> {
     if (input.senderId == input.receiverId) {
       throw new SelfFriendshipRequestError();
+    }
+
+    const receiverExists = await this.accountDirectory.exists(input.receiverId);
+    if (!receiverExists) {
+      throw new FriendshipReceiverNotFound();
     }
 
     await this.throwExistingRequest(input);

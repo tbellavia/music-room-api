@@ -5,15 +5,28 @@ import { Account } from 'src/identity/domain/account.entity';
 import { AccountNotFound } from 'src/identity/domain/errors/account-not-found.error';
 import { Unauthorized } from 'src/identity/domain/errors/unauthorized.error';
 import { AccountNotActive } from 'src/identity/domain/errors/account-not-active.error';
+import { JwtUser } from 'src/identity/types/jwt-user';
+import {
+  DEV1_ACCOUNT,
+  DEV_ACCOUNT_PASSWORD,
+} from 'src/identity/domain/dev-accounts';
 import { SignInUseCase } from './sign-in.usecase';
 
 const alicePassword = 'Str0ng-Password!';
 const validCode = '123456';
 const inOneHour = new Date(Date.now() + 60 * 60 * 1000);
+const ONE_HOUR_IN_SECONDS = 60 * 60;
+const THIRTY_DAYS_IN_SECONDS = 30 * 24 * 60 * 60;
+
+type TokenPayload = JwtUser & {
+  iat: number;
+  exp: number;
+};
 
 describe('SignInUseCase', () => {
   let repository: InMemoryAccountRepository;
   let passwordService: FakePasswordHasher;
+  let jwtService: JwtService;
   let useCase: SignInUseCase;
 
   async function givenAlice(isVerified: boolean) {
@@ -36,7 +49,10 @@ describe('SignInUseCase', () => {
   beforeEach(() => {
     repository = new InMemoryAccountRepository();
     passwordService = new FakePasswordHasher();
-    const jwtService = new JwtService({ secret: 'test-secret' });
+    jwtService = new JwtService({
+      secret: 'test-secret',
+      signOptions: { expiresIn: '60m' },
+    });
     useCase = new SignInUseCase(repository, passwordService, jwtService);
   });
 
@@ -97,5 +113,55 @@ describe('SignInUseCase', () => {
     });
 
     await expect(signIn).rejects.toThrow(AccountNotFound);
+  });
+
+  describe('dev accounts', () => {
+    async function givenDev1() {
+      const hashedPassword = await passwordService.hash(DEV_ACCOUNT_PASSWORD);
+      await repository.save(
+        Account.dev({ ...DEV1_ACCOUNT, password: hashedPassword }),
+      );
+    }
+
+    function payloadOf(accessToken: string): TokenPayload {
+      return jwtService.verify<TokenPayload>(accessToken);
+    }
+
+    it('signs dev1 in with the simple password, at once', async () => {
+      await givenDev1();
+
+      const output = await useCase.execute({
+        username: 'dev1',
+        password: DEV_ACCOUNT_PASSWORD,
+      });
+
+      expect(payloadOf(output.access_token).sub).toBe(DEV1_ACCOUNT.id);
+    });
+
+    it('gives dev1 a 30-day token marked as dev', async () => {
+      await givenDev1();
+
+      const output = await useCase.execute({
+        username: 'dev1',
+        password: DEV_ACCOUNT_PASSWORD,
+      });
+
+      const payload = payloadOf(output.access_token);
+      expect(payload.dev).toBe(true);
+      expect(payload.exp - payload.iat).toBe(THIRTY_DAYS_IN_SECONDS);
+    });
+
+    it('keeps the 60-minute token, not marked, for other accounts', async () => {
+      await givenAlice(true);
+
+      const output = await useCase.execute({
+        username: 'alice',
+        password: alicePassword,
+      });
+
+      const payload = payloadOf(output.access_token);
+      expect(payload.dev).toBeUndefined();
+      expect(payload.exp - payload.iat).toBe(ONE_HOUR_IN_SECONDS);
+    });
   });
 });

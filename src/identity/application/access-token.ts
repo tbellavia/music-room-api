@@ -10,3 +10,16 @@ export function signAccessToken(
 
   return jwtService.sign(payload);
 }
+
+// Dev accounts only: long enough not to sign in again during development.
+// Rejected by the guard outside dev mode.
+export const DEV_ACCESS_TOKEN_LIFETIME = '30d';
+
+export function signDevAccessToken(
+  jwtService: JwtService,
+  account: Account,
+): string {
+  const payload = { sub: account.id, username: account.username, dev: true };
+
+  return jwtService.sign(payload, { expiresIn: DEV_ACCESS_TOKEN_LIFETIME });
+}
