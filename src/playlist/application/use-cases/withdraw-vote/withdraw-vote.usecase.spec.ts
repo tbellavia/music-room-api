@@ -59,6 +59,7 @@ describe('WithdrawVoteUseCase', () => {
       description: '',
       latitude: PLAYLIST_LATITUDE,
       longitude: PLAYLIST_LONGITUDE,
+      address: '96 boulevard Bessières, Paris',
     });
     await playlistRepository.save(playlist);
 

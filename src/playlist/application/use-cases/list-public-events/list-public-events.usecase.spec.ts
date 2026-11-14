@@ -33,6 +33,7 @@ const defaultInfos: CreatePlaylistInfos = {
   description: '',
   latitude: PARIS.latitude,
   longitude: PARIS.longitude,
+  address: '96 boulevard Bessières, Paris',
   beginAt: new Date(Date.now() + ONE_DAY),
 };
 
@@ -67,6 +68,7 @@ describe('ListPublicEventsUseCase', () => {
       id,
       latitude: location.latitude,
       longitude: location.longitude,
+      address: '96 boulevard Bessières, Paris',
     });
   }
 
@@ -225,6 +227,30 @@ describe('ListPublicEventsUseCase', () => {
       expect(ids).toHaveLength(PUBLIC_EVENTS_LIMIT);
       expect(ids[0]).toBe('km-1');
       expect(ids).not.toContain('km-12');
+    });
+  });
+
+  describe('address', () => {
+    it('gives the address of a vote event', async () => {
+      await givenEvent({ id: 'vote' });
+
+      const output = await useCase.execute({
+        accountId: ALICE_ID,
+        position: null,
+      });
+
+      expect(output.events[0].address).toBe('96 boulevard Bessières, Paris');
+    });
+
+    it('is null for an editor event', async () => {
+      await givenEvent({ id: 'editor', type: PlaylistType.EDITOR });
+
+      const output = await useCase.execute({
+        accountId: ALICE_ID,
+        position: null,
+      });
+
+      expect(output.events[0].address).toBeNull();
     });
   });
 

@@ -61,6 +61,10 @@ export class PlaylistOrmEntity {
   @Column({ type: 'double precision', nullable: true })
   longitude: number | null;
 
+  // null for an EDITOR playlist, and for the VOTE playlists created before it existed
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  address: string | null;
+
   @Column({ type: 'varchar', length: 2048, nullable: true })
   cover_path: string | null;
 

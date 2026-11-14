@@ -12,6 +12,7 @@ export type CreatePlaylistInput = {
   endAt?: Date;
   latitude?: number;
   longitude?: number;
+  address?: string;
 };
 
 export type CreatePlaylistOutput = {

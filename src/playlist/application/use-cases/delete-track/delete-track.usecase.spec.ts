@@ -23,6 +23,7 @@ const PLAYLIST_LONGITUDE = 2.3184;
 const ON_SITE_POSITION = {
   latitude: PLAYLIST_LATITUDE,
   longitude: PLAYLIST_LONGITUDE,
+  address: '96 boulevard Bessières, Paris',
 };
 
 const ownerInput: DeleteTrackInput = {
@@ -85,6 +86,7 @@ describe('DeleteTrackUseCase', () => {
       description: '',
       latitude: PLAYLIST_LATITUDE,
       longitude: PLAYLIST_LONGITUDE,
+      address: '96 boulevard Bessières, Paris',
     });
     await playlistRepository.save(playlist);
 

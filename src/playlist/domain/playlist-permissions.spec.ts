@@ -32,10 +32,12 @@ const PLAYLIST_LONGITUDE = 2.3184;
 const ON_SITE_POSITION = {
   latitude: PLAYLIST_LATITUDE + 400 * ONE_METER_IN_LATITUDE_DEGREES,
   longitude: PLAYLIST_LONGITUDE,
+  address: '96 boulevard Bessières, Paris',
 };
 const FAR_POSITION = {
   latitude: PLAYLIST_LATITUDE + 600 * ONE_METER_IN_LATITUDE_DEGREES,
   longitude: PLAYLIST_LONGITUDE,
+  address: '96 boulevard Bessières, Paris',
 };
 
 const defaultInfos: CreatePlaylistInfos = {
@@ -46,6 +48,7 @@ const defaultInfos: CreatePlaylistInfos = {
   description: '',
   latitude: PLAYLIST_LATITUDE,
   longitude: PLAYLIST_LONGITUDE,
+  address: '96 boulevard Bessières, Paris',
 };
 
 // A track added by someone else than the participant used in the tests

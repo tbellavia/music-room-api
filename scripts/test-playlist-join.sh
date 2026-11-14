@@ -56,7 +56,7 @@ ALICE=$(register_and_login "alice$SUFFIX") || exit 1
 BOB=$(register_and_login "bob$SUFFIX") || exit 1
 echo "  owner: alice$SUFFIX, joiner: bob$SUFFIX"
 
-LOCATION="\"latitude\":$PLAYLIST_LATITUDE,\"longitude\":$PLAYLIST_LONGITUDE"
+LOCATION="\"latitude\":$PLAYLIST_LATITUDE,\"longitude\":$PLAYLIST_LONGITUDE,\"address\":\"96 boulevard Bessières, Paris\""
 PUBLIC=$(create_playlist "$ALICE" \
   "{\"type\":\"VOTE\",\"name\":\"Public $SUFFIX\",\"description\":\"\",$LOCATION}") || exit 1
 PRIVATE=$(create_playlist "$ALICE" \
@@ -92,6 +92,28 @@ request POST /playlists "$ALICE" \
   "{\"type\":\"EDITOR\",\"name\":\"Half located $SUFFIX\",\"description\":\"\",\"latitude\":$PLAYLIST_LATITUDE}"
 expect "EDITOR with a latitude only → 400 LOCATION_NOT_ALLOWED" 400 LOCATION_NOT_ALLOWED
 
+request POST /playlists "$ALICE" \
+  "{\"type\":\"EDITOR\",\"name\":\"Addressed $SUFFIX\",\"description\":\"\",\"address\":\"Paris\"}"
+expect "EDITOR with an address only → 400 LOCATION_NOT_ALLOWED" 400 LOCATION_NOT_ALLOWED
+
+COORDINATES="\"latitude\":$PLAYLIST_LATITUDE,\"longitude\":$PLAYLIST_LONGITUDE"
+request POST /playlists "$ALICE" \
+  "{\"type\":\"VOTE\",\"name\":\"No address $SUFFIX\",\"description\":\"\",$COORDINATES}"
+expect "VOTE without address → 400 ADDRESS_INVALID" 400 ADDRESS_INVALID
+
+request POST /playlists "$ALICE" \
+  "{\"type\":\"VOTE\",\"name\":\"Blank address $SUFFIX\",\"description\":\"\",$COORDINATES,\"address\":\"   \"}"
+expect "VOTE with a blank address → 400 ADDRESS_INVALID" 400 ADDRESS_INVALID
+
+request POST /playlists "$ALICE" \
+  "{\"type\":\"VOTE\",\"name\":\"Number address $SUFFIX\",\"description\":\"\",$COORDINATES,\"address\":42}"
+expect "VOTE with an address that is not a string → 400 ADDRESS_INVALID" 400 ADDRESS_INVALID
+
+LONG_ADDRESS=$(printf 'a%.0s' $(seq 1 256))
+request POST /playlists "$ALICE" \
+  "{\"type\":\"VOTE\",\"name\":\"Long address $SUFFIX\",\"description\":\"\",$COORDINATES,\"address\":\"$LONG_ADDRESS\"}"
+expect "VOTE with an address of 256 characters → 400 ADDRESS_TOO_LONG" 400 ADDRESS_TOO_LONG
+
 section "GET /playlists/public"
 request GET /playlists/public
 expect "without token → 401 UNAUTHORIZED" 401 UNAUTHORIZED
@@ -102,10 +124,10 @@ if is_listed "$PUBLIC"; then pass "public playlist is listed"; else fail "public
 if is_listed "$FUTURE"; then pass "not yet started playlist is listed"; else fail "not yet started playlist is listed" "$BODY"; fi
 if is_listed "$PRIVATE"; then fail "private playlist is not listed" "$BODY"; else pass "private playlist is not listed"; fi
 if is_listed "$ENDED"; then fail "ended playlist is not listed" "$BODY"; else pass "ended playlist is not listed"; fi
-expect_json "EDITOR playlist listed without location" \
-  "any(.playlists[]; .id == \"$EDITOR\" and .latitude == null and .longitude == null)"
-expect_json "VOTE playlist listed with its location" \
-  "any(.playlists[]; .id == \"$PUBLIC\" and .latitude == $PLAYLIST_LATITUDE)"
+expect_json "EDITOR playlist listed without location nor address" \
+  "any(.playlists[]; .id == \"$EDITOR\" and .latitude == null and .longitude == null and .address == null)"
+expect_json "VOTE playlist listed with its location and address" \
+  "any(.playlists[]; .id == \"$PUBLIC\" and .latitude == $PLAYLIST_LATITUDE and .address == \"96 boulevard Bessières, Paris\")"
 
 section "POST /playlists/:playlistId/join"
 request POST "/playlists/$PUBLIC/join" "" \

@@ -69,6 +69,7 @@ export class ListPublicPlaylistsUseCase {
       endAt: playlist.endAt,
       latitude: playlist.latitude,
       longitude: playlist.longitude,
+      address: playlist.address,
       coverPath: playlist.coverPath,
     };
   }

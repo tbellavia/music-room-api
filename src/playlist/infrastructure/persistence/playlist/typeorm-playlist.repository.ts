@@ -105,6 +105,7 @@ export class TypeOrmPlaylistRepository implements PlaylistRepository {
       end_at: playlist.endAt,
       latitude: playlist.latitude,
       longitude: playlist.longitude,
+      address: playlist.address,
       cover_path: playlist.coverPath,
       created_at: playlist.createdAt,
     };
@@ -123,6 +124,7 @@ export class TypeOrmPlaylistRepository implements PlaylistRepository {
       orm.end_at,
       orm.latitude,
       orm.longitude,
+      orm.address,
       orm.cover_path,
       orm.created_at,
     );

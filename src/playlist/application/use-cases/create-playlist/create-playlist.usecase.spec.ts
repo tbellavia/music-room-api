@@ -20,6 +20,7 @@ describe('CreatePlaylistUseCase', () => {
     description: 'Une soirée à 42',
     latitude: 48.8966,
     longitude: 2.3184,
+    address: '96 boulevard Bessières, Paris',
   };
 
   const editorInput: CreatePlaylistInput = {
@@ -44,12 +45,13 @@ describe('CreatePlaylistUseCase', () => {
     expect(saved?.isPrivate).toBe(false);
   });
 
-  it('saves the location of a vote playlist', async () => {
+  it('saves the location and the address of a vote playlist', async () => {
     const { id } = await useCase.execute(input);
 
     const saved = await repository.findById(id);
     expect(saved?.latitude).toBe(48.8966);
     expect(saved?.longitude).toBe(2.3184);
+    expect(saved?.address).toBe('96 boulevard Bessières, Paris');
   });
 
   it('creates an editor playlist without location', async () => {
@@ -60,6 +62,7 @@ describe('CreatePlaylistUseCase', () => {
     expect(saved?.type).toBe(PlaylistType.EDITOR);
     expect(saved?.latitude).toBeNull();
     expect(saved?.longitude).toBeNull();
+    expect(saved?.address).toBeNull();
   });
 
   it('rejects an editor playlist sent with a location, without saving it', async () => {
@@ -67,6 +70,7 @@ describe('CreatePlaylistUseCase', () => {
       ...editorInput,
       latitude: 48.8966,
       longitude: 2.3184,
+      address: '96 boulevard Bessières, Paris',
     });
 
     await expect(creation).rejects.toThrow(LocationNotAllowed);
@@ -77,6 +81,23 @@ describe('CreatePlaylistUseCase', () => {
     const creation = useCase.execute({ ...editorInput, latitude: 48.8966 });
 
     await expect(creation).rejects.toThrow(LocationNotAllowed);
+  });
+
+  it('rejects an editor playlist sent with an address only', async () => {
+    const creation = useCase.execute({
+      ...editorInput,
+      address: '96 boulevard Bessières, Paris',
+    });
+
+    await expect(creation).rejects.toThrow(LocationNotAllowed);
+    expect(repository.playlists.size).toBe(0);
+  });
+
+  it('rejects a vote playlist without address, without saving it', async () => {
+    const creation = useCase.execute({ ...input, address: undefined });
+
+    await expect(creation).rejects.toThrow(LocationRequired);
+    expect(repository.playlists.size).toBe(0);
   });
 
   it('rejects a vote playlist without location', async () => {

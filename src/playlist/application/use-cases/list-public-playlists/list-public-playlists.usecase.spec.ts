@@ -17,6 +17,7 @@ const defaultInfos: CreatePlaylistInfos = {
   description: 'Une soirée à 42',
   latitude: 48.8966,
   longitude: 2.3184,
+  address: '96 boulevard Bessières, Paris',
 };
 
 describe('ListPublicPlaylistsUseCase', () => {
@@ -102,6 +103,7 @@ describe('ListPublicPlaylistsUseCase', () => {
       endAt: null,
       latitude: 48.8966,
       longitude: 2.3184,
+      address: '96 boulevard Bessières, Paris',
       coverPath: null,
     });
   });
@@ -125,5 +127,13 @@ describe('ListPublicPlaylistsUseCase', () => {
     const output = await useCase.execute();
 
     expect(output.playlists[0].ownerUsername).toBeNull();
+  });
+
+  it('gives a null address for an editor playlist', async () => {
+    await givenPlaylist({ id: 'editor', type: PlaylistType.EDITOR });
+
+    const output = await useCase.execute();
+
+    expect(output.playlists[0].address).toBeNull();
   });
 });

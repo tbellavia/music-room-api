@@ -90,7 +90,7 @@ CAROL=$(login "carol$SUFFIX") || exit 1
 DAVE=$(login "dave$SUFFIX") || exit 1
 echo "  owner: alice$SUFFIX, joins: bob$SUFFIX, invited: carol$SUFFIX, stranger: dave$SUFFIX"
 
-LOCATION="\"latitude\":$PLAYLIST_LATITUDE,\"longitude\":$PLAYLIST_LONGITUDE"
+LOCATION="\"latitude\":$PLAYLIST_LATITUDE,\"longitude\":$PLAYLIST_LONGITUDE,\"address\":\"96 boulevard Bessières, Paris\""
 RADIO=$(create_playlist "$ALICE" \
   "{\"type\":\"EDITOR\",\"name\":\"Radio $SUFFIX\",\"description\":\"\"}") || exit 1
 INVITED_ONLY=$(create_playlist "$ALICE" \
