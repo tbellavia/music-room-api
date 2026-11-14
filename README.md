@@ -63,7 +63,7 @@ make test-e2e  # lance les tests de bout en bout, puis relance l'API en mode nor
 | API | http://localhost:3000/api/v1 |
 | Adminer (interface web de la base) | http://localhost:8080 (serveur `db`, identifiants du `.env`) |
 
-`make dev` lance l'API avec `ENVIRONMENT=dev` : le guard JWT laisse passer **toutes** les requêtes, sans lire le token. Les routes qui ont besoin de l'utilisateur connecté n'ont alors pas d'utilisateur. N'utilise jamais ce mode pour la correction : `make start` repasse en `prod`.
+`make dev` lance l'API avec `ENVIRONMENT=dev` : le guard JWT laisse passer **toutes** les requêtes, sans lire le token. Les routes qui ont besoin de l'utilisateur connecté ne fonctionnent donc pas : leur liste est dans [docs/ROUTES.md](docs/ROUTES.md#mode-dev-make-dev). N'utilise jamais ce mode pour la correction : `make start` repasse en `prod`.
 
 L'API tourne en mode watch : une modification dans `src/` est rechargée automatiquement, sans relancer les conteneurs.
 
