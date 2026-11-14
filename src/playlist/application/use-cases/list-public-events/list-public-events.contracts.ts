@@ -14,6 +14,7 @@ export type PublicEvent = {
   type: PlaylistType;
   license: PlaylistLicense;
   ownerId: string;
+  ownerUsername: string | null;
   name: string;
   description: string;
   // Never null: an event has a beginning date

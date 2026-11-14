@@ -12,6 +12,10 @@ import {
   ListPublicEventsOutput,
   PublicEvent,
 } from './list-public-events.contracts';
+import {
+  ACCOUNT_DIRECTORY,
+  AccountDirectory,
+} from '../../ports/account-directory';
 import { Playlist } from 'src/playlist/domain/playlist.entity';
 import { Coordinates } from 'src/playlist/domain/geo';
 
@@ -22,6 +26,12 @@ type LocatedEvent = {
   distanceMeters: number;
 };
 
+// null without position
+type ListedEvent = {
+  playlist: Playlist;
+  distanceMeters: number | null;
+};
+
 @Injectable()
 export class ListPublicEventsUseCase {
   constructor(
@@ -29,6 +39,8 @@ export class ListPublicEventsUseCase {
     private readonly playlistRepository: PlaylistRepository,
     @Inject(PARTICIPANT_REPOSITORY)
     private readonly participantRepository: ParticipantRepository,
+    @Inject(ACCOUNT_DIRECTORY)
+    private readonly accountDirectory: AccountDirectory,
   ) {}
 
   async execute(input: ListPublicEventsInput): Promise<ListPublicEventsOutput> {
@@ -42,10 +54,37 @@ export class ListPublicEventsUseCase {
         !event.isOwner(input.accountId) && !memberPlaylistIds.has(event.id),
     );
 
-    if (input.position === null) {
-      return { events: this.soonest(newEvents, now) };
+    const listedEvents = this.listed(newEvents, input.position);
+    const usernameById = await this.findOwnerUsernames(listedEvents);
+
+    return {
+      events: listedEvents.map((event) =>
+        this.toOutput(event, input.position, usernameById, now),
+      ),
+    };
+  }
+
+  private listed(
+    events: Playlist[],
+    position: Coordinates | null,
+  ): ListedEvent[] {
+    if (position === null) {
+      return this.soonest(events);
     }
-    return { events: this.closest(newEvents, input.position, now) };
+    return this.closest(events, position);
+  }
+
+  // Only for the listed events: one lookup for at most 10 owners
+  private async findOwnerUsernames(
+    events: ListedEvent[],
+  ): Promise<Map<string, string>> {
+    const ownerIds = events.map((event) => event.playlist.ownerId);
+    const owners = await this.accountDirectory.findByIds(ownerIds);
+    const usernameById = new Map<string, string>();
+    for (const owner of owners) {
+      usernameById.set(owner.id, owner.username);
+    }
+    return usernameById;
   }
 
   private async findMemberPlaylistIds(accountId: string): Promise<Set<string>> {
@@ -58,22 +97,18 @@ export class ListPublicEventsUseCase {
   }
 
   // Live events come first, since they began before the upcoming ones
-  private soonest(events: Playlist[], now: Date): PublicEvent[] {
+  private soonest(events: Playlist[]): ListedEvent[] {
     const soonestFirst = events.sort(
       (a, b) => this.beginningOf(a) - this.beginningOf(b),
     );
 
     return soonestFirst
       .slice(0, PUBLIC_EVENTS_LIMIT)
-      .map((event) => this.toOutput(event, null, null, now));
+      .map((playlist) => ({ playlist, distanceMeters: null }));
   }
 
   // Only VOTE events have a location to be close to
-  private closest(
-    events: Playlist[],
-    position: Coordinates,
-    now: Date,
-  ): PublicEvent[] {
+  private closest(events: Playlist[], position: Coordinates): ListedEvent[] {
     const locatedEvents: LocatedEvent[] = [];
     for (const playlist of events) {
       const distanceMeters = playlist.distanceFrom(position);
@@ -86,16 +121,7 @@ export class ListPublicEventsUseCase {
       (a, b) => a.distanceMeters - b.distanceMeters,
     );
 
-    return closestFirst
-      .slice(0, PUBLIC_EVENTS_LIMIT)
-      .map((event) =>
-        this.toOutput(
-          event.playlist,
-          position,
-          Math.round(event.distanceMeters),
-          now,
-        ),
-      );
+    return closestFirst.slice(0, PUBLIC_EVENTS_LIMIT);
   }
 
   // The repository only returns events, which all have a beginning date
@@ -107,16 +133,23 @@ export class ListPublicEventsUseCase {
   }
 
   private toOutput(
-    playlist: Playlist,
+    event: ListedEvent,
     position: Coordinates | null,
-    distanceMeters: number | null,
+    usernameById: Map<string, string>,
     now: Date,
   ): PublicEvent {
+    const playlist = event.playlist;
+    let distanceMeters: number | null = null;
+    if (event.distanceMeters !== null) {
+      distanceMeters = Math.round(event.distanceMeters);
+    }
+
     return {
       id: playlist.id,
       type: playlist.type,
       license: playlist.license,
       ownerId: playlist.ownerId,
+      ownerUsername: usernameById.get(playlist.ownerId) ?? null,
       name: playlist.name,
       description: playlist.description,
       beginAt: playlist.beginAt,

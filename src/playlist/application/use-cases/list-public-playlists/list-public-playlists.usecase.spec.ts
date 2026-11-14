@@ -1,4 +1,5 @@
 import { playlistInfos } from 'src/playlist/domain/playlist-test-infos';
+import { InMemoryAccountDirectory } from 'src/playlist/infrastructure/persistence/account/in-memory-account-directory';
 import { InMemoryPlaylistRepository } from 'src/playlist/infrastructure/persistence/playlist/in-memory-playlist.repository';
 import {
   CreatePlaylistInfos,
@@ -20,6 +21,7 @@ const defaultInfos: CreatePlaylistInfos = {
 
 describe('ListPublicPlaylistsUseCase', () => {
   let repository: InMemoryPlaylistRepository;
+  let accountDirectory: InMemoryAccountDirectory;
   let useCase: ListPublicPlaylistsUseCase;
 
   async function givenPlaylist(overrides: Partial<CreatePlaylistInfos>) {
@@ -29,7 +31,9 @@ describe('ListPublicPlaylistsUseCase', () => {
 
   beforeEach(() => {
     repository = new InMemoryPlaylistRepository();
-    useCase = new ListPublicPlaylistsUseCase(repository);
+    accountDirectory = new InMemoryAccountDirectory();
+    accountDirectory.add({ id: 'owner-id', username: 'owner' });
+    useCase = new ListPublicPlaylistsUseCase(repository, accountDirectory);
   });
 
   it('returns an empty list when there is no playlist', async () => {
@@ -91,6 +95,7 @@ describe('ListPublicPlaylistsUseCase', () => {
       type: PlaylistType.VOTE,
       license: PlaylistLicense.EVERYONE,
       ownerId: 'owner-id',
+      ownerUsername: 'owner',
       name: 'Soirée',
       description: 'Une soirée à 42',
       beginAt: null,
@@ -99,5 +104,26 @@ describe('ListPublicPlaylistsUseCase', () => {
       longitude: 2.3184,
       coverPath: null,
     });
+  });
+
+  it('gives the username of the owner of each playlist', async () => {
+    accountDirectory.add({ id: 'bob-id', username: 'bob' });
+    await givenPlaylist({ id: 'owner-playlist' });
+    await givenPlaylist({ id: 'bob-playlist', ownerId: 'bob-id' });
+
+    const output = await useCase.execute();
+
+    const usernames = output.playlists.map(
+      (playlist) => playlist.ownerUsername,
+    );
+    expect(usernames).toEqual(['owner', 'bob']);
+  });
+
+  it('gives a null username when the owner cannot be found', async () => {
+    await givenPlaylist({ id: 'orphan', ownerId: 'unknown-id' });
+
+    const output = await useCase.execute();
+
+    expect(output.playlists[0].ownerUsername).toBeNull();
   });
 });
