@@ -13,8 +13,14 @@ import {
   SortOrder,
 } from './list-my-playlists.contracts';
 import {
+  ACCOUNT_DIRECTORY,
+  AccountDirectory,
+} from '../../ports/account-directory';
+import {
+  MemberPlaylist,
   MyPlaylist,
   OWNER_MEMBERSHIP,
+  findOwnerUsernames,
   toMyPlaylist,
 } from 'src/playlist/application/my-playlist';
 import { PlaylistRole } from 'src/playlist/domain/playlist-role.enum';
@@ -26,34 +32,39 @@ export class ListMyPlaylistsUseCase {
     private readonly playlistRepository: PlaylistRepository,
     @Inject(PARTICIPANT_REPOSITORY)
     private readonly participantRepository: ParticipantRepository,
+    @Inject(ACCOUNT_DIRECTORY)
+    private readonly accountDirectory: AccountDirectory,
   ) {}
 
   async execute(input: ListMyPlaylistsInput): Promise<ListMyPlaylistsOutput> {
     const now = new Date();
-    const ownedPlaylists = await this.findOwned(input.accountId, now);
-    const joinedPlaylists = await this.findJoined(input.accountId, now);
+    const ownedPlaylists = await this.findOwned(input.accountId);
+    const joinedPlaylists = await this.findJoined(input.accountId);
+    const memberPlaylists = [...ownedPlaylists, ...joinedPlaylists];
 
-    const filteredPlaylists = [...ownedPlaylists, ...joinedPlaylists].filter(
-      (playlist) => this.matchesFilters(playlist, input),
+    const usernameById = await findOwnerUsernames(
+      this.accountDirectory,
+      memberPlaylists.map((memberPlaylist) => memberPlaylist.playlist),
     );
+    const filteredPlaylists = memberPlaylists
+      .map((memberPlaylist) => toMyPlaylist(memberPlaylist, usernameById, now))
+      .filter((playlist) => this.matchesFilters(playlist, input));
 
     return {
       playlists: this.sortByCreation(filteredPlaylists, input.order),
     };
   }
 
-  private async findOwned(accountId: string, now: Date): Promise<MyPlaylist[]> {
+  private async findOwned(accountId: string): Promise<MemberPlaylist[]> {
     const playlists = await this.playlistRepository.findByOwner(accountId);
 
-    return playlists.map((playlist) =>
-      toMyPlaylist(playlist, OWNER_MEMBERSHIP, now),
-    );
+    return playlists.map((playlist) => ({
+      playlist,
+      membership: OWNER_MEMBERSHIP,
+    }));
   }
 
-  private async findJoined(
-    accountId: string,
-    now: Date,
-  ): Promise<MyPlaylist[]> {
+  private async findJoined(accountId: string): Promise<MemberPlaylist[]> {
     const participations =
       await this.participantRepository.findByAccount(accountId);
     const playlistIds = participations.map(
@@ -61,7 +72,7 @@ export class ListMyPlaylistsUseCase {
     );
     const playlists = await this.playlistRepository.findByIds(playlistIds);
 
-    const joinedPlaylists: MyPlaylist[] = [];
+    const joinedPlaylists: MemberPlaylist[] = [];
     for (const playlist of playlists) {
       const participation = participations.find(
         (candidate) => candidate.playlistId === playlist.id,
@@ -71,7 +82,7 @@ export class ListMyPlaylistsUseCase {
           role: PlaylistRole.PARTICIPANT,
           hasPrivilege: participation.hasPrivilege,
         };
-        joinedPlaylists.push(toMyPlaylist(playlist, membership, now));
+        joinedPlaylists.push({ playlist, membership });
       }
     }
     return joinedPlaylists;

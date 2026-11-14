@@ -469,6 +469,7 @@ Triées par date de création. Tous les paramètres sont optionnels.
     type: "VOTE" | "EDITOR"
     license: "EVERYONE" | "INVITED_ONLY"
     ownerId: string
+    ownerUsername: string | null   // null si le compte est introuvable
     name: string
     description: string
     isPrivate: boolean

@@ -1,4 +1,5 @@
 import { playlistInfos } from 'src/playlist/domain/playlist-test-infos';
+import { InMemoryAccountDirectory } from 'src/playlist/infrastructure/persistence/account/in-memory-account-directory';
 import { InMemoryPlaylistRepository } from 'src/playlist/infrastructure/persistence/playlist/in-memory-playlist.repository';
 import {
   CreatePlaylistInfos,
@@ -30,6 +31,7 @@ function dayAfterFirst(days: number): Date {
 
 describe('ListMyRecentPlaylistsUseCase', () => {
   let repository: InMemoryPlaylistRepository;
+  let accountDirectory: InMemoryAccountDirectory;
   let useCase: ListMyRecentPlaylistsUseCase;
 
   async function givenPlaylist(overrides: Partial<CreatePlaylistInfos>) {
@@ -55,7 +57,9 @@ describe('ListMyRecentPlaylistsUseCase', () => {
 
   beforeEach(() => {
     repository = new InMemoryPlaylistRepository();
-    useCase = new ListMyRecentPlaylistsUseCase(repository);
+    accountDirectory = new InMemoryAccountDirectory();
+    accountDirectory.add({ id: ALICE_ID, username: 'alice' });
+    useCase = new ListMyRecentPlaylistsUseCase(repository, accountDirectory);
   });
 
   it('returns an empty list when the account created nothing', async () => {
@@ -109,5 +113,6 @@ describe('ListMyRecentPlaylistsUseCase', () => {
 
     expect(output.playlists[0].role).toBe(PlaylistRole.OWNER);
     expect(output.playlists[0].hasPrivilege).toBe(true);
+    expect(output.playlists[0].ownerUsername).toBe('alice');
   });
 });

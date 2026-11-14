@@ -8,7 +8,12 @@ import {
   ListMyRecentPlaylistsOutput,
 } from './list-my-recent-playlists.contracts';
 import {
+  ACCOUNT_DIRECTORY,
+  AccountDirectory,
+} from '../../ports/account-directory';
+import {
   OWNER_MEMBERSHIP,
+  findOwnerUsernames,
   toMyPlaylist,
 } from 'src/playlist/application/my-playlist';
 
@@ -19,6 +24,8 @@ export class ListMyRecentPlaylistsUseCase {
   constructor(
     @Inject(PLAYLIST_REPOSITORY)
     private readonly playlistRepository: PlaylistRepository,
+    @Inject(ACCOUNT_DIRECTORY)
+    private readonly accountDirectory: AccountDirectory,
   ) {}
 
   async execute(
@@ -30,9 +37,19 @@ export class ListMyRecentPlaylistsUseCase {
       RECENT_PLAYLISTS_LIMIT,
     );
 
+    // Always the caller here: kept for the shared format with GET /playlists/me
+    const usernameById = await findOwnerUsernames(
+      this.accountDirectory,
+      playlists,
+    );
+
     return {
       playlists: playlists.map((playlist) =>
-        toMyPlaylist(playlist, OWNER_MEMBERSHIP, now),
+        toMyPlaylist(
+          { playlist, membership: OWNER_MEMBERSHIP },
+          usernameById,
+          now,
+        ),
       ),
     };
   }
