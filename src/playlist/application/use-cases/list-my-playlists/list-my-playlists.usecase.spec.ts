@@ -1,4 +1,5 @@
 import { playlistInfos } from 'src/playlist/domain/playlist-test-infos';
+import { InMemoryAccountDirectory } from 'src/playlist/infrastructure/persistence/account/in-memory-account-directory';
 import { InMemoryPlaylistRepository } from 'src/playlist/infrastructure/persistence/playlist/in-memory-playlist.repository';
 import { InMemoryParticipantRepository } from 'src/playlist/infrastructure/persistence/participant/in-memory-participant.repository';
 import {
@@ -41,6 +42,7 @@ const defaultInfos: CreatePlaylistInfos = {
 describe('ListMyPlaylistsUseCase', () => {
   let playlistRepository: InMemoryPlaylistRepository;
   let participantRepository: InMemoryParticipantRepository;
+  let accountDirectory: InMemoryAccountDirectory;
   let useCase: ListMyPlaylistsUseCase;
 
   async function givenPlaylist(overrides: Partial<CreatePlaylistInfos>) {
@@ -71,9 +73,13 @@ describe('ListMyPlaylistsUseCase', () => {
   beforeEach(() => {
     playlistRepository = new InMemoryPlaylistRepository();
     participantRepository = new InMemoryParticipantRepository();
+    accountDirectory = new InMemoryAccountDirectory();
+    accountDirectory.add({ id: ALICE_ID, username: 'alice' });
+    accountDirectory.add({ id: BOB_ID, username: 'bob' });
     useCase = new ListMyPlaylistsUseCase(
       playlistRepository,
       participantRepository,
+      accountDirectory,
     );
   });
 
@@ -122,6 +128,26 @@ describe('ListMyPlaylistsUseCase', () => {
 
     const addresses = output.playlists.map((playlist) => playlist.address);
     expect(addresses).toEqual(['96 boulevard Bessières, Paris', null]);
+  });
+
+  it('gives the username of the owner, the caller or not', async () => {
+    await givenPlaylist({ id: 'owned', createdAt: FEBRUARY });
+    await givenPlaylist({ id: 'joined', ownerId: BOB_ID, name: 'Bob' });
+    await givenParticipant('joined', ALICE_ID);
+
+    const output = await useCase.execute({ accountId: ALICE_ID });
+
+    const owners = output.playlists.map((playlist) => playlist.ownerUsername);
+    expect(owners).toEqual(['alice', 'bob']);
+  });
+
+  it('gives a null username when the owner cannot be found', async () => {
+    await givenPlaylist({ id: 'joined', ownerId: 'unknown-id' });
+    await givenParticipant('joined', ALICE_ID);
+
+    const output = await useCase.execute({ accountId: ALICE_ID });
+
+    expect(output.playlists[0].ownerUsername).toBeNull();
   });
 
   it('gives the status of each playlist', async () => {

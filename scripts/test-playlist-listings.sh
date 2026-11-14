@@ -78,6 +78,8 @@ expect_json "owned and joined playlists, most recent first" \
   "[.playlists[].id] == [\"$JOINED\", \"$SECOND\", \"$FIRST\"]"
 expect_json "gives the role and the privilege" \
   "(.playlists[0] | .role == \"PARTICIPANT\" and .hasPrivilege == false) and (.playlists[2] | .role == \"OWNER\" and .hasPrivilege == true)"
+expect_json "gives the username of the owner" \
+  "(.playlists[0].ownerUsername == \"bob$SUFFIX\") and (.playlists[2].ownerUsername == \"alice$SUFFIX\")"
 expect_json "includes the private playlist" \
   ".playlists[2].isPrivate == true"
 expect_json "gives the address, null for an EDITOR playlist" \
@@ -121,6 +123,8 @@ request GET /playlists/me/recent "$ALICE"
 expect "lists the playlists created by the caller → 200" 200
 expect_json "only the created ones, most recent first" \
   "[.playlists[].id] == [\"$SECOND\", \"$FIRST\"]"
+expect_json "the owner is always the caller" \
+  "all(.playlists[]; .ownerUsername == \"alice$SUFFIX\")"
 
 for index in $(seq 1 10); do
   create_playlist "$ALICE" \
