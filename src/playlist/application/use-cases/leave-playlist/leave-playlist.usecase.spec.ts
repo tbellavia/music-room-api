@@ -20,6 +20,7 @@ const defaultInfos: CreatePlaylistInfos = {
   description: '',
   latitude: 48.8966,
   longitude: 2.3184,
+  address: '96 boulevard Bessières, Paris',
 };
 
 const input: LeavePlaylistInput = {

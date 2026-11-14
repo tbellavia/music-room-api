@@ -34,6 +34,7 @@ const defaultInfos: CreatePlaylistInfos = {
   description: '',
   latitude: 48.8966,
   longitude: 2.3184,
+  address: '96 boulevard Bessières, Paris',
   createdAt: JANUARY,
 };
 
@@ -111,6 +112,16 @@ describe('ListMyPlaylistsUseCase', () => {
     expect(owned?.hasPrivilege).toBe(true);
     expect(joined?.role).toBe(PlaylistRole.PARTICIPANT);
     expect(joined?.hasPrivilege).toBe(true);
+  });
+
+  it('gives the address, null for an editor playlist', async () => {
+    await givenPlaylist({ id: 'vote', name: 'A', createdAt: FEBRUARY });
+    await givenPlaylist({ id: 'editor', name: 'B', type: PlaylistType.EDITOR });
+
+    const output = await useCase.execute({ accountId: ALICE_ID });
+
+    const addresses = output.playlists.map((playlist) => playlist.address);
+    expect(addresses).toEqual(['96 boulevard Bessières, Paris', null]);
   });
 
   it('gives the status of each playlist', async () => {

@@ -48,6 +48,7 @@ export class CreatePlaylistUseCase {
       endAt: input.endAt,
       latitude: input.latitude,
       longitude: input.longitude,
+      address: input.address,
     });
 
     await this.playlistRepository.save(playlist);

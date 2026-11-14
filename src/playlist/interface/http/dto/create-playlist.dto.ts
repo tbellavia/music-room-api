@@ -6,6 +6,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -15,6 +16,7 @@ import {
 import { PlaylistType } from 'src/playlist/domain/playlist-type.enum';
 import { PlaylistLicense } from 'src/playlist/domain/playlist-license.enum';
 import {
+  PLAYLIST_ADDRESS_MAX_LENGTH,
   PLAYLIST_DESCRIPTION_MAX_LENGTH,
   PLAYLIST_NAME_MAX_LENGTH,
   PLAYLIST_NAME_MIN_LENGTH,
@@ -59,7 +61,7 @@ export class CreatePlaylistDto {
   endAt?: Date;
 
   // Validated for a VOTE playlist only. For an EDITOR playlist, the domain
-  // rejects any value sent with LOCATION_NOT_ALLOWED.
+  // rejects any value sent with LOCATION_NOT_ALLOWED (address included).
   @ValidateIf(isVotePlaylist)
   @IsNumber({}, withCode('LATITUDE_INVALID'))
   @Min(-90, withCode('LATITUDE_OUT_OF_RANGE'))
@@ -71,4 +73,12 @@ export class CreatePlaylistDto {
   @Min(-180, withCode('LONGITUDE_OUT_OF_RANGE'))
   @Max(180, withCode('LONGITUDE_OUT_OF_RANGE'))
   longitude?: number;
+
+  // Same rule as the coordinates. Only a label: distances use the coordinates.
+  @ValidateIf(isVotePlaylist)
+  @IsString(withCode('ADDRESS_INVALID'))
+  // Not empty nor only spaces
+  @Matches(/\S/, withCode('ADDRESS_INVALID'))
+  @MaxLength(PLAYLIST_ADDRESS_MAX_LENGTH, withCode('ADDRESS_TOO_LONG'))
+  address?: string;
 }

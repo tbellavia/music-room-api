@@ -68,6 +68,7 @@ export class PlaylistController {
       endAt: createPlaylistDto.endAt,
       latitude: createPlaylistDto.latitude,
       longitude: createPlaylistDto.longitude,
+      address: createPlaylistDto.address,
     });
   }
 

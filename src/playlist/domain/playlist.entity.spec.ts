@@ -1,6 +1,7 @@
 import { InvalidPlaylistPeriod } from './errors/invalid-playlist-period.error';
 import { LocationNotAllowed } from './errors/location-not-allowed.error';
 import { LocationRequired } from './errors/location-required.error';
+import { Coordinates } from './geo';
 import { PlaylistType } from './playlist-type.enum';
 import { PlaylistStatus } from './playlist-status.enum';
 import { CreatePlaylistInfos, Playlist } from './playlist.entity';
@@ -16,6 +17,7 @@ const defaultInfos: CreatePlaylistInfos = {
   description: '',
   latitude: 48.8966,
   longitude: 2.3184,
+  address: '96 boulevard Bessières, Paris',
 };
 
 function build(overrides: Partial<CreatePlaylistInfos> = {}): Playlist {
@@ -48,6 +50,15 @@ describe('Playlist', () => {
 
       expect(playlist.latitude).toBe(48.8966);
       expect(playlist.longitude).toBe(2.3184);
+      expect(playlist.address).toBe('96 boulevard Bessières, Paris');
+    });
+
+    it('rejects a vote playlist without address', () => {
+      expect(() => build({ address: undefined })).toThrow(LocationRequired);
+    });
+
+    it('rejects a vote playlist with a blank address', () => {
+      expect(() => build({ address: '   ' })).toThrow(LocationRequired);
     });
 
     it('rejects a vote playlist without location', () => {
@@ -65,10 +76,12 @@ describe('Playlist', () => {
         type: PlaylistType.EDITOR,
         latitude: undefined,
         longitude: undefined,
+        address: undefined,
       });
 
       expect(playlist.latitude).toBeNull();
       expect(playlist.longitude).toBeNull();
+      expect(playlist.address).toBeNull();
     });
 
     it('rejects an editor playlist with a location', () => {
@@ -79,7 +92,21 @@ describe('Playlist', () => {
 
     it('rejects an editor playlist with only one coordinate', () => {
       expect(() =>
-        build({ type: PlaylistType.EDITOR, latitude: undefined }),
+        build({
+          type: PlaylistType.EDITOR,
+          latitude: undefined,
+          address: undefined,
+        }),
+      ).toThrow(LocationNotAllowed);
+    });
+
+    it('rejects an editor playlist with only an address', () => {
+      expect(() =>
+        build({
+          type: PlaylistType.EDITOR,
+          latitude: undefined,
+          longitude: undefined,
+        }),
       ).toThrow(LocationNotAllowed);
     });
 
@@ -199,6 +226,7 @@ describe('Playlist', () => {
         type: PlaylistType.EDITOR,
         latitude: null,
         longitude: null,
+        address: null,
       });
 
       expect(
@@ -250,6 +278,7 @@ describe('Playlist', () => {
         type: PlaylistType.EDITOR,
         latitude: null,
         longitude: null,
+        address: null,
       });
 
       expect(
@@ -259,11 +288,11 @@ describe('Playlist', () => {
   });
 
   describe('canBeJoinedFrom', () => {
-    const inZone = {
+    const inZone: Coordinates = {
       latitude: 48.8966 + 400 * ONE_METER_IN_LATITUDE_DEGREES,
       longitude: 2.3184,
     };
-    const outsideZone = {
+    const outsideZone: Coordinates = {
       latitude: 48.8966 + 600 * ONE_METER_IN_LATITUDE_DEGREES,
       longitude: 2.3184,
     };
@@ -285,6 +314,7 @@ describe('Playlist', () => {
         type: PlaylistType.EDITOR,
         latitude: null,
         longitude: null,
+        address: null,
       });
 
       expect(editorPlaylist.canBeJoinedFrom(null)).toBe(true);

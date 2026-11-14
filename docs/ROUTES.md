@@ -68,6 +68,8 @@ non respectée, par exemple :
 | `LATITUDE_OUT_OF_RANGE` | `latitude` | Hors de -90..90 | création, join, événements, actions sur les musiques |
 | `LONGITUDE_INVALID` | `longitude` | Absent (quand obligatoire : création d'une playlist VOTE, ou `latitude` envoyée seule sur `GET /playlists/events`) ou pas un nombre | création, join, événements, actions sur les musiques |
 | `LONGITUDE_OUT_OF_RANGE` | `longitude` | Hors de -180..180 | création, join, événements, actions sur les musiques |
+| `ADDRESS_INVALID` | `address` | Absente (playlist VOTE), pas une chaîne, vide ou seulement des espaces | `POST /playlists` |
+| `ADDRESS_TOO_LONG` | `address` | Plus de 255 caractères | `POST /playlists` |
 | `ACCOUNT_ID_INVALID` | `accountId` | Pas un UUID | `POST /playlists/:playlistId/invitations` |
 | `HAS_PRIVILEGE_INVALID` | `hasPrivilege` | Pas un booléen | `PATCH /playlists/:playlistId/participants/:participantId` |
 | `ROLE_INVALID` | `role` (query) | Ni `OWNER` ni `PARTICIPANT` | `GET /playlists/me` |
@@ -388,7 +390,8 @@ Annuler une demande envoyée. Réservé à l'émetteur de la demande.
 
 ### `POST /playlists`
 
-Créer une playlist. Seule une playlist **VOTE** a une position : ses participants doivent être à 500 m maximum pour la rejoindre et agir sur ses musiques. Une playlist **EDITOR** est une collaboration à distance : elle n'a pas de position, et `latitude` / `longitude` ne doivent pas être envoyés.
+Créer une playlist. Seule une playlist **VOTE** a une position : ses participants doivent être à 500 m maximum pour la rejoindre et agir sur ses musiques. Une playlist **EDITOR** est une collaboration à distance : elle n'a pas de position, et `latitude` / `longitude` / `address` ne doivent pas être envoyés.
+`address` n'est qu'un libellé à afficher : les distances (règle des 500 m, tri des événements) utilisent uniquement `latitude` / `longitude`. Le serveur ne vérifie pas que l'adresse correspond aux coordonnées.
 
 ```ts
 // Body
@@ -402,6 +405,7 @@ Créer une playlist. Seule une playlist **VOTE** a une position : ses participan
   endAt?: string            // ISO 8601, dans le futur et strictement après beginAt
   latitude?: number         // -90..90, obligatoire pour VOTE, interdit pour EDITOR
   longitude?: number        // -180..180, obligatoire pour VOTE, interdit pour EDITOR
+  address?: string          // 255 caractères max, pas vide, obligatoire pour VOTE, interdit pour EDITOR
 }
 ```
 
@@ -422,7 +426,9 @@ Créer une playlist. Seule une playlist **VOTE** a une position : ses participan
 | 400 | `LATITUDE_OUT_OF_RANGE` | VOTE : hors de -90..90 |
 | 400 | `LONGITUDE_INVALID` | VOTE : absent ou pas un nombre |
 | 400 | `LONGITUDE_OUT_OF_RANGE` | VOTE : hors de -180..180 |
-| 400 | `LOCATION_NOT_ALLOWED` | EDITOR : `latitude` ou `longitude` envoyé, quelle que soit sa valeur |
+| 400 | `ADDRESS_INVALID` | VOTE : absente, pas une chaîne, vide ou seulement des espaces |
+| 400 | `ADDRESS_TOO_LONG` | VOTE : plus de 255 caractères |
+| 400 | `LOCATION_NOT_ALLOWED` | EDITOR : `latitude`, `longitude` ou `address` envoyé, quelle que soit sa valeur |
 | 400 | `INVALID_PLAYLIST_PERIOD` | |
 | 400 | `PLAYLIST_END_IN_PAST` | |
 | 409 | `PLAYLIST_ALREADY_EXISTS` | Même nom pour le même owner |
@@ -446,6 +452,7 @@ Liste les playlists publiques non terminées (celles qui n'ont pas encore commen
     endAt: string | null
     latitude: number | null   // null pour une playlist EDITOR
     longitude: number | null  // null pour une playlist EDITOR
+    address: string | null    // libellé, null pour une playlist EDITOR
     coverPath: string | null
   }[]
 }
@@ -480,6 +487,7 @@ Triées par date de création. Tous les paramètres sont optionnels.
     endAt: string | null
     latitude: number | null   // null pour une playlist EDITOR
     longitude: number | null  // null pour une playlist EDITOR
+    address: string | null    // libellé, null pour une playlist EDITOR
     coverPath: string | null
     createdAt: string
     status: "UPCOMING" | "LIVE" | "ENDED"   // LIVE pour une playlist sans dates
@@ -537,6 +545,7 @@ Les playlists que l'appelant a créées ou rejointes sont exclues.
     endAt: string | null
     latitude: number | null   // null pour une playlist EDITOR
     longitude: number | null  // null pour une playlist EDITOR
+    address: string | null    // libellé, null pour une playlist EDITOR
     coverPath: string | null
     status: "UPCOMING" | "LIVE"
     distanceMeters: number | null  // arrondie au mètre, null sans position

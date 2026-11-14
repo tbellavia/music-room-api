@@ -287,6 +287,7 @@ describe('MoveTrackUseCase', () => {
         type: PlaylistType.VOTE,
         latitude: 48.8966,
         longitude: 2.3184,
+        address: '96 boulevard Bessières, Paris',
       });
 
       await expect(useCase.execute(moveFirstToEnd)).rejects.toThrow(

@@ -34,7 +34,7 @@ create_playlist() {
 # vote_event TOKEN NAME LATITUDE BEGIN_AT -> prints the playlist id
 vote_event() {
   create_playlist "$1" \
-    "{\"type\":\"VOTE\",\"name\":\"$2 $SUFFIX\",\"description\":\"\",\"beginAt\":\"$4\",\"latitude\":$3,\"longitude\":$EVENT_LONGITUDE}"
+    "{\"type\":\"VOTE\",\"name\":\"$2 $SUFFIX\",\"description\":\"\",\"beginAt\":\"$4\",\"latitude\":$3,\"longitude\":$EVENT_LONGITUDE,\"address\":\"Pacifique Sud\"}"
 }
 
 # ids -> the ids of the last listing, one per line
@@ -61,7 +61,7 @@ UPCOMING_HERE=$(vote_event "$BOB" "Upcoming here" "$EVENT_LATITUDE" "2099-01-01T
 LIVE_FAR=$(vote_event "$BOB" "Live far" "$LATITUDE_5KM_NORTH" "2020-01-01T20:00:00Z") || exit 1
 JOINED=$(vote_event "$BOB" "Joined" "$EVENT_LATITUDE" "2020-01-01T20:00:00Z") || exit 1
 NO_DATE=$(create_playlist "$BOB" \
-  "{\"type\":\"VOTE\",\"name\":\"No date $SUFFIX\",\"description\":\"\",\"latitude\":$EVENT_LATITUDE,\"longitude\":$EVENT_LONGITUDE}") || exit 1
+  "{\"type\":\"VOTE\",\"name\":\"No date $SUFFIX\",\"description\":\"\",\"latitude\":$EVENT_LATITUDE,\"longitude\":$EVENT_LONGITUDE,\"address\":\"Pacifique Sud\"}") || exit 1
 
 request POST "/playlists/$JOINED/join" "$ALICE" \
   "{\"latitude\":$EVENT_LATITUDE,\"longitude\":$EVENT_LONGITUDE}"
@@ -80,6 +80,8 @@ expect_json "gives the role and the privilege" \
   "(.playlists[0] | .role == \"PARTICIPANT\" and .hasPrivilege == false) and (.playlists[2] | .role == \"OWNER\" and .hasPrivilege == true)"
 expect_json "includes the private playlist" \
   ".playlists[2].isPrivate == true"
+expect_json "gives the address, null for an EDITOR playlist" \
+  "(.playlists[0].address == \"Pacifique Sud\") and (.playlists[2].address == null)"
 expect_json "gives the status" \
   "[.playlists[].status] == [\"LIVE\", \"UPCOMING\", \"LIVE\"]"
 
@@ -162,6 +164,8 @@ expect_json "only VOTE events" \
   "all(.events[]; .type == \"VOTE\")"
 expect_json "gives the username of the owner" \
   "all(.events[0:3][]; .ownerUsername == \"bob$SUFFIX\")"
+expect_json "gives the address" \
+  "all(.events[0:3][]; .address == \"Pacifique Sud\")"
 expect_json "canJoinHere: live within 500 m only" \
   "(.events[0].canJoinHere == false) and (.events[1].canJoinHere == true) and (.events[2].canJoinHere == false)"
 

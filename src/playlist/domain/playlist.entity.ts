@@ -21,6 +21,8 @@ export type CreatePlaylistInfos = {
   // an EDITOR playlist (remote collaboration)
   latitude?: number | null;
   longitude?: number | null;
+  // Same rule. Only a label for the clients: distances use the coordinates.
+  address?: string | null;
   // Defaults to now, set by tests that need a creation order
   createdAt?: Date;
 };
@@ -39,6 +41,7 @@ export class Playlist {
     // null for an EDITOR playlist
     public latitude: number | null,
     public longitude: number | null,
+    public address: string | null,
     public coverPath: string | null,
     public readonly createdAt: Date,
   ) {}
@@ -61,6 +64,7 @@ export class Playlist {
       infos.endAt ?? null,
       infos.latitude ?? null,
       infos.longitude ?? null,
+      infos.address ?? null,
       null,
       infos.createdAt ?? new Date(),
     );
@@ -70,14 +74,18 @@ export class Playlist {
     const hasLatitude = infos.latitude !== undefined && infos.latitude !== null;
     const hasLongitude =
       infos.longitude !== undefined && infos.longitude !== null;
+    const address = infos.address ?? null;
+    const hasAddress = address !== null;
+    // A blank address is sent, but labels nothing
+    const hasNonBlankAddress = address !== null && address.trim() !== '';
 
     if (infos.type === PlaylistType.EDITOR) {
-      if (hasLatitude || hasLongitude) {
+      if (hasLatitude || hasLongitude || hasAddress) {
         throw new LocationNotAllowed();
       }
       return;
     }
-    if (!hasLatitude || !hasLongitude) {
+    if (!hasLatitude || !hasLongitude || !hasNonBlankAddress) {
       throw new LocationRequired();
     }
   }

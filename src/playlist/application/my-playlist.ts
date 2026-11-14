@@ -18,6 +18,8 @@ export type MyPlaylist = {
   // null for an EDITOR playlist
   latitude: number | null;
   longitude: number | null;
+  // Label only, null for an EDITOR playlist
+  address: string | null;
   coverPath: string | null;
   createdAt: Date;
   status: PlaylistStatus;
@@ -53,6 +55,7 @@ export function toMyPlaylist(
     endAt: playlist.endAt,
     latitude: playlist.latitude,
     longitude: playlist.longitude,
+    address: playlist.address,
     coverPath: playlist.coverPath,
     createdAt: playlist.createdAt,
     status: playlist.status(now),

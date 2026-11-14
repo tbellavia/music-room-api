@@ -156,6 +156,7 @@ export class ListPublicEventsUseCase {
       endAt: playlist.endAt,
       latitude: playlist.latitude,
       longitude: playlist.longitude,
+      address: playlist.address,
       coverPath: playlist.coverPath,
       status: playlist.status(now),
       distanceMeters,

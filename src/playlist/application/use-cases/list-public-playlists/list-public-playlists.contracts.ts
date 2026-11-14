@@ -14,6 +14,8 @@ export type PublicPlaylist = {
   // null for an EDITOR playlist
   latitude: number | null;
   longitude: number | null;
+  // Label only, null for an EDITOR playlist
+  address: string | null;
   coverPath: string | null;
 };
 
