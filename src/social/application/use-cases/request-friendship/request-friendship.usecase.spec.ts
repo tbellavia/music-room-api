@@ -5,6 +5,8 @@ import { Friendship } from 'src/social/domain/friendship.entity';
 import { SelfFriendshipRequestError } from 'src/social/domain/errors/self-friendship-request.error';
 import { FriendshipRequestAlreadyExists } from 'src/social/domain/errors/friendship-request-already-exists.error';
 import { FriendshipAlreadyExists } from 'src/social/domain/errors/friendship-already-exists.error';
+import { FriendshipReceiverNotFound } from 'src/social/domain/errors/friendship-receiver-not-found.error';
+import { InMemoryAccountDirectory } from 'src/social/infrastructure/persistence/account/in-memory-account-directory';
 import { RequestFriendshipUseCase } from './request-friendship.usecase';
 import { RequestFriendshipInput } from './request-friendship.contracts';
 
@@ -16,15 +18,32 @@ const input: RequestFriendshipInput = {
 describe('RequestFriendshipUseCase', () => {
   let requestRepository: InMemoryFriendshipRequestRepository;
   let friendshipRepository: InMemoryFriendshipRepository;
+  let accountDirectory: InMemoryAccountDirectory;
   let useCase: RequestFriendshipUseCase;
 
   beforeEach(() => {
     requestRepository = new InMemoryFriendshipRequestRepository();
     friendshipRepository = new InMemoryFriendshipRepository();
+    accountDirectory = new InMemoryAccountDirectory();
+    accountDirectory.add('sender-id');
+    accountDirectory.add('receiver-id');
     useCase = new RequestFriendshipUseCase(
       requestRepository,
       friendshipRepository,
+      accountDirectory,
     );
+  });
+
+  it('rejects a receiver that does not exist, without saving', async () => {
+    const unknownReceiverInput = {
+      senderId: 'sender-id',
+      receiverId: 'unknown-id',
+    };
+
+    await expect(useCase.execute(unknownReceiverInput)).rejects.toThrow(
+      FriendshipReceiverNotFound,
+    );
+    expect(requestRepository.requests.size).toBe(0);
   });
 
   it('creates a pending request from the sender to the receiver', async () => {
@@ -83,6 +102,7 @@ describe('RequestFriendshipUseCase', () => {
   });
 
   it('allows the same sender to request several receivers', async () => {
+    accountDirectory.add('other-receiver-id');
     await useCase.execute(input);
     await useCase.execute({ ...input, receiverId: 'other-receiver-id' });
 

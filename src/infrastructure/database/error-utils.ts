@@ -2,6 +2,7 @@ import { QueryFailedError } from 'typeorm';
 
 // https://www.postgresql.org/docs/current/errcodes-appendix.html
 const POSTGRES_UNIQUE_VIOLATION = '23505';
+const POSTGRES_FOREIGN_KEY_VIOLATION = '23503';
 
 // The driver error is untyped: only keep it when it is an object
 function driverErrorOf(error: unknown): object | null {
@@ -21,6 +22,15 @@ export function isUniqueViolation(error: unknown): boolean {
     return false;
   }
   return driverError.code === POSTGRES_UNIQUE_VIOLATION;
+}
+
+// A referenced row is missing, e.g. an account deleted in the meantime
+export function isForeignKeyViolation(error: unknown): boolean {
+  const driverError = driverErrorOf(error);
+  if (driverError === null || !('code' in driverError)) {
+    return false;
+  }
+  return driverError.code === POSTGRES_FOREIGN_KEY_VIOLATION;
 }
 
 // Name of the unique constraint that was violated, null for any other error

@@ -52,6 +52,9 @@ expect "without token → 401 UNAUTHORIZED" 401 UNAUTHORIZED
 send_request "$ALICE" "$ALICE_ID"
 expect "to oneself → 400 SELF_FRIENDSHIP" 400 SELF_FRIENDSHIP
 
+send_request "$ALICE" "$UNKNOWN_ID"
+expect "to an unknown account → 404 RECEIVER_NOT_FOUND" 404 RECEIVER_NOT_FOUND
+
 send_request "$ALICE" "$BOB_ID"
 expect "alice → bob → 201" 201
 ALICE_TO_BOB=$(echo "$BODY" | jq -r '.requestId // empty')

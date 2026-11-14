@@ -39,6 +39,10 @@ export class TypeOrmAccountRepository implements AccountRepository {
     return this.toDomain(entity);
   }
 
+  async delete(id: string): Promise<void> {
+    await this.repository.delete({ id });
+  }
+
   async save(account: Account): Promise<void> {
     try {
       await this.repository.save(this.toOrm(account));

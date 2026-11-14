@@ -59,6 +59,11 @@ export class InMemoryAccountRepository implements AccountRepository {
     return Promise.resolve();
   }
 
+  delete(id: string): Promise<void> {
+    this.accounts.delete(id);
+    return Promise.resolve();
+  }
+
   consumeOtpAttempt(accountId: string, maxAttempts: number): Promise<boolean> {
     const storedAccount = this.accounts.get(accountId);
     if (!storedAccount || storedAccount.otp_attempts >= maxAttempts) {

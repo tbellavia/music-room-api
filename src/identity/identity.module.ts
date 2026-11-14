@@ -37,6 +37,9 @@ import {
 import { E2eGoogleTokenVerifier } from './infrastructure/google/e2e-google-token-verifier';
 import { GoogleAuthTokenVerifier } from './infrastructure/google/google-auth-token-verifier';
 import { SignInWithGoogleUseCase } from './application/use-cases/sign-in-with-google/sign-in-with-google.usecase';
+import { EnsureDevAccountsUseCase } from './application/use-cases/ensure-dev-accounts/ensure-dev-accounts.usecase';
+import { RemoveDevAccountsUseCase } from './application/use-cases/remove-dev-accounts/remove-dev-accounts.usecase';
+import { DevAccountsSeeder } from './infrastructure/dev/dev-accounts-seeder';
 
 @Module({
   imports: [
@@ -104,6 +107,9 @@ import { SignInWithGoogleUseCase } from './application/use-cases/sign-in-with-go
     RequestPasswordResetUseCase,
     ResetPasswordUseCase,
     SignInWithGoogleUseCase,
+    EnsureDevAccountsUseCase,
+    RemoveDevAccountsUseCase,
+    DevAccountsSeeder,
   ],
   exports: [JwtModule],
 })

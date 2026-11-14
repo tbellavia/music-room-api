@@ -6,6 +6,8 @@ export interface AccountRepository {
   findByUsername(username: string): Promise<Account | null>;
   findByGoogleId(googleId: string): Promise<Account | null>;
   save(account: Account): Promise<void>;
+  // Everything the account owns is deleted with it (database cascades)
+  delete(id: string): Promise<void>;
   // Atomically uses one code attempt if fewer than `maxAttempts` were used.
   // Returns false when none is left. Atomic so that parallel requests cannot
   // all read the same counter and exceed the limit.

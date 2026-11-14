@@ -9,7 +9,9 @@ import { PASSWORD_HASHER, PasswordHasher } from '../../ports/password-hasher';
 import { Unauthorized } from 'src/identity/domain/errors/unauthorized.error';
 import { JwtService } from '@nestjs/jwt';
 import { AccountNotActive } from 'src/identity/domain/errors/account-not-active.error';
-import { signAccessToken } from '../../access-token';
+import { signAccessToken, signDevAccessToken } from '../../access-token';
+import { isDevAccount } from 'src/identity/domain/dev-accounts';
+import { Account } from 'src/identity/domain/account.entity';
 
 @Injectable()
 export class SignInUseCase {
@@ -45,7 +47,15 @@ export class SignInUseCase {
     this.logger.log(`Account signed in account=${account.id}`);
 
     return {
-      access_token: signAccessToken(this.jwtService, account),
+      access_token: this.signToken(account),
     };
+  }
+
+  // Dev accounts only exist in dev mode: no need to check the mode here
+  private signToken(account: Account): string {
+    if (isDevAccount(account.id)) {
+      return signDevAccessToken(this.jwtService, account);
+    }
+    return signAccessToken(this.jwtService, account);
   }
 }
