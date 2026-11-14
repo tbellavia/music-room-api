@@ -131,6 +131,12 @@ expect_json "after 12 creations: the 10 most recent" \
 request GET /playlists/me/recent
 expect "without token → 401" 401
 
+section "GET /playlists/public"
+request GET /playlists/public "$ALICE"
+expect "lists the public playlists → 200" 200
+expect_json "gives the username of the owner" \
+  "(.playlists[] | select(.id == \"$LIVE_NEAR\") | .ownerUsername) == \"bob$SUFFIX\""
+
 section "GET /playlists/events (soonest)"
 request GET /playlists/events "$ALICE"
 expect "lists the events → 200" 200
@@ -154,6 +160,8 @@ expect_json "excludes the joined playlist and the one without date" \
   "all(.events[]; .id != \"$JOINED\" and .id != \"$NO_DATE\")"
 expect_json "only VOTE events" \
   "all(.events[]; .type == \"VOTE\")"
+expect_json "gives the username of the owner" \
+  "all(.events[0:3][]; .ownerUsername == \"bob$SUFFIX\")"
 expect_json "canJoinHere: live within 500 m only" \
   "(.events[0].canJoinHere == false) and (.events[1].canJoinHere == true) and (.events[2].canJoinHere == false)"
 

@@ -439,6 +439,7 @@ Liste les playlists publiques non terminées (celles qui n'ont pas encore commen
     type: "VOTE" | "EDITOR"
     license: "EVERYONE" | "INVITED_ONLY"
     ownerId: string
+    ownerUsername: string | null   // null si le compte est introuvable
     name: string
     description: string
     beginAt: string | null
@@ -529,6 +530,7 @@ Les playlists que l'appelant a créées ou rejointes sont exclues.
     type: "VOTE" | "EDITOR"
     license: "EVERYONE" | "INVITED_ONLY"
     ownerId: string
+    ownerUsername: string | null   // null si le compte est introuvable
     name: string
     description: string
     beginAt: string           // jamais null pour un événement

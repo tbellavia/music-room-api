@@ -1,4 +1,5 @@
 import { playlistInfos } from 'src/playlist/domain/playlist-test-infos';
+import { InMemoryAccountDirectory } from 'src/playlist/infrastructure/persistence/account/in-memory-account-directory';
 import { InMemoryPlaylistRepository } from 'src/playlist/infrastructure/persistence/playlist/in-memory-playlist.repository';
 import { InMemoryParticipantRepository } from 'src/playlist/infrastructure/persistence/participant/in-memory-participant.repository';
 import {
@@ -49,6 +50,7 @@ function metersNorthOfParis(meters: number): Coordinates {
 describe('ListPublicEventsUseCase', () => {
   let playlistRepository: InMemoryPlaylistRepository;
   let participantRepository: InMemoryParticipantRepository;
+  let accountDirectory: InMemoryAccountDirectory;
   let useCase: ListPublicEventsUseCase;
 
   async function givenEvent(overrides: Partial<CreatePlaylistInfos>) {
@@ -76,9 +78,12 @@ describe('ListPublicEventsUseCase', () => {
   beforeEach(() => {
     playlistRepository = new InMemoryPlaylistRepository();
     participantRepository = new InMemoryParticipantRepository();
+    accountDirectory = new InMemoryAccountDirectory();
+    accountDirectory.add({ id: BOB_ID, username: 'bob' });
     useCase = new ListPublicEventsUseCase(
       playlistRepository,
       participantRepository,
+      accountDirectory,
     );
   });
 
@@ -220,6 +225,41 @@ describe('ListPublicEventsUseCase', () => {
       expect(ids).toHaveLength(PUBLIC_EVENTS_LIMIT);
       expect(ids[0]).toBe('km-1');
       expect(ids).not.toContain('km-12');
+    });
+  });
+
+  describe('ownerUsername', () => {
+    it('gives the username of the owner, without position', async () => {
+      await givenEvent({ id: 'event' });
+
+      const output = await useCase.execute({
+        accountId: ALICE_ID,
+        position: null,
+      });
+
+      expect(output.events[0].ownerUsername).toBe('bob');
+    });
+
+    it('gives the username of the owner, with a position', async () => {
+      await givenEventAt('event', 300);
+
+      const output = await useCase.execute({
+        accountId: ALICE_ID,
+        position: PARIS,
+      });
+
+      expect(output.events[0].ownerUsername).toBe('bob');
+    });
+
+    it('is null when the owner cannot be found', async () => {
+      await givenEvent({ id: 'orphan', ownerId: 'unknown-id' });
+
+      const output = await useCase.execute({
+        accountId: ALICE_ID,
+        position: null,
+      });
+
+      expect(output.events[0].ownerUsername).toBeNull();
     });
   });
 

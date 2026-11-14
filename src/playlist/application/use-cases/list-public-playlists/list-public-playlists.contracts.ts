@@ -6,6 +6,7 @@ export type PublicPlaylist = {
   type: PlaylistType;
   license: PlaylistLicense;
   ownerId: string;
+  ownerUsername: string | null;
   name: string;
   description: string;
   beginAt: Date | null;
