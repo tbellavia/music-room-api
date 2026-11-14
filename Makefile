@@ -4,6 +4,10 @@ start:
 stop:
 	@docker compose down
 
+# The JWT guard lets every request through: never for the defense
+dev:
+	@ENVIRONMENT=dev docker compose --env-file .env up -d --build
+
 lint:
 	@npm run lint
 
@@ -21,7 +25,7 @@ build:
 test-e2e:
 	@trap 'echo "Restarting the API in normal mode..."; $(MAKE) --no-print-directory start' EXIT; \
 	trap 'exit 130' INT TERM; \
-	E2E_MODE=true docker compose --env-file .env up -d --build --wait || exit 1; \
+	ENVIRONMENT=test E2E_MODE=true docker compose --env-file .env up -d --build --wait || exit 1; \
 	status=0; \
 	for script in scripts/test-*.sh; do \
 		./$$script || status=1; \
@@ -30,4 +34,4 @@ test-e2e:
 
 re: stop build start
 
-.PHONY: start stop lint lint-fix build re test-e2e
+.PHONY: start stop dev lint lint-fix build re test-e2e

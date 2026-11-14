@@ -21,8 +21,11 @@ export class JwtAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const isPublic = this.isPublic(context);
-    // const isDevelopment = this.isDevelopment();
     if (isPublic) {
+      return true;
+    }
+    const isDevelopment = this.isDevelopment();
+    if (isDevelopment) {
       return true;
     }
 
@@ -55,7 +58,7 @@ export class JwtAuthGuard implements CanActivate {
   private isDevelopment(): boolean {
     const isDevelopment = this.configService.get<string>('ENVIRONMENT') ?? '';
 
-    return isDevelopment == 'dev';
+    return isDevelopment === 'dev';
   }
 
   private extractTokenFromHeader(request: Request) {

@@ -51,7 +51,8 @@ N'ajoute **pas** `E2E_MODE` au `.env` : cette variable est réservée à `make t
 ## Lancer l'API
 
 ```bash
-make start   # construit les images et démarre l'API, la base et Adminer
+make start   # construit les images et démarre l'API, la base et Adminer (ENVIRONMENT=prod)
+make dev     # pareil, mais sans vérification du JWT : à réserver au développement iOS
 make stop    # arrête et supprime les conteneurs
 make re      # stop + rebuild + start (après un changement de dépendances ou de schéma)
 make test-e2e  # lance les tests de bout en bout, puis relance l'API en mode normal
@@ -61,6 +62,8 @@ make test-e2e  # lance les tests de bout en bout, puis relance l'API en mode nor
 | --- | --- |
 | API | http://localhost:3000/api/v1 |
 | Adminer (interface web de la base) | http://localhost:8080 (serveur `db`, identifiants du `.env`) |
+
+`make dev` lance l'API avec `ENVIRONMENT=dev` : le guard JWT laisse passer **toutes** les requêtes, sans lire le token. Les routes qui ont besoin de l'utilisateur connecté n'ont alors pas d'utilisateur. N'utilise jamais ce mode pour la correction : `make start` repasse en `prod`.
 
 L'API tourne en mode watch : une modification dans `src/` est rechargée automatiquement, sans relancer les conteneurs.
 
@@ -224,8 +227,9 @@ Configurés dans `src/main.ts` d'après la variable `ENVIRONMENT` :
 
 | `ENVIRONMENT` | Niveaux affichés |
 | --- | --- |
-| `dev` | `error`, `warn`, `log`, `debug`, `verbose` |
-| `prod`, ou variable absente | `error`, `warn`, `log` |
+| `dev` (`make dev`) | `error`, `warn`, `log`, `debug`, `verbose` |
+| `test` (`make test-e2e`) | `error`, `warn`, `log` |
+| `prod` (`make start`), ou variable absente | `error`, `warn`, `log` |
 
 ### Lire les logs
 

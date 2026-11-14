@@ -21,7 +21,9 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - ENVIRONMENT=dev
+      # prod by default (make start); dev (make dev) skips the JWT check;
+      # test is set by make test-e2e
+      - ENVIRONMENT=${ENVIRONMENT:-prod}
       # Only set by `make test-e2e`: never put it in .env
       - E2E_MODE=${E2E_MODE:-false}
     healthcheck:
