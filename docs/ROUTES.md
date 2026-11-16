@@ -764,6 +764,46 @@ plus de votes d'abord, puis, à égalité, la musique ajoutée le plus tôt. À 
   L'app recharge alors la liste (`GET /tracks`) pour afficher le nouvel ordre et les nouvelles versions ;
   l'utilisateur peut ensuite refaire son déplacement s'il le souhaite.
 
+**Exemple VOTE** : Bob vote, les deux apps retrient leur liste.
+
+```mermaid
+sequenceDiagram
+    participant A as App d'Alice
+    participant API
+    participant B as App de Bob
+    A->>API: GET /tracks
+    API-->>A: classement actuel
+    A->>API: GET /events (flux SSE ouvert)
+    B->>API: GET /tracks puis GET /events
+    B->>API: POST /tracks/T1/vote
+    API-->>B: 201 { votes: 3 }
+    API--)A: track.votes_changed { trackId: T1, votes: 3 }
+    API--)B: track.votes_changed { trackId: T1, votes: 3 }
+    Note over A,B: chaque app met T1 à 3 votes et retrie sa liste
+```
+
+**Exemple EDITOR** : Alice et Bob déplacent la même musique T1 (version 4) au même moment.
+
+```mermaid
+sequenceDiagram
+    participant A as App d'Alice
+    participant API
+    participant B as App de Bob
+    Note over A,B: les deux apps affichent T1 en version 4
+    A->>API: PATCH /tracks/T1/position { afterTrackId: T3, version: 4 }
+    API-->>A: 200 { version: 5 }
+    API--)A: track.moved { trackId: T1, afterTrackId: T3, version: 5 }
+    API--)B: track.moved { trackId: T1, afterTrackId: T3, version: 5 }
+    B->>API: PATCH /tracks/T1/position { afterTrackId: null, version: 4 }
+    API-->>B: 409 TRACK_VERSION_CONFLICT
+    B->>API: GET /tracks
+    API-->>B: ordre à jour, T1 en version 5
+    Note over B: Bob voit le déplacement d'Alice et peut refaire le sien
+```
+
+Dans le second exemple, la requête de Bob peut partir avant que `track.moved` lui arrive : c'est
+le cas que la `version` protège.
+
 ### Erreurs communes
 
 | Statut | Réponse | Détail |
