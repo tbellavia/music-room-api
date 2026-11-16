@@ -746,6 +746,24 @@ Elles s'appliquent aux actions : ajout, vote, retrait de vote, déplacement.
 | Playlist terminée | Bloque les actions | Idem |
 | Limite | 200 musiques non jouées | 200 musiques |
 
+### Classement et ordre
+
+Le serveur est la source de vérité : l'app garde sa copie de la liste à jour en appliquant les événements
+du [flux temps réel](#temps-réel-server-sent-events), envoyés à tous les clients connectés, auteur de l'action compris.
+
+**VOTE** : aucun ordre n'est stocké. Le classement est recalculé à chaque `GET /tracks` à partir des votes :
+plus de votes d'abord, puis, à égalité, la musique ajoutée le plus tôt. À la réception de
+`track.votes_changed`, l'app met à jour le nombre de votes de la musique et retrie sa liste avec cette même règle.
+
+**EDITOR** : l'ordre est fixé par une position décimale stockée en base, qui n'est pas exposée.
+- Une nouvelle musique est ajoutée à la fin.
+- Un déplacement place la musique après `afterTrackId` (ou en tête avec `null`) : seule la musique déplacée
+  change de position, les autres ne bougent pas.
+- Chaque musique a une `version`, que l'app renvoie avec le déplacement. Si un autre membre a déplacé la même
+  musique entre-temps, la version de l'app est périmée et la route répond `409 TRACK_VERSION_CONFLICT`.
+  L'app recharge alors la liste (`GET /tracks`) pour afficher le nouvel ordre et les nouvelles versions ;
+  l'utilisateur peut ensuite refaire son déplacement s'il le souhaite.
+
 ### Erreurs communes
 
 | Statut | Réponse | Détail |
