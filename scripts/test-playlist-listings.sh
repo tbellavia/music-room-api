@@ -39,7 +39,7 @@ vote_event() {
 
 # ids -> the ids of the last listing, one per line
 ids() {
-  echo "$BODY" | jq -r '(.playlists // .events)[].id'
+  echo "$BODY" | jq -r '.playlists[].id'
 }
 
 preflight
@@ -86,6 +86,8 @@ expect_json "gives the address, null for an EDITOR playlist" \
   "(.playlists[0].address == \"Pacifique Sud\") and (.playlists[2].address == null)"
 expect_json "gives the status" \
   "[.playlists[].status] == [\"LIVE\", \"UPCOMING\", \"LIVE\"]"
+expect_json "no distance and nothing to join: the caller is a member" \
+  "all(.playlists[]; .distanceMeters == null and .canJoinHere == false)"
 
 request GET "/playlists/me?order=ASC" "$ALICE"
 expect_json "order=ASC → oldest first" \
@@ -140,42 +142,58 @@ expect "without token → 401" 401
 section "GET /playlists/public"
 request GET /playlists/public "$ALICE"
 expect "lists the public playlists → 200" 200
+expect_json "same format as GET /playlists/me" \
+  "all(.playlists[]; has(\"isPrivate\") and has(\"createdAt\") and has(\"status\") and has(\"role\") and has(\"hasPrivilege\") and has(\"distanceMeters\") and has(\"canJoinHere\"))"
 expect_json "gives the username of the owner" \
   "(.playlists[] | select(.id == \"$LIVE_NEAR\") | .ownerUsername) == \"bob$SUFFIX\""
+expect_json "gives the role of the caller: OWNER, PARTICIPANT or null" \
+  "([.playlists[] | select(.id == \"$SECOND\") | .role] == [\"OWNER\"]) and ([.playlists[] | select(.id == \"$JOINED\") | .role] == [\"PARTICIPANT\"]) and ([.playlists[] | select(.id == \"$LIVE_NEAR\") | .role] == [null])"
+expect_json "without position: no distance, no VOTE playlist to join" \
+  "all(.playlists[]; .distanceMeters == null) and ([.playlists[] | select(.id == \"$LIVE_NEAR\") | .canJoinHere] == [false])"
+
+request GET "/playlists/public?latitude=$EVENT_LATITUDE&longitude=$EVENT_LONGITUDE" "$ALICE"
+expect "with a position → 200" 200
+expect_json "gives the distance to the VOTE playlists" \
+  "([.playlists[] | select(.id == \"$UPCOMING_HERE\") | .distanceMeters] == [0]) and ([.playlists[] | select(.id == \"$LIVE_NEAR\") | .distanceMeters | . > 250 and . < 350] == [true])"
+expect_json "canJoinHere: live and in the zone only, never for a member" \
+  "([.playlists[] | select(.id == \"$LIVE_NEAR\") | .canJoinHere] == [true]) and ([.playlists[] | select(.id == \"$LIVE_FAR\" or .id == \"$UPCOMING_HERE\" or .id == \"$JOINED\") | .canJoinHere] | length == 3 and all(. == false))"
+
+request GET "/playlists/public?latitude=$EVENT_LATITUDE" "$ALICE"
+expect "latitude without longitude → 400 LONGITUDE_INVALID" 400 LONGITUDE_INVALID
 
 section "GET /playlists/events (soonest)"
 request GET /playlists/events "$ALICE"
 expect "lists the events → 200" 200
 expect_json "at most 10 events" \
-  "(.events | length) <= 10"
+  "(.playlists | length) <= 10"
 expect_json "soonest first" \
-  "[.events[].beginAt] == ([.events[].beginAt] | sort)"
+  "[.playlists[].beginAt] == ([.playlists[].beginAt] | sort)"
 expect_json "no distance without position" \
-  "all(.events[]; .distanceMeters == null)"
+  "all(.playlists[]; .distanceMeters == null)"
 expect_json "never an event of the caller, owned or joined" \
-  "all(.events[]; .ownerId != \"$ALICE_ID\" and .id != \"$JOINED\")"
+  "all(.playlists[]; .ownerId != \"$ALICE_ID\" and .id != \"$JOINED\")"
 
 section "GET /playlists/events (closest)"
 request GET "/playlists/events?latitude=$EVENT_LATITUDE&longitude=$EVENT_LONGITUDE" "$ALICE"
 expect "lists the closest events → 200" 200
 expect_json "closest first: here, then 300 m, then 5 km" \
-  "[.events[0:3][].id] == [\"$UPCOMING_HERE\", \"$LIVE_NEAR\", \"$LIVE_FAR\"]"
+  "[.playlists[0:3][].id] == [\"$UPCOMING_HERE\", \"$LIVE_NEAR\", \"$LIVE_FAR\"]"
 expect_json "gives the distance in meters" \
-  ".events[0].distanceMeters == 0 and (.events[1].distanceMeters | . > 250 and . < 350)"
+  ".playlists[0].distanceMeters == 0 and (.playlists[1].distanceMeters | . > 250 and . < 350)"
 expect_json "excludes the joined playlist and the one without date" \
-  "all(.events[]; .id != \"$JOINED\" and .id != \"$NO_DATE\")"
+  "all(.playlists[]; .id != \"$JOINED\" and .id != \"$NO_DATE\")"
 expect_json "only VOTE events" \
-  "all(.events[]; .type == \"VOTE\")"
+  "all(.playlists[]; .type == \"VOTE\")"
 expect_json "gives the username of the owner" \
-  "all(.events[0:3][]; .ownerUsername == \"bob$SUFFIX\")"
+  "all(.playlists[0:3][]; .ownerUsername == \"bob$SUFFIX\")"
 expect_json "gives the address" \
-  "all(.events[0:3][]; .address == \"Pacifique Sud\")"
+  "all(.playlists[0:3][]; .address == \"Pacifique Sud\")"
 expect_json "canJoinHere: live within 500 m only" \
-  "(.events[0].canJoinHere == false) and (.events[1].canJoinHere == true) and (.events[2].canJoinHere == false)"
+  "(.playlists[0].canJoinHere == false) and (.playlists[1].canJoinHere == true) and (.playlists[2].canJoinHere == false)"
 
 request GET "/playlists/events?latitude=$EVENT_LATITUDE&longitude=$EVENT_LONGITUDE" "$BOB"
 expect_json "the owner does not see their own events" \
-  "all(.events[]; .ownerId != \"$BOB_ID\")"
+  "all(.playlists[]; .ownerId != \"$BOB_ID\")"
 
 request GET "/playlists/events?latitude=$EVENT_LATITUDE" "$ALICE"
 expect "latitude without longitude → 400 LONGITUDE_INVALID" 400 LONGITUDE_INVALID

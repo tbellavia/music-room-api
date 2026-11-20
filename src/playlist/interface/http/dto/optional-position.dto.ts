@@ -2,13 +2,13 @@ import { Type } from 'class-transformer';
 import { IsNumber, Max, Min, ValidateIf } from 'class-validator';
 import { withCode } from 'src/interface/http/validation/validation-code';
 
-function hasAnyCoordinate(dto: ListPublicEventsDto): boolean {
+function hasAnyCoordinate(dto: OptionalPositionDto): boolean {
   return dto.latitude !== undefined || dto.longitude !== undefined;
 }
 
-// Query string of GET /playlists/events. The position is optional, but a
+// Query string of the playlist listings. The position is optional, but a
 // single coordinate is refused rather than silently ignored.
-export class ListPublicEventsDto {
+export class OptionalPositionDto {
   @ValidateIf(hasAnyCoordinate)
   @Type(() => Number)
   @IsNumber({}, withCode('LATITUDE_INVALID'))

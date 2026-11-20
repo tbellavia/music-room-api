@@ -422,30 +422,102 @@ Créer une playlist. Seule une playlist **VOTE** a une position : ses participan
 | 400 | `PLAYLIST_END_IN_PAST` | |
 | 409 | `PLAYLIST_ALREADY_EXISTS` | Même nom pour le même owner |
 
-### `GET /playlists/public`
+### Format commun des listes de playlists
 
-Liste les playlists publiques non terminées (celles qui n'ont pas encore commencé sont incluses).
+Les trois listes `GET /playlists/public`, `GET /playlists/me` (et `/me/recent`) et `GET /playlists/events`
+renvoient **exactement le même objet** pour chaque playlist, dans une enveloppe identique `{ playlists: [...] }`.
+L'app décode donc un seul modèle, et une même cellule de liste sert partout.
+
+Les routes diffèrent par **les playlists qu'elles sélectionnent** et par **leur tri**, pas par leur format.
+
+```ts
+// Une playlist listée
+{
+  // La playlist elle-même : même valeur pour tous les appelants
+  id: string
+  type: "VOTE" | "EDITOR"
+  license: "EVERYONE" | "INVITED_ONLY"
+  ownerId: string
+  ownerUsername: string | null   // null si le compte est introuvable
+  name: string
+  description: string
+  isPrivate: boolean
+  beginAt: string | null         // null : pas de date de début
+  endAt: string | null           // null : pas de date de fin
+  latitude: number | null        // null pour une playlist EDITOR
+  longitude: number | null       // null pour une playlist EDITOR
+  address: string | null         // libellé, null pour une playlist EDITOR
+  coverPath: string | null
+  createdAt: string
+  status: "UPCOMING" | "LIVE" | "ENDED"   // LIVE pour une playlist sans dates
+
+  // L'appelant par rapport à la playlist : dépend de qui appelle, et d'où
+  role: "OWNER" | "PARTICIPANT" | null   // null : l'appelant n'est pas membre
+  hasPrivilege: boolean          // peut inviter ; true pour l'owner, false si non membre
+  distanceMeters: number | null  // arrondie au mètre ; null sans position ou pour une EDITOR
+  canJoinHere: boolean           // POST /join passerait maintenant
+}
+```
+
+À quoi servent les champs liés à l'appelant :
+
+| Champ | Utilité côté app |
+| --- | --- |
+| `status` | Badge « À venir » / « En cours » / « Terminée », sans recalculer les dates côté client |
+| `role` | Savoir si l'utilisateur est déjà dedans : `null` → proposer de rejoindre ; sinon → ouvrir la playlist. `OWNER` → afficher les actions d'administration |
+| `hasPrivilege` | Afficher ou non le bouton « Inviter » |
+| `distanceMeters` | Afficher « à 300 m ». Seulement si l'app a envoyé sa position et pour une VOTE (une EDITOR n'a pas de lieu) |
+| `canJoinHere` | Activer ou griser le bouton « Rejoindre ». `true` si la playlist est en cours, que l'appelant n'est pas membre, et, pour une VOTE, qu'il est à 500 m au plus (il faut donc envoyer sa position) |
+
+Valeurs selon la route :
+
+| Champ | `/public` | `/me`, `/me/recent` | `/events` |
+| --- | --- | --- | --- |
+| `role` | `OWNER`, `PARTICIPANT` ou `null` | jamais `null` (`OWNER` seulement pour `/me/recent`) | toujours `null` (mes playlists sont exclues) |
+| `hasPrivilege` | selon le rôle, `false` si non membre | selon le rôle | toujours `false` |
+| `distanceMeters` | si position envoyée | toujours `null` (pas de position) | si position envoyée |
+| `canJoinHere` | calculé | toujours `false` (déjà membre) | calculé |
+
+La position est facultative sur `/public` et `/events`, en query string, avec les mêmes règles :
+
+```ts
+// Query
+{
+  latitude?: number    // -90..90, à envoyer avec longitude
+  longitude?: number   // -180..180, à envoyer avec latitude
+}
+```
+
+| Statut | Réponse | Détail |
+| --- | --- | --- |
+| 400 | `LATITUDE_INVALID` | Pas un nombre, ou absente alors que `longitude` est envoyée |
+| 400 | `LATITUDE_OUT_OF_RANGE` | Hors de -90..90 |
+| 400 | `LONGITUDE_INVALID` | Pas un nombre, ou absente alors que `latitude` est envoyée |
+| 400 | `LONGITUDE_OUT_OF_RANGE` | Hors de -180..180 |
+
+Quelle liste pour quel écran :
+
+| Route | Question | Sélection | Tri |
+| --- | --- | --- | --- |
+| `/public` | « Quelles playlists publiques existent ? » (catalogue) | Publiques, non terminées, mes playlists comprises | Aucun ordre garanti |
+| `/me` | « Où suis-je, et à quel titre ? » | Créées et rejointes, privées et terminées comprises | Date de création |
+| `/me/recent` | « Mes dernières créations » | Les 10 dernières créées | La plus récente d'abord |
+| `/events` | « Que rejoindre bientôt, ou près d'ici ? » (découverte) | 10 publiques avec date de début, non terminées, hors mes playlists | Date de début, ou distance |
+
+### `GET /playlists/public?latitude=…&longitude=…`
+
+Le catalogue : les playlists publiques non terminées (celles qui n'ont pas encore commencé sont incluses),
+y compris celles dont l'appelant est membre. Position facultative : elle donne `distanceMeters` et
+`canJoinHere` pour les playlists VOTE.
 
 ```ts
 // 200
 {
-  playlists: {
-    id: string
-    type: "VOTE" | "EDITOR"
-    license: "EVERYONE" | "INVITED_ONLY"
-    ownerId: string
-    ownerUsername: string | null   // null si le compte est introuvable
-    name: string
-    description: string
-    beginAt: string | null
-    endAt: string | null
-    latitude: number | null   // null pour une playlist EDITOR
-    longitude: number | null  // null pour une playlist EDITOR
-    address: string | null    // libellé, null pour une playlist EDITOR
-    coverPath: string | null
-  }[]
+  playlists: { ... }[]  // voir « Format commun des listes de playlists »
 }
 ```
+
+Erreurs : celles de la position, voir le format commun.
 
 ### `GET /playlists/me?role=…&status=…&order=…`
 
@@ -464,26 +536,7 @@ Triées par date de création. Tous les paramètres sont optionnels.
 ```ts
 // 200
 {
-  playlists: {
-    id: string
-    type: "VOTE" | "EDITOR"
-    license: "EVERYONE" | "INVITED_ONLY"
-    ownerId: string
-    ownerUsername: string | null   // null si le compte est introuvable
-    name: string
-    description: string
-    isPrivate: boolean
-    beginAt: string | null
-    endAt: string | null
-    latitude: number | null   // null pour une playlist EDITOR
-    longitude: number | null  // null pour une playlist EDITOR
-    address: string | null    // libellé, null pour une playlist EDITOR
-    coverPath: string | null
-    createdAt: string
-    status: "UPCOMING" | "LIVE" | "ENDED"   // LIVE pour une playlist sans dates
-    role: "OWNER" | "PARTICIPANT"
-    hasPrivilege: boolean     // toujours true pour le propriétaire
-  }[]
+  playlists: { ... }[]  // voir « Format commun des listes de playlists »
 }
 ```
 
@@ -500,7 +553,7 @@ Les 10 dernières playlists créées par l'appelant, la plus récente d'abord (p
 ```ts
 // 200
 {
-  playlists: { ... }[]  // même format que GET /playlists/me, avec role toujours "OWNER"
+  playlists: { ... }[]  // voir « Format commun des listes de playlists », role toujours "OWNER"
 }
 ```
 
@@ -513,43 +566,13 @@ Les playlists que l'appelant a créées ou rejointes sont exclues.
 - **Avec position** : les plus proches géographiquement d'abord, sans limite de distance. Seules les playlists **VOTE** sont renvoyées (une EDITOR n'a pas de position).
 
 ```ts
-// Query
-{
-  latitude?: number    // -90..90, à envoyer avec longitude
-  longitude?: number   // -180..180, à envoyer avec latitude
-}
-```
-
-```ts
 // 200
 {
-  events: {
-    id: string
-    type: "VOTE" | "EDITOR"
-    license: "EVERYONE" | "INVITED_ONLY"
-    ownerId: string
-    ownerUsername: string | null   // null si le compte est introuvable
-    name: string
-    description: string
-    beginAt: string           // jamais null pour un événement
-    endAt: string | null
-    latitude: number | null   // null pour une playlist EDITOR
-    longitude: number | null  // null pour une playlist EDITOR
-    address: string | null    // libellé, null pour une playlist EDITOR
-    coverPath: string | null
-    status: "UPCOMING" | "LIVE"
-    distanceMeters: number | null  // arrondie au mètre, null sans position
-    canJoinHere: boolean      // le join passerait maintenant : en cours, et EDITOR ou à 500 m au plus
-  }[]
+  playlists: { ... }[]  // voir « Format commun des listes de playlists » ; beginAt jamais null, status jamais ENDED
 }
 ```
 
-| Statut | Réponse | Détail |
-| --- | --- | --- |
-| 400 | `LATITUDE_INVALID` | Pas un nombre, ou absente alors que `longitude` est envoyée |
-| 400 | `LATITUDE_OUT_OF_RANGE` | Hors de -90..90 |
-| 400 | `LONGITUDE_INVALID` | Pas un nombre, ou absente alors que `latitude` est envoyée |
-| 400 | `LONGITUDE_OUT_OF_RANGE` | Hors de -180..180 |
+Erreurs : celles de la position, voir le format commun.
 
 ### `POST /playlists/:playlistId/join`
 
@@ -773,8 +796,8 @@ sequenceDiagram
     participant B as App de Bob
     A->>API: GET /tracks
     API-->>A: classement actuel
-    A->>API: GET /events (flux SSE ouvert)
-    B->>API: GET /tracks puis GET /events
+    A->>API: GET /playlists/P1/events (flux SSE ouvert)
+    B->>API: GET /tracks puis le flux SSE
     B->>API: POST /tracks/T1/vote
     API-->>B: 201 { votes: 3 }
     API--)A: track.votes_changed { trackId: T1, votes: 3 }

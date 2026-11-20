@@ -14,8 +14,8 @@ import {
 import {
   OWNER_MEMBERSHIP,
   findOwnerUsernames,
-  toMyPlaylist,
-} from 'src/playlist/application/my-playlist';
+  toListedPlaylist,
+} from 'src/playlist/application/listed-playlist';
 
 export const RECENT_PLAYLISTS_LIMIT = 10;
 
@@ -43,13 +43,11 @@ export class ListMyRecentPlaylistsUseCase {
       playlists,
     );
 
+    const context = { usernameById, position: null, now };
+
     return {
       playlists: playlists.map((playlist) =>
-        toMyPlaylist(
-          { playlist, membership: OWNER_MEMBERSHIP },
-          usernameById,
-          now,
-        ),
+        toListedPlaylist({ playlist, membership: OWNER_MEMBERSHIP }, context),
       ),
     };
   }

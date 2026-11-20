@@ -1,24 +1,12 @@
-import { PlaylistType } from 'src/playlist/domain/playlist-type.enum';
-import { PlaylistLicense } from 'src/playlist/domain/playlist-license.enum';
+import { Coordinates } from 'src/playlist/domain/geo';
+import { ListedPlaylist } from 'src/playlist/application/listed-playlist';
 
-export type PublicPlaylist = {
-  id: string;
-  type: PlaylistType;
-  license: PlaylistLicense;
-  ownerId: string;
-  ownerUsername: string | null;
-  name: string;
-  description: string;
-  beginAt: Date | null;
-  endAt: Date | null;
-  // null for an EDITOR playlist
-  latitude: number | null;
-  longitude: number | null;
-  // Label only, null for an EDITOR playlist
-  address: string | null;
-  coverPath: string | null;
+export type ListPublicPlaylistsInput = {
+  accountId: string;
+  // Gives distanceMeters and canJoinHere for VOTE playlists
+  position: Coordinates | null;
 };
 
 export type ListPublicPlaylistsOutput = {
-  playlists: PublicPlaylist[];
+  playlists: ListedPlaylist[];
 };
