@@ -1,9 +1,9 @@
-import { MyPlaylist } from 'src/playlist/application/my-playlist';
+import { ListedPlaylist } from 'src/playlist/application/listed-playlist';
 
 export type ListMyRecentPlaylistsInput = {
   accountId: string;
 };
 
 export type ListMyRecentPlaylistsOutput = {
-  playlists: MyPlaylist[];
+  playlists: ListedPlaylist[];
 };

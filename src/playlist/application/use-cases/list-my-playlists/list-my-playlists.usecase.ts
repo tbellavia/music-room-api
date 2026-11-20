@@ -17,13 +17,13 @@ import {
   AccountDirectory,
 } from '../../ports/account-directory';
 import {
-  MemberPlaylist,
-  MyPlaylist,
+  ListedPlaylist,
   OWNER_MEMBERSHIP,
+  PlaylistWithMembership,
   findOwnerUsernames,
-  toMyPlaylist,
-} from 'src/playlist/application/my-playlist';
-import { PlaylistRole } from 'src/playlist/domain/playlist-role.enum';
+  participantMembership,
+  toListedPlaylist,
+} from 'src/playlist/application/listed-playlist';
 
 @Injectable()
 export class ListMyPlaylistsUseCase {
@@ -46,8 +46,10 @@ export class ListMyPlaylistsUseCase {
       this.accountDirectory,
       memberPlaylists.map((memberPlaylist) => memberPlaylist.playlist),
     );
+    // No position: the caller is a member, there is nothing to join
+    const context = { usernameById, position: null, now };
     const filteredPlaylists = memberPlaylists
-      .map((memberPlaylist) => toMyPlaylist(memberPlaylist, usernameById, now))
+      .map((memberPlaylist) => toListedPlaylist(memberPlaylist, context))
       .filter((playlist) => this.matchesFilters(playlist, input));
 
     return {
@@ -55,7 +57,9 @@ export class ListMyPlaylistsUseCase {
     };
   }
 
-  private async findOwned(accountId: string): Promise<MemberPlaylist[]> {
+  private async findOwned(
+    accountId: string,
+  ): Promise<PlaylistWithMembership[]> {
     const playlists = await this.playlistRepository.findByOwner(accountId);
 
     return playlists.map((playlist) => ({
@@ -64,7 +68,9 @@ export class ListMyPlaylistsUseCase {
     }));
   }
 
-  private async findJoined(accountId: string): Promise<MemberPlaylist[]> {
+  private async findJoined(
+    accountId: string,
+  ): Promise<PlaylistWithMembership[]> {
     const participations =
       await this.participantRepository.findByAccount(accountId);
     const playlistIds = participations.map(
@@ -72,16 +78,13 @@ export class ListMyPlaylistsUseCase {
     );
     const playlists = await this.playlistRepository.findByIds(playlistIds);
 
-    const joinedPlaylists: MemberPlaylist[] = [];
+    const joinedPlaylists: PlaylistWithMembership[] = [];
     for (const playlist of playlists) {
       const participation = participations.find(
         (candidate) => candidate.playlistId === playlist.id,
       );
       if (participation) {
-        const membership = {
-          role: PlaylistRole.PARTICIPANT,
-          hasPrivilege: participation.hasPrivilege,
-        };
+        const membership = participantMembership(participation);
         joinedPlaylists.push({ playlist, membership });
       }
     }
@@ -89,7 +92,7 @@ export class ListMyPlaylistsUseCase {
   }
 
   private matchesFilters(
-    playlist: MyPlaylist,
+    playlist: ListedPlaylist,
     input: ListMyPlaylistsInput,
   ): boolean {
     if (input.role !== undefined && playlist.role !== input.role) {
@@ -102,9 +105,9 @@ export class ListMyPlaylistsUseCase {
   }
 
   private sortByCreation(
-    playlists: MyPlaylist[],
+    playlists: ListedPlaylist[],
     order: SortOrder = SortOrder.DESC,
-  ): MyPlaylist[] {
+  ): ListedPlaylist[] {
     const oldestFirst = playlists.sort(
       (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
     );

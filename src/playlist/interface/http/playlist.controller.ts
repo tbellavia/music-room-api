@@ -28,7 +28,7 @@ import { CreatePlaylistDto } from './dto/create-playlist.dto';
 import { JoinPlaylistDto } from './dto/join-playlist.dto';
 import { toPosition } from './dto/position.dto';
 import { ListMyPlaylistsDto } from './dto/list-my-playlists.dto';
-import { ListPublicEventsDto } from './dto/list-public-events.dto';
+import { OptionalPositionDto } from './dto/optional-position.dto';
 import { InviteParticipantDto } from './dto/invite-participant.dto';
 import { UpdateParticipantPrivilegeDto } from './dto/update-participant-privilege.dto';
 
@@ -73,8 +73,14 @@ export class PlaylistController {
   }
 
   @Get('public')
-  async listPublic() {
-    return await this.listPublicPlaylists.execute();
+  async listPublic(
+    @UserIdParam() accountId: string,
+    @Query() optionalPositionDto: OptionalPositionDto,
+  ) {
+    return await this.listPublicPlaylists.execute({
+      accountId,
+      position: toPosition(optionalPositionDto),
+    });
   }
 
   @Get('me')
@@ -98,11 +104,11 @@ export class PlaylistController {
   @Get('events')
   async listEvents(
     @UserIdParam() accountId: string,
-    @Query() listPublicEventsDto: ListPublicEventsDto,
+    @Query() optionalPositionDto: OptionalPositionDto,
   ) {
     return await this.listPublicEvents.execute({
       accountId,
-      position: toPosition(listPublicEventsDto),
+      position: toPosition(optionalPositionDto),
     });
   }
 

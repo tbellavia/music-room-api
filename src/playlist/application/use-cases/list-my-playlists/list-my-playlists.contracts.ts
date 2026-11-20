@@ -1,4 +1,4 @@
-import { MyPlaylist } from 'src/playlist/application/my-playlist';
+import { ListedPlaylist } from 'src/playlist/application/listed-playlist';
 import { PlaylistRole } from 'src/playlist/domain/playlist-role.enum';
 import { PlaylistStatus } from 'src/playlist/domain/playlist-status.enum';
 
@@ -18,5 +18,5 @@ export type ListMyPlaylistsInput = {
 };
 
 export type ListMyPlaylistsOutput = {
-  playlists: MyPlaylist[];
+  playlists: ListedPlaylist[];
 };

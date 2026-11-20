@@ -74,7 +74,7 @@ describe('ListPublicEventsUseCase', () => {
 
   async function listedIds(position: Coordinates | null): Promise<string[]> {
     const output = await useCase.execute({ accountId: ALICE_ID, position });
-    return output.events.map((event) => event.id);
+    return output.playlists.map((event) => event.id);
   }
 
   beforeEach(() => {
@@ -126,7 +126,7 @@ describe('ListPublicEventsUseCase', () => {
         position: null,
       });
 
-      expect(output.events[0].status).toBe(PlaylistStatus.LIVE);
+      expect(output.playlists[0].status).toBe(PlaylistStatus.LIVE);
     });
 
     it('does not return the playlists of the account', async () => {
@@ -172,7 +172,7 @@ describe('ListPublicEventsUseCase', () => {
         position: null,
       });
 
-      expect(output.events[0].distanceMeters).toBeNull();
+      expect(output.playlists[0].distanceMeters).toBeNull();
     });
 
     it(`keeps only the ${PUBLIC_EVENTS_LIMIT} soonest`, async () => {
@@ -214,7 +214,7 @@ describe('ListPublicEventsUseCase', () => {
         position: PARIS,
       });
 
-      expect(output.events[0].distanceMeters).toBe(300);
+      expect(output.playlists[0].distanceMeters).toBe(300);
     });
 
     it(`keeps only the ${PUBLIC_EVENTS_LIMIT} closest`, async () => {
@@ -239,7 +239,7 @@ describe('ListPublicEventsUseCase', () => {
         position: null,
       });
 
-      expect(output.events[0].address).toBe('96 boulevard Bessières, Paris');
+      expect(output.playlists[0].address).toBe('96 boulevard Bessières, Paris');
     });
 
     it('is null for an editor event', async () => {
@@ -250,7 +250,7 @@ describe('ListPublicEventsUseCase', () => {
         position: null,
       });
 
-      expect(output.events[0].address).toBeNull();
+      expect(output.playlists[0].address).toBeNull();
     });
   });
 
@@ -263,7 +263,7 @@ describe('ListPublicEventsUseCase', () => {
         position: null,
       });
 
-      expect(output.events[0].ownerUsername).toBe('bob');
+      expect(output.playlists[0].ownerUsername).toBe('bob');
     });
 
     it('gives the username of the owner, with a position', async () => {
@@ -274,7 +274,7 @@ describe('ListPublicEventsUseCase', () => {
         position: PARIS,
       });
 
-      expect(output.events[0].ownerUsername).toBe('bob');
+      expect(output.playlists[0].ownerUsername).toBe('bob');
     });
 
     it('is null when the owner cannot be found', async () => {
@@ -285,7 +285,7 @@ describe('ListPublicEventsUseCase', () => {
         position: null,
       });
 
-      expect(output.events[0].ownerUsername).toBeNull();
+      expect(output.playlists[0].ownerUsername).toBeNull();
     });
   });
 
@@ -298,7 +298,7 @@ describe('ListPublicEventsUseCase', () => {
         position: metersNorthOfParis(400),
       });
 
-      expect(output.events[0].canJoinHere).toBe(true);
+      expect(output.playlists[0].canJoinHere).toBe(true);
     });
 
     it('is false for a live event farther than 500 m', async () => {
@@ -309,7 +309,7 @@ describe('ListPublicEventsUseCase', () => {
         position: metersNorthOfParis(600),
       });
 
-      expect(output.events[0].canJoinHere).toBe(false);
+      expect(output.playlists[0].canJoinHere).toBe(false);
     });
 
     it('is false for an event that has not begun yet', async () => {
@@ -320,7 +320,7 @@ describe('ListPublicEventsUseCase', () => {
         position: PARIS,
       });
 
-      expect(output.events[0].canJoinHere).toBe(false);
+      expect(output.playlists[0].canJoinHere).toBe(false);
     });
   });
 });

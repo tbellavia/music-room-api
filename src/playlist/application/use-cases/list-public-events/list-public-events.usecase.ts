@@ -10,7 +10,6 @@ import {
 import {
   ListPublicEventsInput,
   ListPublicEventsOutput,
-  PublicEvent,
 } from './list-public-events.contracts';
 import {
   ACCOUNT_DIRECTORY,
@@ -18,18 +17,16 @@ import {
 } from '../../ports/account-directory';
 import { Playlist } from 'src/playlist/domain/playlist.entity';
 import { Coordinates } from 'src/playlist/domain/geo';
+import {
+  findOwnerUsernames,
+  toListedPlaylist,
+} from 'src/playlist/application/listed-playlist';
 
 export const PUBLIC_EVENTS_LIMIT = 10;
 
 type LocatedEvent = {
   playlist: Playlist;
   distanceMeters: number;
-};
-
-// null without position
-type ListedEvent = {
-  playlist: Playlist;
-  distanceMeters: number | null;
 };
 
 @Injectable()
@@ -55,36 +52,26 @@ export class ListPublicEventsUseCase {
     );
 
     const listedEvents = this.listed(newEvents, input.position);
-    const usernameById = await this.findOwnerUsernames(listedEvents);
+    // Only for the listed events: one lookup for at most 10 owners
+    const usernameById = await findOwnerUsernames(
+      this.accountDirectory,
+      listedEvents,
+    );
+    const context = { usernameById, position: input.position, now };
 
+    // The members were filtered out above
     return {
-      events: listedEvents.map((event) =>
-        this.toOutput(event, input.position, usernameById, now),
+      playlists: listedEvents.map((playlist) =>
+        toListedPlaylist({ playlist, membership: null }, context),
       ),
     };
   }
 
-  private listed(
-    events: Playlist[],
-    position: Coordinates | null,
-  ): ListedEvent[] {
+  private listed(events: Playlist[], position: Coordinates | null): Playlist[] {
     if (position === null) {
       return this.soonest(events);
     }
     return this.closest(events, position);
-  }
-
-  // Only for the listed events: one lookup for at most 10 owners
-  private async findOwnerUsernames(
-    events: ListedEvent[],
-  ): Promise<Map<string, string>> {
-    const ownerIds = events.map((event) => event.playlist.ownerId);
-    const owners = await this.accountDirectory.findByIds(ownerIds);
-    const usernameById = new Map<string, string>();
-    for (const owner of owners) {
-      usernameById.set(owner.id, owner.username);
-    }
-    return usernameById;
   }
 
   private async findMemberPlaylistIds(accountId: string): Promise<Set<string>> {
@@ -97,18 +84,16 @@ export class ListPublicEventsUseCase {
   }
 
   // Live events come first, since they began before the upcoming ones
-  private soonest(events: Playlist[]): ListedEvent[] {
+  private soonest(events: Playlist[]): Playlist[] {
     const soonestFirst = events.sort(
       (a, b) => this.beginningOf(a) - this.beginningOf(b),
     );
 
-    return soonestFirst
-      .slice(0, PUBLIC_EVENTS_LIMIT)
-      .map((playlist) => ({ playlist, distanceMeters: null }));
+    return soonestFirst.slice(0, PUBLIC_EVENTS_LIMIT);
   }
 
   // Only VOTE events have a location to be close to
-  private closest(events: Playlist[], position: Coordinates): ListedEvent[] {
+  private closest(events: Playlist[], position: Coordinates): Playlist[] {
     const locatedEvents: LocatedEvent[] = [];
     for (const playlist of events) {
       const distanceMeters = playlist.distanceFrom(position);
@@ -121,7 +106,9 @@ export class ListPublicEventsUseCase {
       (a, b) => a.distanceMeters - b.distanceMeters,
     );
 
-    return closestFirst.slice(0, PUBLIC_EVENTS_LIMIT);
+    return closestFirst
+      .slice(0, PUBLIC_EVENTS_LIMIT)
+      .map((locatedEvent) => locatedEvent.playlist);
   }
 
   // The repository only returns events, which all have a beginning date
@@ -130,37 +117,5 @@ export class ListPublicEventsUseCase {
       return 0;
     }
     return playlist.beginAt.getTime();
-  }
-
-  private toOutput(
-    event: ListedEvent,
-    position: Coordinates | null,
-    usernameById: Map<string, string>,
-    now: Date,
-  ): PublicEvent {
-    const playlist = event.playlist;
-    let distanceMeters: number | null = null;
-    if (event.distanceMeters !== null) {
-      distanceMeters = Math.round(event.distanceMeters);
-    }
-
-    return {
-      id: playlist.id,
-      type: playlist.type,
-      license: playlist.license,
-      ownerId: playlist.ownerId,
-      ownerUsername: usernameById.get(playlist.ownerId) ?? null,
-      name: playlist.name,
-      description: playlist.description,
-      beginAt: playlist.beginAt,
-      endAt: playlist.endAt,
-      latitude: playlist.latitude,
-      longitude: playlist.longitude,
-      address: playlist.address,
-      coverPath: playlist.coverPath,
-      status: playlist.status(now),
-      distanceMeters,
-      canJoinHere: playlist.canBeJoinedFrom(position, now),
-    };
   }
 }

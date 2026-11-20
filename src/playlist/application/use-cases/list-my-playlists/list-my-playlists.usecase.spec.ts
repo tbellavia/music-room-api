@@ -103,6 +103,19 @@ describe('ListMyPlaylistsUseCase', () => {
     expect(await listedIds()).toEqual([]);
   });
 
+  it('gives no distance and nothing to join, the account being a member', async () => {
+    await givenPlaylist({ id: 'owned' });
+    await givenPlaylist({ id: 'joined', ownerId: BOB_ID, name: 'Bob' });
+    await givenParticipant('joined', ALICE_ID);
+
+    const output = await useCase.execute({ accountId: ALICE_ID });
+
+    for (const playlist of output.playlists) {
+      expect(playlist.distanceMeters).toBeNull();
+      expect(playlist.canJoinHere).toBe(false);
+    }
+  });
+
   it('gives the role and the privilege of the account', async () => {
     await givenPlaylist({ id: 'owned' });
     await givenPlaylist({ id: 'joined', ownerId: BOB_ID, name: 'Bob' });
