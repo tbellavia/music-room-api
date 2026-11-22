@@ -953,7 +953,8 @@ Déplacer une musique juste après une autre (`afterTrackId`), ou en tête (`aft
 
 ### `POST /playlists/:playlistId/tracks/:trackId/vote` · VOTE uniquement
 
-Voter pour une musique (une seule fois, jamais pour une musique qu'on a proposée).
+Voter pour une musique : une seule fois par musique, y compris pour une musique qu'on a proposée soi-même.
+Une musique ajoutée démarre à 0 vote, son auteur n'a pas voté pour elle automatiquement.
 
 ```ts
 // Body
@@ -973,7 +974,6 @@ Voter pour une musique (une seule fois, jamais pour une musique qu'on a proposé
 | — | erreurs communes | |
 | 400 | `NOT_A_VOTE_PLAYLIST` | |
 | 404 | `TRACK_NOT_FOUND` | |
-| 403 | `CANNOT_VOTE_OWN_TRACK` | |
 | 409 | `ALREADY_VOTED` | |
 | 409 | `TRACK_ALREADY_PLAYED` | |
 

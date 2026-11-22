@@ -18,7 +18,6 @@ import { NotPlaylistMember } from 'src/playlist/domain/errors/not-playlist-membe
 import { OutsidePlaylistZone } from 'src/playlist/domain/errors/outside-playlist-zone.error';
 import { TrackNotFound } from 'src/playlist/domain/errors/track-not-found.error';
 import { TrackAlreadyPlayed } from 'src/playlist/domain/errors/track-already-played.error';
-import { CannotVoteOwnTrack } from 'src/playlist/domain/errors/cannot-vote-own-track.error';
 import { AlreadyVoted } from 'src/playlist/domain/errors/already-voted.error';
 import { NotAVotePlaylist } from 'src/playlist/domain/errors/not-a-vote-playlist.error';
 import { VoteForTrackUseCase } from './vote-for-track.usecase';
@@ -156,16 +155,24 @@ describe('VoteForTrackUseCase', () => {
     expect(votes).toBe(1);
   });
 
-  it('does not let the author vote for their own track', async () => {
+  it('lets the author vote for their own track', async () => {
     await givenPlaylist();
     await givenTrack();
 
     const authorInput = { ...input, accountId: 'author-id' };
+    const { votes } = await useCase.execute(authorInput);
 
-    await expect(useCase.execute(authorInput)).rejects.toThrow(
-      CannotVoteOwnTrack,
-    );
-    expect(voteRepository.votes).toHaveLength(0);
+    expect(votes).toBe(1);
+  });
+
+  it('rejects a second vote of the author for their own track', async () => {
+    await givenPlaylist();
+    await givenTrack();
+    const authorInput = { ...input, accountId: 'author-id' };
+    await useCase.execute(authorInput);
+
+    await expect(useCase.execute(authorInput)).rejects.toThrow(AlreadyVoted);
+    expect(voteRepository.votes).toHaveLength(1);
   });
 
   it('rejects a second vote of the same account', async () => {

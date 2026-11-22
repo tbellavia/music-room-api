@@ -30,7 +30,6 @@ import { InvitationAlreadyExists } from 'src/playlist/domain/errors/invitation-a
 import { NotAVotePlaylist } from 'src/playlist/domain/errors/not-a-vote-playlist.error';
 import { TrackActionForbidden } from 'src/playlist/domain/errors/track-action-forbidden.error';
 import { TrackDeleteForbidden } from 'src/playlist/domain/errors/track-delete-forbidden.error';
-import { CannotVoteOwnTrack } from 'src/playlist/domain/errors/cannot-vote-own-track.error';
 import { MusicNotFound } from 'src/playlist/domain/errors/music-not-found.error';
 import { TrackNotFound } from 'src/playlist/domain/errors/track-not-found.error';
 import { VoteNotFound } from 'src/playlist/domain/errors/vote-not-found.error';
@@ -403,14 +402,6 @@ const DOMAIN_ERRORS = new Map<unknown, ErrorResponse>([
       status: 403,
       error: 'TRACK_DELETE_FORBIDDEN',
       message: 'Only the owner and privileged participants can delete tracks',
-    },
-  ],
-  [
-    CannotVoteOwnTrack,
-    {
-      status: 403,
-      error: 'CANNOT_VOTE_OWN_TRACK',
-      message: 'You cannot vote for a track you added',
     },
   ],
   [

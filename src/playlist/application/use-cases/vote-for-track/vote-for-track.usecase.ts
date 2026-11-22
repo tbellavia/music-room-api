@@ -26,7 +26,6 @@ import { PlaylistNotFound } from 'src/playlist/domain/errors/playlist-not-found.
 import { NotAVotePlaylist } from 'src/playlist/domain/errors/not-a-vote-playlist.error';
 import { TrackNotFound } from 'src/playlist/domain/errors/track-not-found.error';
 import { TrackAlreadyPlayed } from 'src/playlist/domain/errors/track-already-played.error';
-import { CannotVoteOwnTrack } from 'src/playlist/domain/errors/cannot-vote-own-track.error';
 import { AlreadyVoted } from 'src/playlist/domain/errors/already-voted.error';
 
 @Injectable()
@@ -73,9 +72,6 @@ export class VoteForTrackUseCase {
     }
     if (track.isPlayed()) {
       throw new TrackAlreadyPlayed();
-    }
-    if (track.isAddedBy(input.accountId)) {
-      throw new CannotVoteOwnTrack();
     }
 
     const existingVote = await this.voteRepository.findByTrackAndAccount({

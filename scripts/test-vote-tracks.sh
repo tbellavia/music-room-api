@@ -152,7 +152,15 @@ expect "non member reads a private playlist → 403 NOT_PLAYLIST_MEMBER" 403 NOT
 
 section "POST /playlists/:playlistId/tracks/:trackId/vote"
 vote "$BOB" "$PUBLIC" "$TRACK_BOB" "$ON_SITE"
-expect "vote for own track → 403 CANNOT_VOTE_OWN_TRACK" 403 CANNOT_VOTE_OWN_TRACK
+expect "vote for own track → 201" 201
+expect_json "1 vote" ".votes == 1"
+
+vote "$BOB" "$PUBLIC" "$TRACK_BOB" "$ON_SITE"
+expect "vote twice for own track → 409 ALREADY_VOTED" 409 ALREADY_VOTED
+
+# Withdrawn right away: the counts checked below do not include it
+request DELETE "/playlists/$PUBLIC/tracks/$TRACK_BOB/vote$ON_SITE_QUERY" "$BOB"
+expect "withdraw the vote for own track → 200" 200
 
 vote "$BOB" "$PUBLIC" "$TRACK_ALICE"
 expect "participant without position → 403 OUTSIDE_PLAYLIST_ZONE" 403 OUTSIDE_PLAYLIST_ZONE
