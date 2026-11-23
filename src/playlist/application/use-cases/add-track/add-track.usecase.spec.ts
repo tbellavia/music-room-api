@@ -161,6 +161,19 @@ describe('AddTrackUseCase', () => {
     });
   });
 
+  it('returns the author, the date of addition and no version for a VOTE track', async () => {
+    await givenPlaylist();
+    const before = new Date();
+
+    const output = await useCase.execute(ownerInput);
+
+    const track = trackRepository.tracks.get(output.trackId);
+    expect(output.addedBy).toBe('owner-id');
+    expect(output.addedAt).toEqual(track?.addedAt);
+    expect(output.addedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+    expect(output.version).toBeNull();
+  });
+
   it('does not give a position to a VOTE track', async () => {
     await givenPlaylist();
 
@@ -247,6 +260,15 @@ describe('AddTrackUseCase', () => {
       const track = trackRepository.tracks.get(trackId);
       expect(track?.position).toBe(POSITION_STEP);
       expect(track?.version).toBe(1);
+    });
+
+    it('returns the version to send back when moving the track', async () => {
+      await givenPlaylist({ type: PlaylistType.EDITOR });
+
+      const output = await useCase.execute(ownerInput);
+
+      expect(output.addedBy).toBe('owner-id');
+      expect(output.version).toBe(1);
     });
 
     it('adds a new track after the last one', async () => {

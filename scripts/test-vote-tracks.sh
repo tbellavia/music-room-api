@@ -125,6 +125,8 @@ expect "participant 600 m away → 403 OUTSIDE_PLAYLIST_ZONE" 403 OUTSIDE_PLAYLI
 
 add_track "$BOB" "$PUBLIC" "$ONE_MORE_TIME" "$ON_SITE"
 expect "participant on site → 201" 201
+expect_json "returns the author, the date and no version (VOTE)" \
+  "(.addedBy | type) == \"string\" and (.addedAt | type) == \"string\" and .version == null"
 TRACK_BOB=$(json_field trackId)
 
 add_track "$ALICE" "$PUBLIC" "$ONE_MORE_TIME"

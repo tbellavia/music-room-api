@@ -100,6 +100,9 @@ export class AddTrackUseCase {
 
     return {
       trackId: track.id,
+      addedBy: track.addedBy,
+      addedAt: track.addedAt,
+      version: playlist.isEditorPlaylist() ? track.version : null,
     };
   }
 

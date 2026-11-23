@@ -115,6 +115,8 @@ echo "  SSE stream opened on the radio playlist"
 section "POST /playlists/:playlistId/tracks (EDITOR)"
 add_track "$BOB" "$RADIO" "$ONE_MORE_TIME"
 expect "participant adds remotely, without position → 201" 201
+expect_json "returns the author, the date and the version 1" \
+  "(.addedBy | type) == \"string\" and (.addedAt | type) == \"string\" and .version == 1"
 TRACK_1=$(json_field trackId)
 
 add_track "$ALICE" "$RADIO" "$NEVER_GONNA"

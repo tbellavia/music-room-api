@@ -10,4 +10,8 @@ export type AddTrackInput = {
 
 export type AddTrackOutput = {
   trackId: string;
+  addedBy: string;
+  addedAt: Date;
+  // To send back when moving the track; null for a VOTE track, which never moves
+  version: number | null;
 };
