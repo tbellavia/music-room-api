@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { YoutubeClientPort } from '../application/ports/youtube-client.port';
 import { Music } from '../domain/music.entity';
-import YTMusic from 'ytmusic-api';
+import YTMusic, { SongDetailed } from 'ytmusic-api';
 
 @Injectable()
 export class YoutubeApiClient implements YoutubeClientPort {
@@ -10,8 +10,9 @@ export class YoutubeApiClient implements YoutubeClientPort {
 
     await api.initialize();
     const result = await api.searchSongs(name);
-    const musics = result.map((item) =>
+    const musics = result.map((item: SongDetailed, index: number) =>
       Music.create({
+        id: index,
         name: item.name,
         videoId: item.videoId,
         artist: item.artist.name,

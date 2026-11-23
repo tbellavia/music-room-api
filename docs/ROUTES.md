@@ -364,6 +364,8 @@ Annuler une demande envoyée. Réservé à l'émetteur de la demande.
 // 200
 {
   musics: {
+    id: number               // position dans les résultats, à partir de 0 ; unique dans une réponse,
+                             // sert d'identifiant aux listes SwiftUI (ne pas le conserver d'une recherche à l'autre)
     name: string
     videoId: string
     artist: string
@@ -854,7 +856,7 @@ EDITOR : la musique est ajoutée à la fin de la playlist (on la déplace ensuit
 
 | Statut | Réponse | Détail |
 | --- | --- | --- |
-| 201 | `{ trackId: string }` | |
+| 201 | `{ trackId: string, addedBy: string, addedAt: string, version: number \| null }` | `addedBy` : id de l'auteur (l'appelant). `version` : à renvoyer pour déplacer la musique (EDITOR) ; `null` pour VOTE |
 | 400 | `VIDEO_ID_INVALID` | Absent ou pas un id YouTube (11 caractères) |
 | 400 | `LATITUDE_INVALID` | Pas un nombre |
 | 400 | `LATITUDE_OUT_OF_RANGE` | Hors de -90..90 |
