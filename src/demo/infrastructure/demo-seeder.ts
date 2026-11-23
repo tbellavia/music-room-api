@@ -31,6 +31,7 @@ export class DemoSeeder {
       await this.seedDemo.execute({
         password,
         origin: this.origin(),
+        crowdSize: this.crowdSize(),
         onlyIfMissing: true,
       });
     } catch (error) {
@@ -47,6 +48,7 @@ export class DemoSeeder {
     await this.seedDemo.execute({
       password,
       origin: this.origin(),
+      crowdSize: this.crowdSize(),
       onlyIfMissing: false,
     });
   }
@@ -63,6 +65,10 @@ export class DemoSeeder {
       return null;
     }
     return password;
+  }
+
+  private crowdSize(): number {
+    return Number(this.config.getOrThrow<number>('SEED_COUNT'));
   }
 
   // Environment variables are strings until validated: converted to be sure

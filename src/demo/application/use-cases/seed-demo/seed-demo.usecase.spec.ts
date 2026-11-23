@@ -10,7 +10,11 @@ import { InMemoryVoteRepository } from 'src/playlist/infrastructure/persistence/
 import { Account } from 'src/identity/domain/account.entity';
 import { DEV1_ACCOUNT, DEV2_ACCOUNT } from 'src/identity/domain/dev-accounts';
 import { Coordinates } from 'src/playlist/domain/geo';
-import { DEMO_ACCOUNTS, LEA } from 'src/demo/domain/demo-accounts';
+import {
+  DEMO_ACCOUNTS,
+  LEA,
+  crowdAccount,
+} from 'src/demo/domain/demo-accounts';
 import { RemoveDemoUseCase } from '../remove-demo/remove-demo.usecase';
 import { SeedDemoUseCase } from './seed-demo.usecase';
 import { SeedDemoInput } from './seed-demo.contracts';
@@ -21,6 +25,7 @@ const DEMO_PASSWORD = 'DemoPassword1!';
 const input: SeedDemoInput = {
   password: DEMO_PASSWORD,
   origin: CAMPUS_42,
+  crowdSize: 0,
   onlyIfMissing: false,
 };
 
@@ -179,5 +184,37 @@ describe('SeedDemoUseCase', () => {
     await expect(useCase.execute(input)).rejects.toThrow(LEA.username);
     expect(accountRepository.accounts.size).toBe(1);
     expect(playlistRepository.playlists.size).toBe(0);
+  });
+
+  describe('with a crowd', () => {
+    it('adds the generated accounts and one playlist for two of them', async () => {
+      const scenarioOnly = await useCase.execute(input);
+
+      const withCrowd = await useCase.execute({ ...input, crowdSize: 10 });
+
+      expect(withCrowd.accounts).toBe(DEMO_ACCOUNTS.length + 10);
+      expect(accountRepository.accounts.size).toBe(DEMO_ACCOUNTS.length + 10);
+      expect(withCrowd.playlists).toBe(scenarioOnly.playlists + 5);
+    });
+
+    it('creates the generated accounts verified, with the same password', async () => {
+      await useCase.execute({ ...input, crowdSize: 10 });
+
+      const firstGenerated = crowdAccount(1, '');
+      const account = await accountRepository.findById(firstGenerated.id);
+      expect(account?.is_active).toBe(true);
+      expect(account?.password).toBe(`hashed:${DEMO_PASSWORD}`);
+    });
+
+    it('removes the accounts in excess when the crowd gets smaller', async () => {
+      await useCase.execute({ ...input, crowdSize: 20 });
+
+      await useCase.execute({ ...input, crowdSize: 5 });
+
+      expect(accountRepository.accounts.size).toBe(DEMO_ACCOUNTS.length + 5);
+      const lastOfTheLargerCrowd = crowdAccount(20, '');
+      const removed = await accountRepository.findById(lastOfTheLargerCrowd.id);
+      expect(removed).toBeNull();
+    });
   });
 });

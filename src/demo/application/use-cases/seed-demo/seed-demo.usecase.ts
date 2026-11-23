@@ -47,17 +47,27 @@ import { Track } from 'src/playlist/domain/track.entity';
 import { TrackVote } from 'src/playlist/domain/track-vote.entity';
 import { positionBetween } from 'src/playlist/domain/track-ordering';
 import { DEMO_ACCOUNTS, DemoAccountInfos } from 'src/demo/domain/demo-accounts';
+import { buildDemoScenario } from 'src/demo/domain/demo-scenario';
+import { buildDemoCrowd } from 'src/demo/domain/demo-crowd';
 import {
+  DemoFriendship,
+  DemoFriendshipRequest,
   DemoPlaylist,
-  DemoScenario,
-  buildDemoScenario,
-} from 'src/demo/domain/demo-scenario';
+} from 'src/demo/domain/demo-data';
 import { RemoveDemoUseCase } from '../remove-demo/remove-demo.usecase';
 import { SeedDemoInput, SeedDemoOutput } from './seed-demo.contracts';
 
 type PlaylistCounts = {
   tracks: number;
   votes: number;
+};
+
+// The scenario and the generated crowd, created the same way
+type DemoContent = {
+  accounts: DemoAccountInfos[];
+  friendships: DemoFriendship[];
+  friendshipRequests: DemoFriendshipRequest[];
+  playlists: DemoPlaylist[];
 };
 
 // Every object is built with the domain factories: a demo that breaks a rule of
@@ -103,28 +113,51 @@ export class SeedDemoUseCase {
     }
 
     await this.removeDemo.execute();
-    await this.throwIfNameTaken();
 
     const withDevAccounts = await this.devAccountsExist();
-    const scenario = buildDemoScenario({
-      now: input.now ?? new Date(),
-      origin: input.origin,
-      withDevAccounts,
-    });
+    const content = this.buildContent(input, withDevAccounts);
+    await this.throwIfNameTaken(content.accounts);
 
-    await this.createAccounts(input.password);
-    await this.createSocialGraph(scenario);
-    const counts = await this.createPlaylists(scenario);
+    await this.createAccounts(input.password, content.accounts);
+    await this.createSocialGraph(content);
+    const counts = await this.createPlaylists(content.playlists);
 
     this.logger.log(
-      `Demo seeded: ${DEMO_ACCOUNTS.length} accounts, ${scenario.playlists.length} playlists, ${counts.tracks} tracks, ${counts.votes} votes (dev accounts: ${withDevAccounts})`,
+      `Demo seeded: ${content.accounts.length} accounts (crowd: ${input.crowdSize}), ${content.playlists.length} playlists, ${counts.tracks} tracks, ${counts.votes} votes (dev accounts: ${withDevAccounts})`,
     );
     return {
       seeded: true,
-      accounts: DEMO_ACCOUNTS.length,
-      playlists: scenario.playlists.length,
+      accounts: content.accounts.length,
+      playlists: content.playlists.length,
       tracks: counts.tracks,
       votes: counts.votes,
+    };
+  }
+
+  private buildContent(
+    input: SeedDemoInput,
+    withDevAccounts: boolean,
+  ): DemoContent {
+    const now = input.now ?? new Date();
+    const scenario = buildDemoScenario({
+      now,
+      origin: input.origin,
+      withDevAccounts,
+    });
+    const crowd = buildDemoCrowd({
+      size: input.crowdSize,
+      now,
+      origin: input.origin,
+    });
+
+    return {
+      accounts: [...DEMO_ACCOUNTS, ...crowd.accounts],
+      friendships: [...scenario.friendships, ...crowd.friendships],
+      friendshipRequests: [
+        ...scenario.friendshipRequests,
+        ...crowd.friendshipRequests,
+      ],
+      playlists: [...scenario.playlists, ...crowd.playlists],
     };
   }
 
@@ -141,8 +174,8 @@ export class SeedDemoUseCase {
 
   // The demo accounts were just removed: an account found here is a real one,
   // which must stay untouched
-  private async throwIfNameTaken(): Promise<void> {
-    for (const demoAccount of DEMO_ACCOUNTS) {
+  private async throwIfNameTaken(accounts: DemoAccountInfos[]): Promise<void> {
+    for (const demoAccount of accounts) {
       const isTaken = await this.isUsernameOrEmailTaken(demoAccount);
       if (isTaken) {
         throw new Error(
@@ -172,9 +205,12 @@ export class SeedDemoUseCase {
   }
 
   // Hashed once: bcrypt is slow on purpose, and every account shares it
-  private async createAccounts(password: string): Promise<void> {
+  private async createAccounts(
+    password: string,
+    accounts: DemoAccountInfos[],
+  ): Promise<void> {
     const hashedPassword = await this.passwordHasher.hash(password);
-    for (const demoAccount of DEMO_ACCOUNTS) {
+    for (const demoAccount of accounts) {
       const account = Account.preVerified({
         ...demoAccount,
         password: hashedPassword,
@@ -183,15 +219,15 @@ export class SeedDemoUseCase {
     }
   }
 
-  private async createSocialGraph(scenario: DemoScenario): Promise<void> {
-    for (const demoFriendship of scenario.friendships) {
+  private async createSocialGraph(content: DemoContent): Promise<void> {
+    for (const demoFriendship of content.friendships) {
       const friendship = Friendship.create({
         id: randomUUID(),
         ...demoFriendship,
       });
       await this.friendshipRepository.save(friendship);
     }
-    for (const demoRequest of scenario.friendshipRequests) {
+    for (const demoRequest of content.friendshipRequests) {
       const request = FriendshipRequest.create({
         id: randomUUID(),
         ...demoRequest,
@@ -201,10 +237,10 @@ export class SeedDemoUseCase {
   }
 
   private async createPlaylists(
-    scenario: DemoScenario,
+    demoPlaylists: DemoPlaylist[],
   ): Promise<PlaylistCounts> {
     const counts: PlaylistCounts = { tracks: 0, votes: 0 };
-    for (const demoPlaylist of scenario.playlists) {
+    for (const demoPlaylist of demoPlaylists) {
       const playlistCounts = await this.createPlaylist(demoPlaylist);
       counts.tracks = counts.tracks + playlistCounts.tracks;
       counts.votes = counts.votes + playlistCounts.votes;

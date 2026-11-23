@@ -8,6 +8,9 @@ export interface AccountRepository {
   save(account: Account): Promise<void>;
   // Everything the account owns is deleted with it (database cascades)
   delete(id: string): Promise<void>;
+  // Same cascades. Returns the number of deleted accounts. The prefix must be
+  // reserved (demo accounts): real accounts have random ids.
+  deleteByIdPrefix(idPrefix: string): Promise<number>;
   // Atomically uses one code attempt if fewer than `maxAttempts` were used.
   // Returns false when none is left. Atomic so that parallel requests cannot
   // all read the same counter and exceed the limit.

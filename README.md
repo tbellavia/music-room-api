@@ -45,6 +45,7 @@ POSTGRES_DATABASE=<nom de la base>
 SEED_PASSWORD=<mot de passe des comptes de démo, 8 caractères minimum>
 SEED_LATITUDE=48.8966       # lieu des soirées de démo, 42 Paris par défaut
 SEED_LONGITUDE=2.3184
+SEED_COUNT=0                # comptes générés en plus du scénario, 300 maximum
 ```
 
 Toutes ces variables sont obligatoires, sauf les `SEED_*` : l'API refuse de démarrer s'il en manque une (validation dans `src/infrastructure/config/config.module.ts`).
@@ -107,6 +108,17 @@ Comptes : `lea.dj`, `karim.beats`, `sofia.indie`, `hugo.rock`, `ines.jazz`, `tom
 | Anniversaire surprise de Léa | `chloe.soul` | EDITOR **privée** : invisible pour `lea.dj`, invitations en attente (dont une envoyée par `sofia.indie`, participante avec privilège) |
 
 Côté social : des amitiés, et des demandes en attente vers `lea.dj` (de `nathan.metal` et `emma.folk`).
+
+#### Plus de volume : `SEED_COUNT`
+
+Pour la correction, `SEED_COUNT=<n>` (300 maximum, 0 par défaut) ajoute **n comptes générés** au scénario, avec du contenu proportionnel : **une playlist pour deux comptes**, chacune avec 2 à 8 participants, 3 à 12 musiques et des votes, plus ~3 amis par compte et quelques demandes d'ami.
+
+- Les playlists générées mélangent VOTE / EDITOR, publiques / privées (~20 %), `EVERYONE` / `INVITED_ONLY` (~25 %), et des dates d'il y a 7 jours à dans 14 jours (en cours, à venir, terminées). Les VOTE sont dispersées jusqu'à **20 km** autour de `SEED_LATITUDE` / `SEED_LONGITUDE` : `/events` avec une position renvoie toute une gamme de distances.
+- Les pseudos combinent un prénom et un style (`camille.funk`, `noah.lofi`…) ; même mot de passe `SEED_PASSWORD`.
+- **Toujours les mêmes données** pour un même `SEED_COUNT` (générateur pseudo-aléatoire à graine fixe).
+- Les comptes générés ne touchent **jamais** au scénario : ses 8 playlists et ses 12 personnages restent identiques.
+- Changer `SEED_COUNT` demande de relancer l'API (`make start` / `make dev`) puis **`make seed`** : au démarrage, une démo déjà présente n'est pas recréée. Passer de 300 à 50 supprime bien les 250 comptes en trop (tous les comptes de démo partagent un préfixe d'identifiant réservé).
+- Le plafond de 300 garde le seed assez court pour que l'API démarre dans le délai du healthcheck Docker.
 
 En mode `dev`, si `dev1` et `dev2` existent, ils reçoivent leur propre contenu : `dev1` participe à « Soirée BDE 42 » et « Radio du campus », est ami avec `lea.dj`, a une invitation à « Anniversaire surprise de Léa » et une demande d'ami de `karim.beats` ; `dev2` a une invitation à « Festival de demain » et une demande d'ami de `lucas.house`.
 

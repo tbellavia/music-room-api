@@ -1,12 +1,12 @@
 import { Coordinates } from 'src/playlist/domain/geo';
 import { Playlist } from 'src/playlist/domain/playlist.entity';
 import { PlaylistStatus } from 'src/playlist/domain/playlist-status.enum';
-import { PlaylistType } from 'src/playlist/domain/playlist-type.enum';
 import { PlaylistLicense } from 'src/playlist/domain/playlist-license.enum';
-import { JoinMethod } from 'src/playlist/domain/join-method.enum';
 import { DEV1_ACCOUNT, DEV2_ACCOUNT } from 'src/identity/domain/dev-accounts';
 import { DEMO_ACCOUNTS } from './demo-accounts';
-import { DemoPlaylist, DemoScenario, buildDemoScenario } from './demo-scenario';
+import { DemoScenario, buildDemoScenario } from './demo-scenario';
+import { DemoPlaylist } from './demo-data';
+import { demoPlaylistViolations } from './demo-test-rules';
 
 const NOW = new Date('2026-11-23T20:00:00Z');
 const CAMPUS_42: Coordinates = { latitude: 48.8966, longitude: 2.3184 };
@@ -114,108 +114,13 @@ describe('buildDemoScenario', () => {
     });
   });
 
-  describe('each playlist', () => {
-    const demoPlaylists = scenario(true).playlists;
-
-    it.each(
-      demoPlaylists.map((demoPlaylist) => [
-        demoPlaylist.infos.name,
-        demoPlaylist,
-      ]),
-    )(
-      '%s: tracks are added and voted by its members only',
-      (_name, demoPlaylist) => {
-        const members = memberIds(demoPlaylist);
-        for (const track of demoPlaylist.tracks) {
-          expect(members).toContain(track.addedBy);
-          for (const voterId of track.voterIds) {
-            expect(members).toContain(voterId);
-          }
-        }
-      },
-    );
-
-    it.each(
-      demoPlaylists.map((demoPlaylist) => [
-        demoPlaylist.infos.name,
-        demoPlaylist,
-      ]),
-    )(
-      '%s: a music waits at most once, one vote per account',
-      (_name, demoPlaylist) => {
-        const waitingVideoIds = demoPlaylist.tracks
-          .filter((track) => track.playedAt === null)
-          .map((track) => track.music.videoId);
-        expect(new Set(waitingVideoIds).size).toBe(waitingVideoIds.length);
-
-        for (const track of demoPlaylist.tracks) {
-          expect(new Set(track.voterIds).size).toBe(track.voterIds.length);
-        }
-      },
-    );
-
-    it.each(
-      demoPlaylists.map((demoPlaylist) => [
-        demoPlaylist.infos.name,
-        demoPlaylist,
-      ]),
-    )(
-      '%s: tracks are added in the past, never played or voted in an EDITOR playlist',
-      (_name, demoPlaylist) => {
-        const isEditor = demoPlaylist.infos.type === PlaylistType.EDITOR;
-        for (const track of demoPlaylist.tracks) {
-          expect(track.addedAt.getTime()).toBeLessThanOrEqual(NOW.getTime());
-          if (isEditor) {
-            expect(track.playedAt).toBeNull();
-            expect(track.voterIds).toEqual([]);
-          }
-        }
-      },
-    );
-
-    it.each(
-      demoPlaylists.map((demoPlaylist) => [
-        demoPlaylist.infos.name,
-        demoPlaylist,
-      ]),
-    )(
-      '%s: with INVITED_ONLY, only the owner and the invited add tracks',
-      (_name, demoPlaylist) => {
-        if (demoPlaylist.infos.license !== PlaylistLicense.INVITED_ONLY) {
-          return;
-        }
-        const allowedIds = demoPlaylist.participants
-          .filter(
-            (participant) => participant.joinedVia === JoinMethod.INVITATION,
-          )
-          .map((participant) => participant.accountId);
-        allowedIds.push(demoPlaylist.infos.ownerId);
-        for (const track of demoPlaylist.tracks) {
-          expect(allowedIds).toContain(track.addedBy);
-        }
-      },
-    );
-
-    it.each(
-      demoPlaylists.map((demoPlaylist) => [
-        demoPlaylist.infos.name,
-        demoPlaylist,
-      ]),
-    )(
-      '%s: invitations come from the owner or a privileged participant, to non-members',
-      (_name, demoPlaylist) => {
-        const members = memberIds(demoPlaylist);
-        const privilegedIds = demoPlaylist.participants
-          .filter((participant) => participant.hasPrivilege)
-          .map((participant) => participant.accountId);
-        privilegedIds.push(demoPlaylist.infos.ownerId);
-
-        for (const invitation of demoPlaylist.invitations) {
-          expect(privilegedIds).toContain(invitation.inviterId);
-          expect(members).not.toContain(invitation.inviteeId);
-        }
-      },
-    );
+  it.each(
+    scenario(true).playlists.map((demoPlaylist) => [
+      demoPlaylist.infos.name,
+      demoPlaylist,
+    ]),
+  )('%s follows the rules of the API', (_name, demoPlaylist) => {
+    expect(demoPlaylistViolations(demoPlaylist, NOW)).toEqual([]);
   });
 
   describe('social graph', () => {

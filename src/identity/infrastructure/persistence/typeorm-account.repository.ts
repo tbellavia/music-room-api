@@ -7,7 +7,7 @@ import {
   ACCOUNT_USERNAME_UNIQUE_CONSTRAINT,
   AccountOrmEntity,
 } from './typeorm-account.entity';
-import { LessThan, Repository } from 'typeorm';
+import { LessThan, Like, Repository } from 'typeorm';
 import { EmailAlreadyExists } from '../../domain/errors/email-already-exists.error';
 import { UsernameAlreadyExists } from '../../domain/errors/username-already-exists.error';
 import { violatedUniqueConstraint } from '../../../infrastructure/database/error-utils';
@@ -41,6 +41,11 @@ export class TypeOrmAccountRepository implements AccountRepository {
 
   async delete(id: string): Promise<void> {
     await this.repository.delete({ id });
+  }
+
+  async deleteByIdPrefix(idPrefix: string): Promise<number> {
+    const result = await this.repository.delete({ id: Like(`${idPrefix}%`) });
+    return result.affected ?? 0;
   }
 
   async save(account: Account): Promise<void> {

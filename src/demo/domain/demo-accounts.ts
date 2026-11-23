@@ -6,16 +6,37 @@ export type DemoAccountInfos = {
   email: string;
 };
 
+// Reserved to the demo: real accounts have random ids. The scenario accounts
+// are 00000000-0000-4000-9000-…, the generated crowd 00000000-0000-4000-9001-…
+export const DEMO_ACCOUNT_ID_PREFIX = '00000000-0000-4000-900';
+const SCENARIO_ID_RANGE = '0';
+const CROWD_ID_RANGE = '1';
+
 // Nobody can receive mail there: the demo accounts are created already verified
 const DEMO_EMAIL_DOMAIN = 'demo.music-room.local';
 
-function demoAccount(number: number, username: string): DemoAccountInfos {
+function demoAccountInfos(
+  range: string,
+  number: number,
+  username: string,
+): DemoAccountInfos {
   const suffix = String(number).padStart(12, '0');
   return {
-    id: `00000000-0000-4000-9000-${suffix}`,
+    id: `${DEMO_ACCOUNT_ID_PREFIX}${range}-${suffix}`,
     username,
     email: `${username}@${DEMO_EMAIL_DOMAIN}`,
   };
+}
+
+function demoAccount(number: number, username: string): DemoAccountInfos {
+  return demoAccountInfos(SCENARIO_ID_RANGE, number, username);
+}
+
+export function crowdAccount(
+  number: number,
+  username: string,
+): DemoAccountInfos {
+  return demoAccountInfos(CROWD_ID_RANGE, number, username);
 }
 
 export const LEA = demoAccount(1, 'lea.dj');

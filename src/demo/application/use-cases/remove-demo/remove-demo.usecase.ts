@@ -3,11 +3,12 @@ import {
   ACCOUNT_REPOSITORY,
   AccountRepository,
 } from 'src/identity/application/ports/account.repository';
-import { DEMO_ACCOUNTS } from 'src/demo/domain/demo-accounts';
+import { DEMO_ACCOUNT_ID_PREFIX } from 'src/demo/domain/demo-accounts';
 import { RemoveDemoOutput } from './remove-demo.contracts';
 
 // Deleting the demo accounts deletes the whole demo: their playlists, tracks,
-// votes, friendships and invitations go with them (database cascades)
+// votes, friendships and invitations go with them (database cascades). By id
+// prefix: a crowd generated with a larger SEED_COUNT goes too.
 @Injectable()
 export class RemoveDemoUseCase {
   constructor(
@@ -16,14 +17,9 @@ export class RemoveDemoUseCase {
   ) {}
 
   async execute(): Promise<RemoveDemoOutput> {
-    let removedAccounts = 0;
-    for (const demoAccount of DEMO_ACCOUNTS) {
-      const existing = await this.accountRepository.findById(demoAccount.id);
-      if (existing) {
-        await this.accountRepository.delete(demoAccount.id);
-        removedAccounts = removedAccounts + 1;
-      }
-    }
+    const removedAccounts = await this.accountRepository.deleteByIdPrefix(
+      DEMO_ACCOUNT_ID_PREFIX,
+    );
     return { removedAccounts };
   }
 }

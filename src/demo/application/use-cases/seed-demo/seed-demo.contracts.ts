@@ -4,6 +4,8 @@ export type SeedDemoInput = {
   // Password of every demo account
   password: string;
   origin: Coordinates;
+  // Generated accounts on top of the scenario (SEED_COUNT), 0 for none
+  crowdSize: number;
   // At startup: leave an existing demo untouched. Otherwise it is recreated,
   // which also brings its dates back to "now".
   onlyIfMissing: boolean;

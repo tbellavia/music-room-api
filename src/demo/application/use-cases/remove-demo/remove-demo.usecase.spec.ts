@@ -1,6 +1,6 @@
 import { InMemoryAccountRepository } from 'src/identity/infrastructure/persistence/in-memory-account.repository';
 import { Account } from 'src/identity/domain/account.entity';
-import { KARIM, LEA } from 'src/demo/domain/demo-accounts';
+import { KARIM, LEA, crowdAccount } from 'src/demo/domain/demo-accounts';
 import { RemoveDemoUseCase } from './remove-demo.usecase';
 
 describe('RemoveDemoUseCase', () => {
@@ -15,6 +15,19 @@ describe('RemoveDemoUseCase', () => {
   it('removes the demo accounts', async () => {
     await repository.save(Account.preVerified({ ...LEA, password: 'hash' }));
     await repository.save(Account.preVerified({ ...KARIM, password: 'hash' }));
+
+    const { removedAccounts } = await useCase.execute();
+
+    expect(removedAccounts).toBe(2);
+    expect(repository.accounts.size).toBe(0);
+  });
+
+  it('also removes the generated accounts, whatever their number', async () => {
+    const generated = crowdAccount(250, 'camille.funk');
+    await repository.save(Account.preVerified({ ...LEA, password: 'hash' }));
+    await repository.save(
+      Account.preVerified({ ...generated, password: 'hash' }),
+    );
 
     const { removedAccounts } = await useCase.execute();
 
