@@ -119,7 +119,7 @@ describe('SignInUseCase', () => {
     async function givenDev1() {
       const hashedPassword = await passwordService.hash(DEV_ACCOUNT_PASSWORD);
       await repository.save(
-        Account.dev({ ...DEV1_ACCOUNT, password: hashedPassword }),
+        Account.preVerified({ ...DEV1_ACCOUNT, password: hashedPassword }),
       );
     }
 

@@ -21,11 +21,15 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      # prod by default (make start); dev (make dev) skips the JWT check;
+      # prod by default (make start); dev (make dev) creates dev1 / dev2;
       # test is set by make test-e2e
       - ENVIRONMENT=${ENVIRONMENT:-prod}
       # Only set by `make test-e2e`: never put it in .env
       - E2E_MODE=${E2E_MODE:-false}
+      # Demo data: created at startup when missing, refreshed by make seed
+      - SEED_PASSWORD=${SEED_PASSWORD:-}
+      - SEED_LATITUDE=${SEED_LATITUDE:-48.8966}
+      - SEED_LONGITUDE=${SEED_LONGITUDE:-2.3184}
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/v1/health']
       interval: 10s

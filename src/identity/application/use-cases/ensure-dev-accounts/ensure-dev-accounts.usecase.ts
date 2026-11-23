@@ -45,7 +45,7 @@ export class EnsureDevAccountsUseCase {
     }
 
     const hashedPassword = await this.passwordHasher.hash(DEV_ACCOUNT_PASSWORD);
-    const account = Account.dev({ ...infos, password: hashedPassword });
+    const account = Account.preVerified({ ...infos, password: hashedPassword });
     await this.accountRepository.save(account);
     this.logger.log(`Dev account created username=${infos.username}`);
   }

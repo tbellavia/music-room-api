@@ -19,8 +19,12 @@ describe('RemoveDevAccountsUseCase', () => {
   });
 
   it('deletes dev1 and dev2', async () => {
-    await repository.save(Account.dev({ ...DEV1_ACCOUNT, password: 'hash' }));
-    await repository.save(Account.dev({ ...DEV2_ACCOUNT, password: 'hash' }));
+    await repository.save(
+      Account.preVerified({ ...DEV1_ACCOUNT, password: 'hash' }),
+    );
+    await repository.save(
+      Account.preVerified({ ...DEV2_ACCOUNT, password: 'hash' }),
+    );
 
     await useCase.execute();
 

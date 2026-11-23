@@ -10,6 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import { SocialModule } from './social/social.module';
 import { MusicModule } from './music/music.module';
 import { PlaylistModule } from './playlist/playlist.module';
+import { DemoModule } from './demo/demo.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { PlaylistModule } from './playlist/playlist.module';
     SocialModule,
     MusicModule,
     PlaylistModule,
+    DemoModule,
   ],
   controllers: [AppController],
   providers: [

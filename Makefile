@@ -9,6 +9,16 @@ stop:
 dev:
 	@ENVIRONMENT=dev docker compose --env-file .env up -d --build
 
+# Demo data (see the README): recreated, with dates back to "now". Run it
+# before the defense so that the "live" parties are live.
+seed:
+	@docker compose exec api node dist/demo/infrastructure/demo-cli.js seed
+
+# Removes the demo data. Without SEED_PASSWORD in .env, it does not come back
+# at the next start.
+seed-clean:
+	@docker compose exec api node dist/demo/infrastructure/demo-cli.js clean
+
 lint:
 	@npm run lint
 
@@ -35,4 +45,4 @@ test-e2e:
 
 re: stop build start
 
-.PHONY: start stop dev lint lint-fix build re test-e2e
+.PHONY: start stop dev seed seed-clean lint lint-fix build re test-e2e

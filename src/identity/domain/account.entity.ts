@@ -22,7 +22,7 @@ export type CreateGoogleAccountInfos = {
   google_id: string;
 };
 
-export type CreateDevAccountInfos = {
+export type CreatePreVerifiedAccountInfos = {
   id: string;
   username: string;
   email: string;
@@ -80,8 +80,8 @@ export class Account {
     );
   }
 
-  // Dev mode only: already verified, the iOS developers sign in right away
-  static dev(infos: CreateDevAccountInfos): Account {
+  // Dev and demo accounts: already verified, they sign in right away
+  static preVerified(infos: CreatePreVerifiedAccountInfos): Account {
     return new Account(
       infos.id,
       infos.username,

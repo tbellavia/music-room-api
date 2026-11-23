@@ -8,6 +8,7 @@ import { createRequestLogger } from './interface/http/middleware/request-logger.
 import { translateRequestBodyError } from './interface/http/middleware/request-body-error.middleware';
 import { API_PREFIX } from './shared/constants';
 import { isE2eMode } from './infrastructure/config/e2e-mode';
+import { DemoSeeder } from './demo/infrastructure/demo-seeder';
 
 const PRODUCTION_LOG_LEVELS: LogLevel[] = ['error', 'warn', 'log'];
 const DEVELOPMENT_LOG_LEVELS: LogLevel[] = [
@@ -41,6 +42,11 @@ async function bootstrap() {
   app.use(createRequestLogger(new Logger('HTTP')));
   app.useBodyParser('json');
   app.use(translateRequestBodyError);
+
+  // After the startup hooks, which create the dev accounts the demo links to,
+  // and before the first request
+  await app.init();
+  await app.get(DemoSeeder).seedIfMissing();
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);

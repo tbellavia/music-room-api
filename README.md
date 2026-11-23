@@ -40,9 +40,14 @@ POSTGRES_PORT=5432
 POSTGRES_USER=<utilisateur>
 POSTGRES_PASSWORD=<8 caractères minimum>
 POSTGRES_DATABASE=<nom de la base>
+
+# Données de démo (facultatif, voir « Données de démo »)
+SEED_PASSWORD=<mot de passe des comptes de démo, 8 caractères minimum>
+SEED_LATITUDE=48.8966       # lieu des soirées de démo, 42 Paris par défaut
+SEED_LONGITUDE=2.3184
 ```
 
-Toutes ces variables sont obligatoires : l'API refuse de démarrer s'il en manque une (validation dans `src/infrastructure/config/config.module.ts`).
+Toutes ces variables sont obligatoires, sauf les `SEED_*` : l'API refuse de démarrer s'il en manque une (validation dans `src/infrastructure/config/config.module.ts`).
 
 N'ajoute **pas** `E2E_MODE` au `.env` : cette variable est réservée à `make test-e2e` (voir [Tests de bout en bout](#tests-de-bout-en-bout)).
 
@@ -56,6 +61,8 @@ make dev     # pareil, en mode dev : comptes dev1 / dev2 (mot de passe 123), pou
 make stop    # arrête et supprime les conteneurs
 make re      # stop + rebuild + start (après un changement de dépendances ou de schéma)
 make test-e2e  # lance les tests de bout en bout, puis relance l'API en mode normal
+make seed    # recrée les données de démo (dates remises à maintenant)
+make seed-clean  # supprime les données de démo
 ```
 
 | Service | URL |
@@ -65,7 +72,7 @@ make test-e2e  # lance les tests de bout en bout, puis relance l'API en mode nor
 
 `make dev` lance l'API avec `ENVIRONMENT=dev`, pour le développement iOS :
 
-- Au démarrage, deux comptes déjà vérifiés sont créés s'ils n'existent pas : **`dev1`** et **`dev2`**, mot de passe **`123`**. Il n'y a pas besoin de s'inscrire : `POST /identity/login {"username":"dev1","password":"123"}`. Deux comptes, pour tester les interactions (invitation, vote sur la musique de l'autre, amis).
+- Au démarrage, deux comptes déjà vérifiés sont créés s'ils n'existent pas : **`dev1`** et **`dev2`**, mot de passe **`123`**. Il n'y a pas besoin de s'inscrire : `POST /identity/login {"username":"dev1","password":"123"}`. Deux comptes, pour tester les interactions (invitation, vote, amis).
 - Le token de `dev1` / `dev2` est valable **30 jours**, au lieu de 60 minutes pour les autres comptes.
 - L'authentification est la même qu'en prod : sans token, `401`.
 
@@ -75,6 +82,35 @@ Pour que ces comptes ne servent jamais en prod (leur mot de passe est public) :
 - Un token dev est **refusé (401) hors du mode dev**, même s'il n'a pas expiré.
 
 N'utilise jamais ce mode pour la correction.
+
+### Données de démo
+
+Pour montrer l'app avec du contenu (soutenance, tests iOS), l'API crée de faux utilisateurs avec leurs playlists, musiques, votes, amis et invitations.
+
+- **Création automatique** au démarrage, en `prod` comme en `dev`, si elles n'existent pas encore et si `SEED_PASSWORD` est défini dans le `.env`. Jamais en mode `test` (`make test-e2e`).
+- **`make seed`** les recrée de zéro. Les dates sont relatives au moment du seed (« en cours » = commencée il y a 1 h) : **relance `make seed` juste avant la soutenance**, sinon les soirées « en cours » seront terminées.
+- **`make seed-clean`** les supprime. Pour qu'elles ne reviennent pas au démarrage suivant, retire `SEED_PASSWORD` du `.env`.
+- **Connexion** : un des 12 pseudos ci-dessous, avec le mot de passe `SEED_PASSWORD`. Les comptes sont déjà vérifiés.
+- **Lieu** : les playlists VOTE sont placées autour de `SEED_LATITUDE` / `SEED_LONGITUDE` (42 Paris par défaut). Pour tester chez soi, mets-y sa propre position, relance l'API (`make start` ou `make dev`) puis `make seed`. Les adresses affichées restent celles de Paris.
+
+Comptes : `lea.dj`, `karim.beats`, `sofia.indie`, `hugo.rock`, `ines.jazz`, `tom.electro`, `maya.pop`, `yanis.rap`, `chloe.soul`, `nathan.metal`, `emma.folk`, `lucas.house`.
+
+| Playlist | Owner | Ce qu'elle montre |
+| --- | --- | --- |
+| Soirée BDE 42 | `lea.dj` | VOTE **en cours** au 42 : classement par votes (égalité → la plus ancienne d'abord), historique de musiques jouées, `canJoinHere` sur place |
+| Afterwork Bastille | `karim.beats` | VOTE en cours à ~6 km : listée par `/events` avec sa distance, mais `OUTSIDE_PLAYLIST_ZONE` au join |
+| Festival de demain | `sofia.indie` | VOTE **à venir** : l'owner prépare la playlist, une invitation acceptée d'avance (`hugo.rock`), une en attente (`ines.jazz`) |
+| Jazz du dimanche | `ines.jazz` | VOTE dans 3 jours, à 300 m : proche mais `PLAYLIST_NOT_STARTED` |
+| Rooftop d'hier | `hugo.rock` | VOTE **terminée** : absente de `/public` et `/events`, visible dans `/me` de ses membres |
+| Radio du campus | `tom.electro` | EDITOR `EVERYONE`, sans dates : ajout et déplacement à distance |
+| Projet de groupe | `ines.jazz` | EDITOR `INVITED_ONLY` : `yanis.rap` a rejoint sans invitation, il lit mais `TRACK_ACTION_FORBIDDEN` |
+| Anniversaire surprise de Léa | `chloe.soul` | EDITOR **privée** : invisible pour `lea.dj`, invitations en attente (dont une envoyée par `sofia.indie`, participante avec privilège) |
+
+Côté social : des amitiés, et des demandes en attente vers `lea.dj` (de `nathan.metal` et `emma.folk`).
+
+En mode `dev`, si `dev1` et `dev2` existent, ils reçoivent leur propre contenu : `dev1` participe à « Soirée BDE 42 » et « Radio du campus », est ami avec `lea.dj`, a une invitation à « Anniversaire surprise de Léa » et une demande d'ami de `karim.beats` ; `dev2` a une invitation à « Festival de demain » et une demande d'ami de `lucas.house`.
+
+Les comptes de démo ont des identifiants fixes et un email `@demo.music-room.local` : `make seed` et `make seed-clean` ne suppriment qu'eux (et tout ce qu'ils possèdent, par cascade), jamais un vrai compte. Si un vrai compte a déjà pris un de leurs pseudos, le seed refuse de tourner et l'indique dans les logs.
 
 L'API tourne en mode watch : une modification dans `src/` est rechargée automatiquement, sans relancer les conteneurs.
 

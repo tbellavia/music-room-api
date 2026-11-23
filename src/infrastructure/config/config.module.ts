@@ -19,7 +19,7 @@ import Joi from 'joi';
         GOOGLE_CLIENT_SECRET: Joi.string().required(),
         MAIL: Joi.string().required(),
         MAIL_PASSWORD: Joi.string().required(),
-        // dev: the JWT guard lets every request through (iOS development)
+        // dev: the dev accounts dev1 / dev2 exist (iOS development)
         // test: end-to-end scripts (make test-e2e)
         ENVIRONMENT: Joi.string().valid('dev', 'test', 'prod').default('prod'),
         // Never in production: verification codes would end up in the logs
@@ -31,6 +31,12 @@ import Joi from 'joi';
               'any.only': 'E2E_MODE cannot be enabled when ENVIRONMENT=prod',
             }),
           }),
+        // Demo data (see the README): no password, no demo. Empty when
+        // docker compose passes it unset
+        SEED_PASSWORD: Joi.string().min(8).empty(''),
+        // Where the demo parties take place, 42 Paris by default
+        SEED_LATITUDE: Joi.number().min(-90).max(90).default(48.8966),
+        SEED_LONGITUDE: Joi.number().min(-180).max(180).default(2.3184),
       }),
     }),
   ],
