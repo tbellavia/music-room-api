@@ -4,13 +4,13 @@ export type ListParticipantsInput = {
 };
 
 export type PlaylistOwner = {
-  accountId: string;
+  id: string;
   username: string | null;
 };
 
 export type PlaylistParticipant = {
   participantId: string;
-  accountId: string;
+  id: string;
   username: string | null;
   hasPrivilege: boolean;
 };

@@ -56,11 +56,11 @@ describe('ListParticipantsUseCase', () => {
     });
 
     expect(result).toEqual({
-      owner: { accountId: 'owner-id', username: 'owner' },
+      owner: { id: 'owner-id', username: 'owner' },
       participants: [
         {
           participantId: 'member-participant-id',
-          accountId: 'member-id',
+          id: 'member-id',
           username: 'member',
           hasPrivilege: true,
         },

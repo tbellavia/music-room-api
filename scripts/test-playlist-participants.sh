@@ -120,9 +120,9 @@ expect "non member → 403 NOT_PLAYLIST_MEMBER" 403 NOT_PLAYLIST_MEMBER
 
 request GET "/playlists/$PRIVATE/participants" "$BOB"
 expect "participant lists participants → 200" 200
-expect_json "owner is alice" ".owner.accountId == \"$ALICE_ID\" and .owner.username == \"alice$SUFFIX\""
+expect_json "owner is alice" ".owner.id == \"$ALICE_ID\" and .owner.username == \"alice$SUFFIX\""
 expect_json "bob is listed without privilege" \
-  "any(.participants[]; .participantId == \"$BOB_PARTICIPANT\" and .username == \"bob$SUFFIX\" and .hasPrivilege == false)"
+  "any(.participants[]; .participantId == \"$BOB_PARTICIPANT\" and .id == \"$BOB_ID\" and .username == \"bob$SUFFIX\" and .hasPrivilege == false)"
 
 section "PATCH /playlists/:playlistId/participants/:participantId"
 invite "$BOB" "$PRIVATE" "$CAROL_ID"

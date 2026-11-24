@@ -743,12 +743,12 @@ Réservé aux membres (owner et participants).
 // 200
 {
   owner: {
-    accountId: string
+    id: string             // id du compte
     username: string | null
   }
   participants: {
-    participantId: string
-    accountId: string
+    participantId: string  // pour /participants/:participantId
+    id: string             // id du compte
     username: string | null
     hasPrivilege: boolean
   }[]

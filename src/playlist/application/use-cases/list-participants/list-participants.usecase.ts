@@ -63,7 +63,7 @@ export class ListParticipantsUseCase {
     const playlistParticipants: PlaylistParticipant[] = participants.map(
       (participant) => ({
         participantId: participant.id,
-        accountId: participant.accountId,
+        id: participant.accountId,
         username: usernameById.get(participant.accountId) ?? null,
         hasPrivilege: participant.hasPrivilege,
       }),
@@ -71,7 +71,7 @@ export class ListParticipantsUseCase {
 
     return {
       owner: {
-        accountId: playlist.ownerId,
+        id: playlist.ownerId,
         username: usernameById.get(playlist.ownerId) ?? null,
       },
       participants: playlistParticipants,
