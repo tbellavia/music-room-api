@@ -8,7 +8,7 @@ import { RemoveDemoOutput } from './remove-demo.contracts';
 
 // Deleting the demo accounts deletes the whole demo: their playlists, tracks,
 // votes, friendships and invitations go with them (database cascades). By id
-// prefix: a crowd generated with a larger SEED_COUNT goes too.
+// prefix: the accounts generated with a larger SEED_COUNT go too.
 @Injectable()
 export class RemoveDemoUseCase {
   constructor(

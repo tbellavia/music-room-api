@@ -1,6 +1,10 @@
 import { InMemoryAccountRepository } from 'src/identity/infrastructure/persistence/in-memory-account.repository';
 import { Account } from 'src/identity/domain/account.entity';
-import { KARIM, LEA, crowdAccount } from 'src/demo/domain/demo-accounts';
+import {
+  DEMO_GUEST,
+  DEMO_OWNER,
+  demoAccount,
+} from 'src/demo/domain/demo-accounts';
 import { RemoveDemoUseCase } from './remove-demo.usecase';
 
 describe('RemoveDemoUseCase', () => {
@@ -13,8 +17,12 @@ describe('RemoveDemoUseCase', () => {
   });
 
   it('removes the demo accounts', async () => {
-    await repository.save(Account.preVerified({ ...LEA, password: 'hash' }));
-    await repository.save(Account.preVerified({ ...KARIM, password: 'hash' }));
+    await repository.save(
+      Account.preVerified({ ...DEMO_OWNER, password: 'hash' }),
+    );
+    await repository.save(
+      Account.preVerified({ ...DEMO_GUEST, password: 'hash' }),
+    );
 
     const { removedAccounts } = await useCase.execute();
 
@@ -23,8 +31,10 @@ describe('RemoveDemoUseCase', () => {
   });
 
   it('also removes the generated accounts, whatever their number', async () => {
-    const generated = crowdAccount(250, 'camille.funk');
-    await repository.save(Account.preVerified({ ...LEA, password: 'hash' }));
+    const generated = demoAccount(250, 'camille.funk');
+    await repository.save(
+      Account.preVerified({ ...DEMO_OWNER, password: 'hash' }),
+    );
     await repository.save(
       Account.preVerified({ ...generated, password: 'hash' }),
     );
@@ -38,8 +48,8 @@ describe('RemoveDemoUseCase', () => {
   it('never removes a real account, even with a demo username', async () => {
     const realAccount = Account.preVerified({
       id: 'real-account-id',
-      username: LEA.username,
-      email: LEA.email,
+      username: DEMO_OWNER.username,
+      email: DEMO_OWNER.email,
       password: 'hash',
     });
     await repository.save(realAccount);

@@ -31,7 +31,7 @@ export class DemoSeeder {
       await this.seedDemo.execute({
         password,
         origin: this.origin(),
-        crowdSize: this.crowdSize(),
+        size: this.size(),
         onlyIfMissing: true,
       });
     } catch (error) {
@@ -48,7 +48,7 @@ export class DemoSeeder {
     await this.seedDemo.execute({
       password,
       origin: this.origin(),
-      crowdSize: this.crowdSize(),
+      size: this.size(),
       onlyIfMissing: false,
     });
   }
@@ -67,7 +67,7 @@ export class DemoSeeder {
     return password;
   }
 
-  private crowdSize(): number {
+  private size(): number {
     return Number(this.config.getOrThrow<number>('SEED_COUNT'));
   }
 

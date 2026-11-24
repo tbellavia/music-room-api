@@ -46,14 +46,12 @@ import { Invitation } from 'src/playlist/domain/invitation.entity';
 import { Track } from 'src/playlist/domain/track.entity';
 import { TrackVote } from 'src/playlist/domain/track-vote.entity';
 import { positionBetween } from 'src/playlist/domain/track-ordering';
-import { DEMO_ACCOUNTS, DemoAccountInfos } from 'src/demo/domain/demo-accounts';
-import { buildDemoScenario } from 'src/demo/domain/demo-scenario';
-import { buildDemoCrowd } from 'src/demo/domain/demo-crowd';
 import {
-  DemoFriendship,
-  DemoFriendshipRequest,
-  DemoPlaylist,
-} from 'src/demo/domain/demo-data';
+  DemoAccountInfos,
+  FIXED_DEMO_ACCOUNTS,
+} from 'src/demo/domain/demo-accounts';
+import { generateDemo } from 'src/demo/domain/demo-generator';
+import { DemoContent, DemoPlaylist } from 'src/demo/domain/demo-data';
 import { RemoveDemoUseCase } from '../remove-demo/remove-demo.usecase';
 import { SeedDemoInput, SeedDemoOutput } from './seed-demo.contracts';
 
@@ -62,13 +60,9 @@ type PlaylistCounts = {
   votes: number;
 };
 
-// The scenario and the generated crowd, created the same way
-type DemoContent = {
-  accounts: DemoAccountInfos[];
-  friendships: DemoFriendship[];
-  friendshipRequests: DemoFriendshipRequest[];
-  playlists: DemoPlaylist[];
-};
+// A generated username may already belong to a real account: the demo is
+// generated again, a new draw rarely gives the same one
+const MAX_GENERATION_ATTEMPTS = 3;
 
 // Every object is built with the domain factories: a demo that breaks a rule of
 // the domain fails here instead of ending up in the database
@@ -114,16 +108,16 @@ export class SeedDemoUseCase {
 
     await this.removeDemo.execute();
 
-    const withDevAccounts = await this.devAccountsExist();
-    const content = this.buildContent(input, withDevAccounts);
-    await this.throwIfNameTaken(content.accounts);
+    const devAccountIds = await this.existingDevAccountIds();
+    await this.throwIfNameTaken(FIXED_DEMO_ACCOUNTS);
+    const content = await this.generateContent(input, devAccountIds);
 
     await this.createAccounts(input.password, content.accounts);
     await this.createSocialGraph(content);
     const counts = await this.createPlaylists(content.playlists);
 
     this.logger.log(
-      `Demo seeded: ${content.accounts.length} accounts (crowd: ${input.crowdSize}), ${content.playlists.length} playlists, ${counts.tracks} tracks, ${counts.votes} votes (dev accounts: ${withDevAccounts})`,
+      `Demo seeded: ${content.accounts.length} accounts, ${content.playlists.length} playlists, ${counts.tracks} tracks, ${counts.votes} votes (dev accounts: ${devAccountIds.length})`,
     );
     return {
       seeded: true,
@@ -134,36 +128,30 @@ export class SeedDemoUseCase {
     };
   }
 
-  private buildContent(
+  private async generateContent(
     input: SeedDemoInput,
-    withDevAccounts: boolean,
-  ): DemoContent {
-    const now = input.now ?? new Date();
-    const scenario = buildDemoScenario({
-      now,
-      origin: input.origin,
-      withDevAccounts,
-    });
-    const crowd = buildDemoCrowd({
-      size: input.crowdSize,
-      now,
-      origin: input.origin,
-    });
-
-    return {
-      accounts: [...DEMO_ACCOUNTS, ...crowd.accounts],
-      friendships: [...scenario.friendships, ...crowd.friendships],
-      friendshipRequests: [
-        ...scenario.friendshipRequests,
-        ...crowd.friendshipRequests,
-      ],
-      playlists: [...scenario.playlists, ...crowd.playlists],
-    };
+    devAccountIds: string[],
+  ): Promise<DemoContent> {
+    for (let attempt = 1; attempt <= MAX_GENERATION_ATTEMPTS; attempt++) {
+      const content = generateDemo({
+        size: input.size,
+        now: input.now ?? new Date(),
+        origin: input.origin,
+        devAccountIds,
+      });
+      const hasTakenName = await this.isAnyNameTaken(content.accounts);
+      if (!hasTakenName) {
+        return content;
+      }
+    }
+    throw new Error(
+      'Demo not seeded: the generated usernames keep colliding with real accounts',
+    );
   }
 
   // A partial demo (seed interrupted) also counts: `make seed` recreates it
   private async isSeeded(): Promise<boolean> {
-    for (const demoAccount of DEMO_ACCOUNTS) {
+    for (const demoAccount of FIXED_DEMO_ACCOUNTS) {
       const existing = await this.accountRepository.findById(demoAccount.id);
       if (existing) {
         return true;
@@ -185,6 +173,16 @@ export class SeedDemoUseCase {
     }
   }
 
+  private async isAnyNameTaken(accounts: DemoAccountInfos[]): Promise<boolean> {
+    for (const demoAccount of accounts) {
+      const isTaken = await this.isUsernameOrEmailTaken(demoAccount);
+      if (isTaken) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   private async isUsernameOrEmailTaken(
     infos: DemoAccountInfos,
   ): Promise<boolean> {
@@ -198,10 +196,15 @@ export class SeedDemoUseCase {
     return byEmail !== null;
   }
 
-  private async devAccountsExist(): Promise<boolean> {
-    const dev1 = await this.accountRepository.findById(DEV1_ACCOUNT.id);
-    const dev2 = await this.accountRepository.findById(DEV2_ACCOUNT.id);
-    return dev1 !== null && dev2 !== null;
+  private async existingDevAccountIds(): Promise<string[]> {
+    const devAccountIds: string[] = [];
+    for (const devAccount of [DEV1_ACCOUNT, DEV2_ACCOUNT]) {
+      const existing = await this.accountRepository.findById(devAccount.id);
+      if (existing) {
+        devAccountIds.push(devAccount.id);
+      }
+    }
+    return devAccountIds;
   }
 
   // Hashed once: bcrypt is slow on purpose, and every account shares it
@@ -285,7 +288,7 @@ export class SeedDemoUseCase {
     let lastPosition: number | null = null;
 
     for (const demoTrack of demoPlaylist.tracks) {
-      // EDITOR tracks keep the order of the scenario, VOTE tracks are ranked
+      // EDITOR tracks keep the generated order, VOTE tracks are ranked
       let position: number | null = null;
       if (playlist.isEditorPlaylist()) {
         position = positionBetween(lastPosition, null);

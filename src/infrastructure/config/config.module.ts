@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import Joi from 'joi';
-import { DEMO_CROWD_MAX_ACCOUNTS } from 'src/demo/domain/demo-crowd';
+import { DEMO_MAX_GENERATED_ACCOUNTS } from 'src/demo/domain/demo-generator';
 
 @Module({
   imports: [
@@ -38,12 +38,12 @@ import { DEMO_CROWD_MAX_ACCOUNTS } from 'src/demo/domain/demo-crowd';
         // Where the demo parties take place, 42 Paris by default
         SEED_LATITUDE: Joi.number().min(-90).max(90).default(48.8966),
         SEED_LONGITUDE: Joi.number().min(-180).max(180).default(2.3184),
-        // Generated accounts on top of the scenario, to fill the lists
+        // Generated accounts on top of demo.owner and demo.guest
         SEED_COUNT: Joi.number()
           .integer()
           .min(0)
-          .max(DEMO_CROWD_MAX_ACCOUNTS)
-          .default(0),
+          .max(DEMO_MAX_GENERATED_ACCOUNTS)
+          .default(50),
       }),
     }),
   ],

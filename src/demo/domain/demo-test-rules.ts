@@ -4,7 +4,7 @@ import { PlaylistLicense } from 'src/playlist/domain/playlist-license.enum';
 import { JoinMethod } from 'src/playlist/domain/join-method.enum';
 import { DemoPlaylist } from './demo-data';
 
-// Test helper, shared by the scenario and the crowd specs: the rules of the
+// Test helper of the generator spec: the rules of the
 // API that the demo data must follow, even though it skips the use cases.
 // Returns the broken rules, so that a failing test says which one.
 export function demoPlaylistViolations(

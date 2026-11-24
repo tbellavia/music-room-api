@@ -1,4 +1,4 @@
-// Fake users of the demo data. Their ids are fixed, like the dev accounts:
+// Fake users of the demo data. Their ids are reserved, like the dev accounts:
 // removing the demo by id can never touch a real account with the same name.
 export type DemoAccountInfos = {
   id: string;
@@ -6,63 +6,27 @@ export type DemoAccountInfos = {
   email: string;
 };
 
-// Reserved to the demo: real accounts have random ids. The scenario accounts
-// are 00000000-0000-4000-9000-…, the generated crowd 00000000-0000-4000-9001-…
+// Reserved to the demo: real accounts have random ids
 export const DEMO_ACCOUNT_ID_PREFIX = '00000000-0000-4000-900';
-const SCENARIO_ID_RANGE = '0';
-const CROWD_ID_RANGE = '1';
 
 // Nobody can receive mail there: the demo accounts are created already verified
 const DEMO_EMAIL_DOMAIN = 'demo.music-room.local';
 
-function demoAccountInfos(
-  range: string,
+export function demoAccount(
   number: number,
   username: string,
 ): DemoAccountInfos {
   const suffix = String(number).padStart(12, '0');
   return {
-    id: `${DEMO_ACCOUNT_ID_PREFIX}${range}-${suffix}`,
+    id: `${DEMO_ACCOUNT_ID_PREFIX}0-${suffix}`,
     username,
     email: `${username}@${DEMO_EMAIL_DOMAIN}`,
   };
 }
 
-function demoAccount(number: number, username: string): DemoAccountInfos {
-  return demoAccountInfos(SCENARIO_ID_RANGE, number, username);
-}
+// The two accounts to log in with during the defense: the generated ones get
+// a new username at every seed
+export const DEMO_OWNER = demoAccount(1, 'demo.owner');
+export const DEMO_GUEST = demoAccount(2, 'demo.guest');
 
-export function crowdAccount(
-  number: number,
-  username: string,
-): DemoAccountInfos {
-  return demoAccountInfos(CROWD_ID_RANGE, number, username);
-}
-
-export const LEA = demoAccount(1, 'lea.dj');
-export const KARIM = demoAccount(2, 'karim.beats');
-export const SOFIA = demoAccount(3, 'sofia.indie');
-export const HUGO = demoAccount(4, 'hugo.rock');
-export const INES = demoAccount(5, 'ines.jazz');
-export const TOM = demoAccount(6, 'tom.electro');
-export const MAYA = demoAccount(7, 'maya.pop');
-export const YANIS = demoAccount(8, 'yanis.rap');
-export const CHLOE = demoAccount(9, 'chloe.soul');
-export const NATHAN = demoAccount(10, 'nathan.metal');
-export const EMMA = demoAccount(11, 'emma.folk');
-export const LUCAS = demoAccount(12, 'lucas.house');
-
-export const DEMO_ACCOUNTS: DemoAccountInfos[] = [
-  LEA,
-  KARIM,
-  SOFIA,
-  HUGO,
-  INES,
-  TOM,
-  MAYA,
-  YANIS,
-  CHLOE,
-  NATHAN,
-  EMMA,
-  LUCAS,
-];
+export const FIXED_DEMO_ACCOUNTS: DemoAccountInfos[] = [DEMO_OWNER, DEMO_GUEST];

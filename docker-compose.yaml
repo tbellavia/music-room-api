@@ -30,7 +30,7 @@ services:
       - SEED_PASSWORD=${SEED_PASSWORD:-}
       - SEED_LATITUDE=${SEED_LATITUDE:-48.8966}
       - SEED_LONGITUDE=${SEED_LONGITUDE:-2.3184}
-      - SEED_COUNT=${SEED_COUNT:-0}
+      - SEED_COUNT=${SEED_COUNT:-50}
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/v1/health']
       interval: 10s

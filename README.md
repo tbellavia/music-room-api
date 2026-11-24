@@ -45,7 +45,7 @@ POSTGRES_DATABASE=<nom de la base>
 SEED_PASSWORD=<mot de passe des comptes de démo, 8 caractères minimum>
 SEED_LATITUDE=48.8966       # lieu des soirées de démo, 42 Paris par défaut
 SEED_LONGITUDE=2.3184
-SEED_COUNT=0                # comptes générés en plus du scénario, 300 maximum
+SEED_COUNT=50               # comptes générés en plus de demo.owner et demo.guest, 200 maximum
 ```
 
 Toutes ces variables sont obligatoires, sauf les `SEED_*` : l'API refuse de démarrer s'il en manque une (validation dans `src/infrastructure/config/config.module.ts`).
@@ -86,43 +86,42 @@ N'utilise jamais ce mode pour la correction.
 
 ### Données de démo
 
-Pour montrer l'app avec du contenu (soutenance, tests iOS), l'API crée de faux utilisateurs avec leurs playlists, musiques, votes, amis et invitations.
+Pour montrer l'app avec du contenu (soutenance, tests iOS), l'API crée de faux utilisateurs avec leurs playlists, musiques, votes, amis et invitations. Ils sont générés avec [faker](https://fakerjs.dev) (locale française) : **les données changent à chaque seed**.
 
 - **Création automatique** au démarrage, en `prod` comme en `dev`, si elles n'existent pas encore et si `SEED_PASSWORD` est défini dans le `.env`. Jamais en mode `test` (`make test-e2e`).
-- **`make seed`** les recrée de zéro. Les dates sont relatives au moment du seed (« en cours » = commencée il y a 1 h) : **relance `make seed` juste avant la soutenance**, sinon les soirées « en cours » seront terminées.
+- **`make seed`** les recrée de zéro, avec un nouveau tirage. Les dates sont relatives au moment du seed : **relance `make seed` juste avant la soutenance**, sinon les soirées « en cours » seront terminées.
 - **`make seed-clean`** les supprime. Pour qu'elles ne reviennent pas au démarrage suivant, retire `SEED_PASSWORD` du `.env`.
-- **Connexion** : un des 12 pseudos ci-dessous, avec le mot de passe `SEED_PASSWORD`. Les comptes sont déjà vérifiés.
 - **Lieu** : les playlists VOTE sont placées autour de `SEED_LATITUDE` / `SEED_LONGITUDE` (42 Paris par défaut). Pour tester chez soi, mets-y sa propre position, relance l'API (`make start` ou `make dev`) puis `make seed`. Les adresses affichées restent celles de Paris.
 
-Comptes : `lea.dj`, `karim.beats`, `sofia.indie`, `hugo.rock`, `ines.jazz`, `tom.electro`, `maya.pop`, `yanis.rap`, `chloe.soul`, `nathan.metal`, `emma.folk`, `lucas.house`.
+#### Les deux comptes fixes
 
-| Playlist | Owner | Ce qu'elle montre |
-| --- | --- | --- |
-| Soirée BDE 42 | `lea.dj` | VOTE **en cours** au 42 : classement par votes (égalité → la plus ancienne d'abord), historique de musiques jouées, `canJoinHere` sur place |
-| Afterwork Bastille | `karim.beats` | VOTE en cours à ~6 km : listée par `/events` avec sa distance, mais `OUTSIDE_PLAYLIST_ZONE` au join |
-| Festival de demain | `sofia.indie` | VOTE **à venir** : l'owner prépare la playlist, une invitation acceptée d'avance (`hugo.rock`), une en attente (`ines.jazz`) |
-| Jazz du dimanche | `ines.jazz` | VOTE dans 3 jours, à 300 m : proche mais `PLAYLIST_NOT_STARTED` |
-| Rooftop d'hier | `hugo.rock` | VOTE **terminée** : absente de `/public` et `/events`, visible dans `/me` de ses membres |
-| Radio du campus | `tom.electro` | EDITOR `EVERYONE`, sans dates : ajout et déplacement à distance |
-| Projet de groupe | `ines.jazz` | EDITOR `INVITED_ONLY` : `yanis.rap` a rejoint sans invitation, il lit mais `TRACK_ACTION_FORBIDDEN` |
-| Anniversaire surprise de Léa | `chloe.soul` | EDITOR **privée** : invisible pour `lea.dj`, invitations en attente (dont une envoyée par `sofia.indie`, participante avec privilège) |
+Pour se connecter pendant la correction, avec le mot de passe `SEED_PASSWORD` (déjà vérifiés) :
 
-Côté social : des amitiés, et des demandes en attente vers `lea.dj` (de `nathan.metal` et `emma.folk`).
+- **`demo.owner`** possède une playlist de chaque sorte :
 
-#### Plus de volume : `SEED_COUNT`
+| Playlist | Ce qu'elle montre |
+| --- | --- |
+| Soirée en cours | VOTE **en cours**, à moins de 200 m de l'origine : on peut la rejoindre sur place (`canJoinHere`), classement par votes, historique de musiques jouées |
+| Soirée à venir | VOTE **à venir** : seul l'owner la prépare, ses membres ont été invités |
+| Soirée terminée | VOTE **terminée** : absente de `/public` et `/events`, visible dans `/me` de ses membres |
+| Playlist collaborative | EDITOR `EVERYONE`, sans dates : ajout et déplacement à distance |
+| Projet privé | EDITOR **privée**, `INVITED_ONLY` : invitations en attente |
 
-Pour la correction, `SEED_COUNT=<n>` (300 maximum, 0 par défaut) ajoute **n comptes générés** au scénario, avec du contenu proportionnel : **une playlist pour deux comptes**, chacune avec 2 à 8 participants, 3 à 12 musiques et des votes, plus ~3 amis par compte et quelques demandes d'ami.
+- **`demo.guest`** est ami avec `demo.owner`, membre de « Playlist collaborative », invité à « Projet privé », et reçoit une demande d'ami d'un compte généré. Il n'est **pas** membre de « Soirée en cours » : on peut montrer le join sur place avec lui.
 
-- Les playlists générées mélangent VOTE / EDITOR, publiques / privées (~20 %), `EVERYONE` / `INVITED_ONLY` (~25 %), et des dates d'il y a 7 jours à dans 14 jours (en cours, à venir, terminées). Les VOTE sont dispersées jusqu'à **20 km** autour de `SEED_LATITUDE` / `SEED_LONGITUDE` : `/events` avec une position renvoie toute une gamme de distances.
-- Les pseudos combinent un prénom et un style (`camille.funk`, `noah.lofi`…) ; même mot de passe `SEED_PASSWORD`.
-- **Toujours les mêmes données** pour un même `SEED_COUNT` (générateur pseudo-aléatoire à graine fixe).
-- Les comptes générés ne touchent **jamais** au scénario : ses 8 playlists et ses 12 personnages restent identiques.
-- Changer `SEED_COUNT` demande de relancer l'API (`make start` / `make dev`) puis **`make seed`** : au démarrage, une démo déjà présente n'est pas recréée. Passer de 300 à 50 supprime bien les 250 comptes en trop (tous les comptes de démo partagent un préfixe d'identifiant réservé).
-- Le plafond de 300 garde le seed assez court pour que l'API démarre dans le délai du healthcheck Docker.
+En mode `dev`, si `dev1` et `dev2` existent, ils reçoivent le même contenu que `demo.guest`. Ils ne possèdent jamais de playlist de démo.
 
-En mode `dev`, si `dev1` et `dev2` existent, ils reçoivent leur propre contenu : `dev1` participe à « Soirée BDE 42 » et « Radio du campus », est ami avec `lea.dj`, a une invitation à « Anniversaire surprise de Léa » et une demande d'ami de `karim.beats` ; `dev2` a une invitation à « Festival de demain » et une demande d'ami de `lucas.house`.
+#### Les comptes générés : `SEED_COUNT`
 
-Les comptes de démo ont des identifiants fixes et un email `@demo.music-room.local` : `make seed` et `make seed-clean` ne suppriment qu'eux (et tout ce qu'ils possèdent, par cascade), jamais un vrai compte. Si un vrai compte a déjà pris un de leurs pseudos, le seed refuse de tourner et l'indique dans les logs.
+`SEED_COUNT=<n>` (50 par défaut, 200 maximum) génère **n comptes** en plus des deux comptes fixes, avec du contenu proportionnel : **une playlist pour deux comptes**, chacune avec 2 à 8 participants, 3 à 12 musiques et des votes, plus ~3 amis par compte et quelques demandes d'ami.
+
+- Les playlists générées mélangent VOTE / EDITOR, publiques / privées (~20 %), `EVERYONE` / `INVITED_ONLY` (~25 %), en cours, à venir et terminées. Les VOTE sont dispersées jusqu'à **20 km** autour de `SEED_LATITUDE` / `SEED_LONGITUDE` : `/events` avec une position renvoie toute une gamme de distances.
+- Pseudos, noms de playlists et adresses viennent de faker et changent à chaque seed ; même mot de passe `SEED_PASSWORD`. `demo.guest` et les comptes dev peuvent aussi être membres de ces playlists.
+- Les musiques sont de vrais morceaux YouTube (52 titres figés dans `src/demo/domain/demo-music-library.ts`) : faker ne sait pas inventer de `videoId` lisible par l'app.
+- Changer `SEED_COUNT` demande de relancer l'API (`make start` / `make dev`) puis **`make seed`** : au démarrage, une démo déjà présente n'est pas recréée.
+- Le plafond de 200 garde le seed assez court pour que l'API démarre dans le délai du healthcheck Docker.
+
+Les comptes de démo ont des identifiants réservés (préfixe `00000000-0000-4000-900`) et un email `@demo.music-room.local` : `make seed` et `make seed-clean` ne suppriment qu'eux (et tout ce qu'ils possèdent, par cascade), jamais un vrai compte. Si un vrai compte a pris `demo.owner` ou `demo.guest`, le seed refuse de tourner et l'indique dans les logs ; si c'est un pseudo généré, le seed refait un tirage.
 
 L'API tourne en mode watch : une modification dans `src/` est rechargée automatiquement, sans relancer les conteneurs.
 
