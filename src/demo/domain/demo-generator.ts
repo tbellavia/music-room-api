@@ -237,7 +237,7 @@ function editorName(genre: string): string {
   return faker.helpers.arrayElement([
     `Road trip ${genre}`,
     `Les classiques ${genre} de ${firstName}`,
-    `Session ${genre} du ${faker.date.weekday()}`,
+    `Session ${genre} du ${faker.date.weekday().toLowerCase()}`,
   ]);
 }
 

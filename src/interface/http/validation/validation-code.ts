@@ -39,10 +39,17 @@ export type ValidationCode =
   | 'ROLE_INVALID'
   | 'STATUS_INVALID'
   | 'ORDER_INVALID'
+  | 'PLAYLIST_ID_INVALID'
+  | 'PARTICIPANT_ID_INVALID'
+  | 'INVITATION_ID_INVALID'
   // tracks
   | 'VIDEO_ID_INVALID'
   | 'AFTER_TRACK_ID_INVALID'
-  | 'VERSION_INVALID';
+  | 'VERSION_INVALID'
+  | 'TRACK_ID_INVALID'
+  // social
+  | 'RECEIVER_ID_INVALID'
+  | 'REQUEST_ID_INVALID';
 
 // Attaches the code to a class-validator decorator: @MinLength(3, withCode('USERNAME_TOO_SHORT'))
 export function withCode(code: ValidationCode): ValidationOptions {

@@ -2,6 +2,7 @@ import { Controller, MessageEvent, Param, Sse } from '@nestjs/common';
 import { interval, map, merge, Observable } from 'rxjs';
 import { UserIdParam } from 'src/interface/http/decorators/user-param.decorator';
 import { WatchPlaylistEventsUseCase } from 'src/playlist/application/use-cases/watch-playlist-events/watch-playlist-events.usecase';
+import { uuidParam } from 'src/interface/http/validation/uuid-param.pipe';
 
 // Keeps idle connections open through proxies and lets clients detect a dead stream
 const HEARTBEAT_INTERVAL_MS = 25_000;
@@ -16,7 +17,7 @@ export class PlaylistEventsController {
   @Sse(':playlistId/events')
   async events(
     @UserIdParam() accountId: string,
-    @Param('playlistId') playlistId: string,
+    @Param('playlistId', uuidParam('PLAYLIST_ID_INVALID')) playlistId: string,
   ): Promise<Observable<MessageEvent>> {
     const playlistEvents = await this.watchPlaylistEvents.execute({
       playlistId,

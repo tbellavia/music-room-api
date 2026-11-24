@@ -39,6 +39,7 @@ import { AcceptInvitationUseCase } from './application/use-cases/accept-invitati
 import { DeclineInvitationUseCase } from './application/use-cases/decline-invitation/decline-invitation.usecase';
 import { CancelInvitationUseCase } from './application/use-cases/cancel-invitation/cancel-invitation.usecase';
 import { ListParticipantsUseCase } from './application/use-cases/list-participants/list-participants.usecase';
+import { GetPlaylistUseCase } from './application/use-cases/get-playlist/get-playlist.usecase';
 import { UpdateParticipantPrivilegeUseCase } from './application/use-cases/update-participant-privilege/update-participant-privilege.usecase';
 import { RemoveParticipantUseCase } from './application/use-cases/remove-participant/remove-participant.usecase';
 import { LeavePlaylistUseCase } from './application/use-cases/leave-playlist/leave-playlist.usecase';
@@ -114,6 +115,7 @@ import { MoveTrackUseCase } from './application/use-cases/move-track/move-track.
     DeclineInvitationUseCase,
     CancelInvitationUseCase,
     ListParticipantsUseCase,
+    GetPlaylistUseCase,
     UpdateParticipantPrivilegeUseCase,
     RemoveParticipantUseCase,
     LeavePlaylistUseCase,

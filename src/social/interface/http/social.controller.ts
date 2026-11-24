@@ -5,6 +5,7 @@ import { CancelFriendshipRequestUseCase } from 'src/social/application/use-cases
 import { GetPendingRequestsUseCase } from 'src/social/application/use-cases/get-pending-requests/get-pending-requests.usecase';
 import { RequestFriendshipUseCase } from 'src/social/application/use-cases/request-friendship/request-friendship.usecase';
 import { RejectFriendshipUseCase } from 'src/social/application/use-cases/reject-friendship/reject-friendship.usecase';
+import { uuidParam } from 'src/interface/http/validation/uuid-param.pipe';
 
 @Controller('social')
 export class SocialController {
@@ -19,7 +20,7 @@ export class SocialController {
   @Post('friends/request/:requestId/accept')
   async acceptFriendshipRequest(
     @UserIdParam() receiverId: string,
-    @Param('requestId') requestId: string,
+    @Param('requestId', uuidParam('REQUEST_ID_INVALID')) requestId: string,
   ) {
     return await this.acceptFriendship.execute({
       requestId,
@@ -30,7 +31,7 @@ export class SocialController {
   @Post('friends/request/:receiverId')
   async friendshipRequest(
     @UserIdParam() senderId: string,
-    @Param('receiverId') receiverId: string,
+    @Param('receiverId', uuidParam('RECEIVER_ID_INVALID')) receiverId: string,
   ) {
     return await this.requestFriendship.execute({
       senderId,
@@ -48,7 +49,7 @@ export class SocialController {
   @Delete('friends/request/:requestId/reject')
   async rejectRequest(
     @UserIdParam() receiverId: string,
-    @Param('requestId') requestId: string,
+    @Param('requestId', uuidParam('REQUEST_ID_INVALID')) requestId: string,
   ) {
     await this.rejectFriendship.execute({
       requestId,
@@ -59,7 +60,7 @@ export class SocialController {
   @Delete('friends/request/:requestId/cancel')
   async cancelRequest(
     @UserIdParam() senderId: string,
-    @Param('requestId') requestId: string,
+    @Param('requestId', uuidParam('REQUEST_ID_INVALID')) requestId: string,
   ) {
     await this.cancelFriendshipRequest.execute({
       requestId,

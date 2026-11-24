@@ -24,6 +24,7 @@ import { ListParticipantsUseCase } from 'src/playlist/application/use-cases/list
 import { UpdateParticipantPrivilegeUseCase } from 'src/playlist/application/use-cases/update-participant-privilege/update-participant-privilege.usecase';
 import { RemoveParticipantUseCase } from 'src/playlist/application/use-cases/remove-participant/remove-participant.usecase';
 import { LeavePlaylistUseCase } from 'src/playlist/application/use-cases/leave-playlist/leave-playlist.usecase';
+import { GetPlaylistUseCase } from 'src/playlist/application/use-cases/get-playlist/get-playlist.usecase';
 import { CreatePlaylistDto } from './dto/create-playlist.dto';
 import { JoinPlaylistDto } from './dto/join-playlist.dto';
 import { toPosition } from './dto/position.dto';
@@ -31,6 +32,7 @@ import { ListMyPlaylistsDto } from './dto/list-my-playlists.dto';
 import { OptionalPositionDto } from './dto/optional-position.dto';
 import { InviteParticipantDto } from './dto/invite-participant.dto';
 import { UpdateParticipantPrivilegeDto } from './dto/update-participant-privilege.dto';
+import { uuidParam } from 'src/interface/http/validation/uuid-param.pipe';
 
 @Controller('playlists')
 export class PlaylistController {
@@ -50,6 +52,7 @@ export class PlaylistController {
     private readonly updateParticipantPrivilege: UpdateParticipantPrivilegeUseCase,
     private readonly removeParticipant: RemoveParticipantUseCase,
     private readonly leavePlaylist: LeavePlaylistUseCase,
+    private readonly getPlaylist: GetPlaylistUseCase,
   ) {}
 
   @Post()
@@ -115,7 +118,7 @@ export class PlaylistController {
   @Post(':playlistId/join')
   async join(
     @UserIdParam() accountId: string,
-    @Param('playlistId') playlistId: string,
+    @Param('playlistId', uuidParam('PLAYLIST_ID_INVALID')) playlistId: string,
     @Body() joinPlaylistDto: JoinPlaylistDto,
   ) {
     return await this.joinPlaylist.execute({
@@ -128,7 +131,7 @@ export class PlaylistController {
   @Post(':playlistId/leave')
   async leave(
     @UserIdParam() accountId: string,
-    @Param('playlistId') playlistId: string,
+    @Param('playlistId', uuidParam('PLAYLIST_ID_INVALID')) playlistId: string,
   ) {
     await this.leavePlaylist.execute({
       playlistId,
@@ -139,7 +142,7 @@ export class PlaylistController {
   @Post(':playlistId/invitations')
   async invite(
     @UserIdParam() inviterId: string,
-    @Param('playlistId') playlistId: string,
+    @Param('playlistId', uuidParam('PLAYLIST_ID_INVALID')) playlistId: string,
     @Body() inviteParticipantDto: InviteParticipantDto,
   ) {
     return await this.inviteParticipant.execute({
@@ -159,7 +162,8 @@ export class PlaylistController {
   @Post('invitations/:invitationId/accept')
   async accept(
     @UserIdParam() accountId: string,
-    @Param('invitationId') invitationId: string,
+    @Param('invitationId', uuidParam('INVITATION_ID_INVALID'))
+    invitationId: string,
   ) {
     return await this.acceptInvitation.execute({
       invitationId,
@@ -170,7 +174,8 @@ export class PlaylistController {
   @Delete('invitations/:invitationId/decline')
   async decline(
     @UserIdParam() accountId: string,
-    @Param('invitationId') invitationId: string,
+    @Param('invitationId', uuidParam('INVITATION_ID_INVALID'))
+    invitationId: string,
   ) {
     await this.declineInvitation.execute({
       invitationId,
@@ -181,7 +186,8 @@ export class PlaylistController {
   @Delete('invitations/:invitationId/cancel')
   async cancel(
     @UserIdParam() accountId: string,
-    @Param('invitationId') invitationId: string,
+    @Param('invitationId', uuidParam('INVITATION_ID_INVALID'))
+    invitationId: string,
   ) {
     await this.cancelInvitation.execute({
       invitationId,
@@ -192,7 +198,7 @@ export class PlaylistController {
   @Get(':playlistId/participants')
   async participants(
     @UserIdParam() accountId: string,
-    @Param('playlistId') playlistId: string,
+    @Param('playlistId', uuidParam('PLAYLIST_ID_INVALID')) playlistId: string,
   ) {
     return await this.listParticipants.execute({
       playlistId,
@@ -203,8 +209,9 @@ export class PlaylistController {
   @Patch(':playlistId/participants/:participantId')
   async updatePrivilege(
     @UserIdParam() accountId: string,
-    @Param('playlistId') playlistId: string,
-    @Param('participantId') participantId: string,
+    @Param('playlistId', uuidParam('PLAYLIST_ID_INVALID')) playlistId: string,
+    @Param('participantId', uuidParam('PARTICIPANT_ID_INVALID'))
+    participantId: string,
     @Body() updateParticipantPrivilegeDto: UpdateParticipantPrivilegeDto,
   ) {
     await this.updateParticipantPrivilege.execute({
@@ -218,13 +225,28 @@ export class PlaylistController {
   @Delete(':playlistId/participants/:participantId')
   async remove(
     @UserIdParam() accountId: string,
-    @Param('playlistId') playlistId: string,
-    @Param('participantId') participantId: string,
+    @Param('playlistId', uuidParam('PLAYLIST_ID_INVALID')) playlistId: string,
+    @Param('participantId', uuidParam('PARTICIPANT_ID_INVALID'))
+    participantId: string,
   ) {
     await this.removeParticipant.execute({
       playlistId,
       participantId,
       accountId,
+    });
+  }
+
+  // Declared last: the fixed routes (public, me, events, invitations) match first
+  @Get(':playlistId')
+  async get(
+    @UserIdParam() accountId: string,
+    @Param('playlistId', uuidParam('PLAYLIST_ID_INVALID')) playlistId: string,
+    @Query() optionalPositionDto: OptionalPositionDto,
+  ) {
+    return await this.getPlaylist.execute({
+      playlistId,
+      accountId,
+      position: toPosition(optionalPositionDto),
     });
   }
 }

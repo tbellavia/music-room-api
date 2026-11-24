@@ -39,6 +39,10 @@ non respectée, par exemple :
   `<CHAMP>_INVALID`, jamais `_TOO_SHORT` ou `_OUT_OF_RANGE`.
 - `message` est le texte de class-validator, en anglais, pour le debug ; l'app s'appuie sur `error`.
 - `VALIDATION_FAILED` reste possible en repli si une règle n'a pas de code (un test empêche ce cas).
+- **Identifiants dans l'URL** (`:playlistId`, `:trackId`, `:participantId`, `:invitationId`, `:receiverId`, `:requestId`) :
+  sur toutes les routes, un identifiant qui n'est pas un UUID donne 400 `<PARAMÈTRE>_ID_INVALID`, avant toute autre vérification
+  (authentification mise à part). Un UUID bien formé mais inconnu donne toujours le 404 de la route. Ce 400 n'est pas
+  répété dans le tableau de chaque route.
 
 | Code | Champ | Règle | Routes |
 | --- | --- | --- | --- |
@@ -78,6 +82,12 @@ non respectée, par exemple :
 | `VIDEO_ID_INVALID` | `videoId` | Pas un id YouTube (11 caractères) | `POST /playlists/:playlistId/tracks` |
 | `AFTER_TRACK_ID_INVALID` | `afterTrackId` | Absent, ou ni un UUID ni `null` | `PATCH …/tracks/:trackId/position` |
 | `VERSION_INVALID` | `version` | Pas un entier ≥ 1 | `PATCH …/tracks/:trackId/position` |
+| `PLAYLIST_ID_INVALID` | `:playlistId` (URL) | Pas un UUID | toutes les routes `/playlists/:playlistId…` |
+| `TRACK_ID_INVALID` | `:trackId` (URL) | Pas un UUID | `/playlists/:playlistId/tracks/:trackId…` |
+| `PARTICIPANT_ID_INVALID` | `:participantId` (URL) | Pas un UUID | `PATCH`, `DELETE /playlists/:playlistId/participants/:participantId` |
+| `INVITATION_ID_INVALID` | `:invitationId` (URL) | Pas un UUID | `/playlists/invitations/:invitationId/…` |
+| `RECEIVER_ID_INVALID` | `:receiverId` (URL) | Pas un UUID | `POST /social/friends/request/:receiverId` |
+| `REQUEST_ID_INVALID` | `:requestId` (URL) | Pas un UUID | `/social/friends/request/:requestId/…` |
 
 ## Mode dev (`make dev`)
 
@@ -429,6 +439,7 @@ Créer une playlist. Seule une playlist **VOTE** a une position : ses participan
 Les trois listes `GET /playlists/public`, `GET /playlists/me` (et `/me/recent`) et `GET /playlists/events`
 renvoient **exactement le même objet** pour chaque playlist, dans une enveloppe identique `{ playlists: [...] }`.
 L'app décode donc un seul modèle, et une même cellule de liste sert partout.
+Le détail d'une playlist, `GET /playlists/:playlistId`, renvoie ce même objet, sans enveloppe.
 
 Les routes diffèrent par **les playlists qu'elles sélectionnent** et par **leur tri**, pas par leur format.
 
@@ -575,6 +586,35 @@ Les playlists que l'appelant a créées ou rejointes sont exclues.
 ```
 
 Erreurs : celles de la position, voir le format commun.
+
+### `GET /playlists/:playlistId?latitude=…&longitude=…`
+
+Le détail d'une playlist, pour son écran : **le même objet** qu'un élément des listes (voir « Format commun des listes
+de playlists »), renvoyé directement, sans enveloppe. L'app réutilise le modèle de ses listes.
+
+- **Qui peut la voir** : tout le monde pour une playlist publique, terminée ou non. Pour une playlist privée : son owner,
+  ses participants, et les comptes invités qui n'ont **pas encore accepté** (pour décider avant d'accepter ; `role` vaut alors `null`).
+- **Position facultative** : comme pour `/public` et `/events`, elle donne `distanceMeters` et `canJoinHere` (playlist VOTE).
+  L'écran de détail sait ainsi s'il affiche le bouton « Rejoindre ».
+
+```ts
+// Query
+{
+  latitude?: number   // -90..90, avec longitude
+  longitude?: number  // -180..180, avec latitude
+}
+```
+
+| Statut | Réponse | Détail |
+| --- | --- | --- |
+| 200 | `{ ... }` | Voir « Format commun des listes de playlists » |
+| 400 | `PLAYLIST_ID_INVALID` | `:playlistId` n'est pas un UUID |
+| 400 | `LATITUDE_INVALID` | Pas un nombre, ou `longitude` envoyée seule |
+| 400 | `LATITUDE_OUT_OF_RANGE` | Hors de -90..90 |
+| 400 | `LONGITUDE_INVALID` | Pas un nombre, ou `latitude` envoyée seule |
+| 400 | `LONGITUDE_OUT_OF_RANGE` | Hors de -180..180 |
+| 404 | `PLAYLIST_NOT_FOUND` | |
+| 403 | `NOT_PLAYLIST_MEMBER` | Playlist privée : ni owner, ni participant, ni invité |
 
 ### `POST /playlists/:playlistId/join`
 

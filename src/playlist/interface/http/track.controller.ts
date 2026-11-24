@@ -19,6 +19,7 @@ import { MoveTrackUseCase } from 'src/playlist/application/use-cases/move-track/
 import { AddTrackDto } from './dto/add-track.dto';
 import { PositionDto, toPosition } from './dto/position.dto';
 import { MoveTrackDto } from './dto/move-track.dto';
+import { uuidParam } from 'src/interface/http/validation/uuid-param.pipe';
 
 @Controller('playlists')
 export class TrackController {
@@ -35,7 +36,7 @@ export class TrackController {
   @Post(':playlistId/tracks')
   async add(
     @UserIdParam() accountId: string,
-    @Param('playlistId') playlistId: string,
+    @Param('playlistId', uuidParam('PLAYLIST_ID_INVALID')) playlistId: string,
     @Body() addTrackDto: AddTrackDto,
   ) {
     return await this.addTrack.execute({
@@ -49,7 +50,7 @@ export class TrackController {
   @Get(':playlistId/tracks')
   async list(
     @UserIdParam() accountId: string,
-    @Param('playlistId') playlistId: string,
+    @Param('playlistId', uuidParam('PLAYLIST_ID_INVALID')) playlistId: string,
   ) {
     return await this.listTracks.execute({
       playlistId,
@@ -60,8 +61,8 @@ export class TrackController {
   @Post(':playlistId/tracks/:trackId/vote')
   async vote(
     @UserIdParam() accountId: string,
-    @Param('playlistId') playlistId: string,
-    @Param('trackId') trackId: string,
+    @Param('playlistId', uuidParam('PLAYLIST_ID_INVALID')) playlistId: string,
+    @Param('trackId', uuidParam('TRACK_ID_INVALID')) trackId: string,
     @Body() positionDto: PositionDto,
   ) {
     return await this.voteForTrack.execute({
@@ -76,8 +77,8 @@ export class TrackController {
   @Delete(':playlistId/tracks/:trackId/vote')
   async unvote(
     @UserIdParam() accountId: string,
-    @Param('playlistId') playlistId: string,
-    @Param('trackId') trackId: string,
+    @Param('playlistId', uuidParam('PLAYLIST_ID_INVALID')) playlistId: string,
+    @Param('trackId', uuidParam('TRACK_ID_INVALID')) trackId: string,
     @Query() positionDto: PositionDto,
   ) {
     return await this.withdrawVote.execute({
@@ -91,8 +92,8 @@ export class TrackController {
   @Patch(':playlistId/tracks/:trackId/position')
   async move(
     @UserIdParam() accountId: string,
-    @Param('playlistId') playlistId: string,
-    @Param('trackId') trackId: string,
+    @Param('playlistId', uuidParam('PLAYLIST_ID_INVALID')) playlistId: string,
+    @Param('trackId', uuidParam('TRACK_ID_INVALID')) trackId: string,
     @Body() moveTrackDto: MoveTrackDto,
   ) {
     return await this.moveTrack.execute({
@@ -107,8 +108,8 @@ export class TrackController {
   @Post(':playlistId/tracks/:trackId/played')
   async played(
     @UserIdParam() accountId: string,
-    @Param('playlistId') playlistId: string,
-    @Param('trackId') trackId: string,
+    @Param('playlistId', uuidParam('PLAYLIST_ID_INVALID')) playlistId: string,
+    @Param('trackId', uuidParam('TRACK_ID_INVALID')) trackId: string,
   ) {
     await this.markTrackPlayed.execute({
       playlistId,
@@ -120,8 +121,8 @@ export class TrackController {
   @Delete(':playlistId/tracks/:trackId')
   async delete(
     @UserIdParam() accountId: string,
-    @Param('playlistId') playlistId: string,
-    @Param('trackId') trackId: string,
+    @Param('playlistId', uuidParam('PLAYLIST_ID_INVALID')) playlistId: string,
+    @Param('trackId', uuidParam('TRACK_ID_INVALID')) trackId: string,
     @Query() positionDto: PositionDto,
   ) {
     await this.deleteTrack.execute({
