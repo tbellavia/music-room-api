@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Query } from '@nestjs/common';
 import { RegisterAccountUseCase } from 'src/identity/application/use-cases/register-account/register-account.usecase';
 import { RegisterAccountDto } from './dto/register-account.dto';
 import { SignInDto } from './dto/sign-in.dto';
@@ -14,6 +14,9 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ResetPasswordUseCase } from 'src/identity/application/use-cases/reset-password/reset-password.usecase';
 import { GoogleSignInDto } from './dto/google-sign-in.dto';
 import { SignInWithGoogleUseCase } from 'src/identity/application/use-cases/sign-in-with-google/sign-in-with-google.usecase';
+import { UserIdParam } from 'src/interface/http/decorators/user-param.decorator';
+import { SearchAccountsDto } from './dto/search-accounts.dto';
+import { ListAccountsUseCase } from 'src/identity/application/use-cases/list-accounts/list-accounts.usecase';
 
 @Controller('identity')
 export class IdentityController {
@@ -25,6 +28,7 @@ export class IdentityController {
     private readonly requestPasswordReset: RequestPasswordResetUseCase,
     private readonly resetAccountPassword: ResetPasswordUseCase,
     private readonly signInWithGoogle: SignInWithGoogleUseCase,
+    private readonly listAccountsUseCase: ListAccountsUseCase,
   ) {}
 
   @Public()
@@ -97,5 +101,18 @@ export class IdentityController {
   @Get('profile')
   getProfile() {
     return { success: true };
+  }
+
+  @Get('accounts')
+  async listAccounts(
+    @UserIdParam() accountId: string,
+    @Query() searchAccountsDto: SearchAccountsDto,
+  ) {
+    const accounts = await this.listAccountsUseCase.execute({
+      excludedAccountId: accountId,
+      prefix: searchAccountsDto.prefix,
+    });
+
+    return { accounts };
   }
 }

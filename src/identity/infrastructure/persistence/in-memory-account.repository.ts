@@ -1,4 +1,7 @@
-import { AccountRepository } from 'src/identity/application/ports/account.repository';
+import {
+  AccountRepository,
+  FindActiveByUsernamePrefixInfos,
+} from 'src/identity/application/ports/account.repository';
 import { Account } from 'src/identity/domain/account.entity';
 import { EmailAlreadyExists } from 'src/identity/domain/errors/email-already-exists.error';
 import { UsernameAlreadyExists } from 'src/identity/domain/errors/username-already-exists.error';
@@ -42,6 +45,25 @@ export class InMemoryAccountRepository implements AccountRepository {
       }
     }
     return Promise.resolve(null);
+  }
+
+  // Same matching as the ILIKE of the database: case-insensitive, sorted by username
+  findActiveByUsernamePrefix(
+    infos: FindActiveByUsernamePrefixInfos,
+  ): Promise<Account[]> {
+    const prefix = (infos.prefix ?? '').toLowerCase();
+    const found: Account[] = [];
+    for (const account of this.accounts.values()) {
+      const isExcluded = account.id === infos.excludedAccountId;
+      const hasPrefix = account.username.toLowerCase().startsWith(prefix);
+      if (account.is_active && !isExcluded && hasPrefix) {
+        found.push(this.copy(account));
+      }
+    }
+    found.sort((first, second) =>
+      first.username.localeCompare(second.username),
+    );
+    return Promise.resolve(found);
   }
 
   // Same unique constraints as the database on email and username

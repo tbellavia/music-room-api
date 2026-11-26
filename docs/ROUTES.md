@@ -58,6 +58,8 @@ non respectée, par exemple :
 | `NEW_PASSWORD_TOO_WEAK` | `new_password` | Mêmes règles que `PASSWORD_TOO_WEAK` | password/reset |
 | `NEW_PASSWORD_TOO_LONG` | `new_password` | Plus de 72 caractères | password/reset |
 | `ID_TOKEN_INVALID` | `id_token` | Absent, vide, pas une chaîne ou plus de 4096 caractères | google |
+| `PREFIX_INVALID` | `prefix` (query) | Pas une chaîne (par exemple envoyé deux fois) | `GET /identity/accounts` |
+| `PREFIX_TOO_LONG` | `prefix` (query) | Plus de 20 caractères | `GET /identity/accounts` |
 | `PLAYLIST_TYPE_INVALID` | `type` | Ni `VOTE` ni `EDITOR` | `POST /playlists` |
 | `NAME_INVALID` | `name` | Absent ou pas une chaîne | `POST /playlists` |
 | `NAME_TOO_SHORT` | `name` | Vide | `POST /playlists` |
@@ -305,6 +307,35 @@ Mot de passe oublié, étape 2 : remplace le mot de passe avec le code reçu par
 | Statut | Réponse |
 | --- | --- |
 | 200 | `{ success: true }` |
+
+### `GET /identity/accounts?prefix=…`
+
+Comptes actifs (email vérifié), sauf l'appelant, triés par username.
+Avec `prefix`, seulement les usernames qui commencent par ce préfixe, sans tenir compte de la casse.
+Sans `prefix`, ou avec un préfixe vide, tous les comptes actifs.
+
+```ts
+// Query string
+{
+  prefix?: string  // 20 caractères max ; % et _ sont des caractères comme les autres
+}
+```
+
+```ts
+// 200
+{
+  accounts: {
+    id: string
+    username: string
+  }[]
+}
+```
+
+| Statut | Réponse | Détail |
+| --- | --- | --- |
+| 200 | voir ci-dessus | `accounts: []` si aucun compte ne correspond |
+| 400 | `PREFIX_INVALID` | Pas une chaîne (par exemple `?prefix=a&prefix=b`) |
+| 400 | `PREFIX_TOO_LONG` | Plus de 20 caractères |
 
 ---
 

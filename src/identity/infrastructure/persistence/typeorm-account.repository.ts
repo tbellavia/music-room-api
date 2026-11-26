@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { AccountRepository } from '../../application/ports/account.repository';
+import {
+  AccountRepository,
+  FindActiveByUsernamePrefixInfos,
+} from '../../application/ports/account.repository';
 import { Account } from '../../domain/account.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
@@ -7,7 +10,7 @@ import {
   ACCOUNT_USERNAME_UNIQUE_CONSTRAINT,
   AccountOrmEntity,
 } from './typeorm-account.entity';
-import { LessThan, Like, Repository } from 'typeorm';
+import { ILike, LessThan, Like, Not, Repository } from 'typeorm';
 import { EmailAlreadyExists } from '../../domain/errors/email-already-exists.error';
 import { UsernameAlreadyExists } from '../../domain/errors/username-already-exists.error';
 import { violatedUniqueConstraint } from '../../../infrastructure/database/error-utils';
@@ -99,6 +102,20 @@ export class TypeOrmAccountRepository implements AccountRepository {
     return result.affected === 1;
   }
 
+  async findActiveByUsernamePrefix(
+    infos: FindActiveByUsernamePrefixInfos,
+  ): Promise<Account[]> {
+    const accounts = await this.repository.find({
+      where: {
+        id: Not(infos.excludedAccountId),
+        username: ILike(`${escapeLikePattern(infos.prefix ?? '')}%`),
+        is_active: true,
+      },
+      order: { username: 'ASC' },
+    });
+    return accounts.map((account) => this.toDomain(account));
+  }
+
   private toDomain(orm: AccountOrmEntity): Account {
     return new Account(
       orm.id,
@@ -130,4 +147,8 @@ export class TypeOrmAccountRepository implements AccountRepository {
       google_id: account.google_id,
     };
   }
+}
+
+function escapeLikePattern(value: string): string {
+  return value.replace(/[\\%_]/g, '\\$&');
 }

@@ -17,6 +17,8 @@ export type ValidationCode =
   | 'NEW_PASSWORD_TOO_WEAK'
   | 'NEW_PASSWORD_TOO_LONG'
   | 'ID_TOKEN_INVALID'
+  | 'PREFIX_INVALID'
+  | 'PREFIX_TOO_LONG'
   // playlists
   | 'PLAYLIST_TYPE_INVALID'
   | 'NAME_INVALID'

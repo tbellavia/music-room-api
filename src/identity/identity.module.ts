@@ -40,6 +40,7 @@ import { SignInWithGoogleUseCase } from './application/use-cases/sign-in-with-go
 import { EnsureDevAccountsUseCase } from './application/use-cases/ensure-dev-accounts/ensure-dev-accounts.usecase';
 import { RemoveDevAccountsUseCase } from './application/use-cases/remove-dev-accounts/remove-dev-accounts.usecase';
 import { DevAccountsSeeder } from './infrastructure/dev/dev-accounts-seeder';
+import { ListAccountsUseCase } from './application/use-cases/list-accounts/list-accounts.usecase';
 
 @Module({
   imports: [
@@ -110,6 +111,7 @@ import { DevAccountsSeeder } from './infrastructure/dev/dev-accounts-seeder';
     EnsureDevAccountsUseCase,
     RemoveDevAccountsUseCase,
     DevAccountsSeeder,
+    ListAccountsUseCase,
   ],
   exports: [JwtModule],
 })
